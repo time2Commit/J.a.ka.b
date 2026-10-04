@@ -5,8 +5,12 @@ export default defineConfig({
   globalSetup: "./e2e/global-setup.ts",
   fullyParallel: false,
   workers: 1,
+  forbidOnly: !!process.env.CI,
+  // On CI: annotate failures in the PR and keep an HTML report to upload as an artifact.
+  reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL: "http://localhost:3000",
+    trace: "retain-on-failure",
     locale: "en-US",
     // Far from the workspace time zone on purpose: the board must show workspace time.
     timezoneId: "Asia/Tokyo",
