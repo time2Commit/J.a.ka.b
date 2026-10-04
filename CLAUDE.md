@@ -18,6 +18,9 @@ pnpm format           # Prettier write; `pnpm format:check` in CI
 pnpm typecheck        # tsc across all packages
 pnpm test             # Vitest (unit); single file: pnpm vitest run <path>
 pnpm secrets          # secretlint scan of the whole working tree
+pnpm dev              # Next.js dev server (needs Postgres + .env; see .env.example)
+pnpm --filter @jakab/db migrate:dev   # create/apply Prisma migrations (generate: `pnpm --filter @jakab/db generate`)
+PW_CHROMIUM_PATH=/opt/pw-browsers/chromium pnpm --filter @jakab/web test:e2e   # Playwright E2E (needs AUTH_SECRET, empty user table)
 ```
 
 Before every commit: `pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm secrets`.
