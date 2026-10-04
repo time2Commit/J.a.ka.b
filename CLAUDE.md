@@ -1,55 +1,60 @@
 # CLAUDE.md
 
-J.a.ka.b ("Just another kanban board") è una board a **calendario** per pianificare progetti, con una **nota di progetto collaborativa** (stile OneNote) collegata a ogni scheda. Il piano completo e l'architettura sono in `docs/PIANO-ARCHITETTURA.md`: leggilo prima di iniziare una nuova fase.
+J.a.ka.b ("Just another kanban board") is a **calendar** board for scheduling projects, with a **collaborative project note** (OneNote-style) linked to every card. The full plan and architecture are in `docs/ARCHITECTURE.md`: read it before starting a new milestone.
 
-## Comandi
+## Language
+
+- **Everything written to the repository is in English**: code, comments, docs, commit messages, PR titles and descriptions, issues.
+- The maintainer talks to Claude in Italian; reply in Italian in chat, but keep the repository in English.
+- UI strings go through i18n (next-intl) with Italian and English locales; never hard-code user-facing text.
+
+## Commands
 
 ```bash
-pnpm install          # dipendenze (pnpm workspace, Node >= 22)
+pnpm install          # dependencies (pnpm workspace, Node >= 22)
 pnpm lint             # ESLint (flat config, typescript-eslint)
-pnpm format           # Prettier in scrittura; `pnpm format:check` in CI
-pnpm typecheck        # tsc su tutti i pacchetti
-pnpm test             # Vitest (unit); un file: pnpm vitest run <percorso>
+pnpm format           # Prettier write; `pnpm format:check` in CI
+pnpm typecheck        # tsc across all packages
+pnpm test             # Vitest (unit); single file: pnpm vitest run <path>
 ```
 
-Prima di ogni commit: `pnpm lint && pnpm format:check && pnpm typecheck && pnpm test`.
+Before every commit: `pnpm lint && pnpm format:check && pnpm typecheck && pnpm test`.
 
-## Struttura (monorepo pnpm)
+## Layout (pnpm monorepo)
 
 ```
-apps/web/        Next.js (App Router): UI calendario, API, upload, export, SSE   [fase 1-2]
-apps/collab/     Server Hocuspocus (Yjs) per le note in tempo reale              [fase 4]
-packages/db/     Schema Prisma, client, migrazioni, seed                         [fase 1]
-packages/editor/ Estensioni Tiptap condivise + serializer Markdown                [fase 4]
-packages/shared/ Schemi zod, tipi, utilità condivise (es. normalizeProjectName)
-docker/          Dockerfile e Caddyfile; docker-compose.yml in root              [fase 8]
-docs/            Piano e documentazione
+apps/web/        Next.js (App Router): calendar UI, API, uploads, export, SSE   [milestones 1-2]
+apps/collab/     Hocuspocus (Yjs) server for real-time notes                    [milestone 4]
+packages/db/     Prisma schema, client, migrations, seed                        [milestone 1]
+packages/editor/ Shared Tiptap extensions + Markdown serializer                 [milestone 4]
+packages/shared/ zod schemas, types, shared utilities (e.g. normalizeProjectName)
+docker/          Dockerfiles and Caddyfile; docker-compose.yml at the root      [milestone 8]
+docs/            Plan and documentation
 ```
 
-I pacchetti interni si chiamano `@jakab/<nome>` ed esportano direttamente i sorgenti TypeScript (`"exports": { ".": "./src/index.ts" }`).
+Internal packages are named `@jakab/<name>` and export TypeScript sources directly (`"exports": { ".": "./src/index.ts" }`).
 
-## Dominio (non confondere)
+## Domain (do not mix these up)
 
-- **Progetto** = entità principale con la nota, gli allegati e le versioni. Nome univoco; `nameNormalized` (da `normalizeProjectName`) serve per i suggerimenti con pg_trgm.
-- **Scheda (Card)** = blocco pianificato sul calendario (inizio/fine/allDay). **Più schede → un progetto.**
-- **Stato e % di avanzamento** stanno sul progetto e si vedono sulla scheda; le colonne della board NON rappresentano lo stato. La scheda può avere un override.
-- Creare una scheda crea (o collega) sempre un progetto e la sua nota, nella stessa transazione.
-- Il ripristino di una versione è **non distruttivo**: salva prima una versione `pre-restore`.
-- Gli allegati sono nodi `fileEmbed` dentro la nota, non una lista separata; non cancellare mai file referenziati da una versione.
+- **Project** = main entity holding the note, attachments and versions. Unique name; `nameNormalized` (from `normalizeProjectName`) powers pg_trgm suggestions.
+- **Card** = a scheduled block on the calendar (start/end/allDay). **Many cards → one project.**
+- **Status and progress %** live on the project and are shown on the card; board columns do NOT represent status. A card may override them.
+- Creating a card always creates (or links) a project and its note, in the same transaction.
+- Restoring a version is **non-destructive**: save a `pre-restore` version first.
+- Attachments are `fileEmbed` nodes inside the note, not a separate list; never delete files referenced by a version.
 
-## Stack e convenzioni
+## Stack and conventions
 
-- TypeScript `strict` ovunque (`tsconfig.base.json`); niente `any` senza motivo commentato.
-- UI: Tailwind v4 + shadcn/ui, icone lucide-react, toast con sonner, tema chiaro/scuro con next-themes. Componenti accessibili (Radix), layout responsive.
-- Calendario: FullCalendar (plugin MIT: dayGrid, timeGrid, list, interaction). Non usare plugin premium.
-- Editor: Tiptap + Yjs/Hocuspocus. Le estensioni condivise vivono in `packages/editor`, così web, collab ed export usano lo stesso schema.
-- Dati: Prisma + PostgreSQL 16 con `pg_trgm`. Validazione input con zod (schemi in `packages/shared`).
-- Date con date-fns e locale `it`; salvare sempre in UTC, fuso del workspace per la visualizzazione.
-- Testi dell'interfaccia, commenti e documentazione in **italiano**; identificatori del codice in inglese.
-- Test accanto al codice: `*.test.ts`. E2E Playwright in `apps/web/e2e/` (Chromium preinstallato: non eseguire `playwright install`).
+- TypeScript `strict` everywhere (`tsconfig.base.json`); no `any` without a comment explaining why.
+- UI: Tailwind v4 + shadcn/ui, lucide-react icons, sonner toasts, light/dark theme with next-themes. Accessible components (Radix), responsive layout.
+- Calendar: FullCalendar (MIT plugins only: dayGrid, timeGrid, list, interaction). No premium plugins.
+- Editor: Tiptap + Yjs/Hocuspocus. Shared extensions live in `packages/editor` so web, collab and export use the same schema.
+- Data: Prisma + PostgreSQL 16 with `pg_trgm`. Validate input with zod (schemas in `packages/shared`).
+- Dates with date-fns; always store UTC, display in the workspace time zone.
+- Tests next to the code: `*.test.ts`. Playwright E2E in `apps/web/e2e/` (Chromium is preinstalled in cloud sessions: do not run `playwright install`).
 
-## Ambiente
+## Environment
 
-- Nelle sessioni cloud `.claude/hooks/session-start.sh` esegue `pnpm install` e avvia PostgreSQL 16 locale con database/utente `jakab` (password `jakab`) ed esporta `DATABASE_URL=postgresql://jakab:jakab@localhost:5432/jakab`.
-- In locale: `docker compose -f docker-compose.dev.yml up -d` per Postgres (dalla fase 1).
-- Segreti solo in `.env` (ignorato da git); documentare ogni variabile in `.env.example`.
+- In cloud sessions `.claude/hooks/session-start.sh` runs `pnpm install` and starts a local PostgreSQL 16 with database/user `jakab` (password `jakab`), exporting `DATABASE_URL=postgresql://jakab:jakab@localhost:5432/jakab`.
+- Locally: `docker compose -f docker-compose.dev.yml up -d` for Postgres (from milestone 1).
+- Secrets only in `.env` (git-ignored); document every variable in `.env.example`.

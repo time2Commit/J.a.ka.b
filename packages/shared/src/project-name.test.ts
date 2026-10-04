@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { normalizeProjectName } from "./project-name";
 
 describe("normalizeProjectName", () => {
-  it("rimuove accenti, maiuscole e spazi superflui", () => {
+  it("strips accents, uppercase and extra whitespace", () => {
     expect(normalizeProjectName("  Città   di Forlì ")).toBe("citta di forli");
   });
 
-  it("lascia invariato un nome già normalizzato", () => {
+  it("leaves an already normalized name unchanged", () => {
     expect(normalizeProjectName("cliente x")).toBe("cliente x");
   });
 });

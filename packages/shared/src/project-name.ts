@@ -1,7 +1,7 @@
 /**
- * Normalizza il nome di un progetto per confronti e suggerimenti:
- * minuscolo, senza accenti, spazi compressi.
- * Il risultato viene salvato in `Project.nameNormalized` (indice trigram).
+ * Normalizes a project name for comparisons and suggestions:
+ * lowercase, accents stripped, whitespace collapsed.
+ * The result is stored in `Project.nameNormalized` (trigram index).
  */
 export function normalizeProjectName(name: string): string {
   return name
