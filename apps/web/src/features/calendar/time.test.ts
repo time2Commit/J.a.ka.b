@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultDraft, draftToRange, eventToRange, selectionToDraft } from "./time";
+import { defaultDraft, draftToRange, dropToRange, eventToRange, selectionToDraft } from "./time";
 
 describe("draftToRange", () => {
   it("converts workspace-local times to UTC instants (CEST, UTC+2)", () => {
@@ -83,5 +83,22 @@ describe("eventToRange / defaultDraft", () => {
   it("proposes the next full hour, one hour long", () => {
     const draft = defaultDraft(new Date("2026-10-05T07:20:00Z"), "Europe/Rome");
     expect(draft).toMatchObject({ date: "2026-10-05", startTime: "10:00", endTime: "11:00" });
+  });
+});
+
+describe("dropToRange", () => {
+  it("gives a timed drop a one-hour card", () => {
+    expect(dropToRange("2026-10-05T09:30:00+02:00", false)).toEqual({
+      start: "2026-10-05T07:30:00.000Z",
+      end: "2026-10-05T08:30:00.000Z",
+      allDay: false,
+    });
+  });
+  it("gives an all-day drop a single UTC day", () => {
+    expect(dropToRange("2026-10-05", true)).toEqual({
+      start: "2026-10-05T00:00:00.000Z",
+      end: "2026-10-06T00:00:00.000Z",
+      allDay: true,
+    });
   });
 });

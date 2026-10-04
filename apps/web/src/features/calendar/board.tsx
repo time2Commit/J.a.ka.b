@@ -1,6 +1,7 @@
 "use client";
 
 import type { DatesSetArg, EventDropArg, EventInput, DateSelectArg } from "@fullcalendar/core";
+import type { DropArg } from "@fullcalendar/interaction";
 import itLocale from "@fullcalendar/core/locales/it";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin, { type EventResizeDoneArg } from "@fullcalendar/interaction";
@@ -9,19 +10,21 @@ import luxon3Plugin from "@fullcalendar/luxon3";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
-import type { CardDto, Meta } from "@/lib/types";
+import type { CardDto, Meta, ProjectSuggestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { CardContent } from "./card-content";
 import { CardPanel } from "./card-panel";
+import { CommandPalette } from "./command-palette";
 import { emptyFilters, FilterBar, type Filters } from "./filters";
 import { NewCardDialog } from "./new-card-dialog";
-import { defaultDraft, eventToRange, selectionToDraft, type Draft } from "./time";
+import { ToSchedulePanel } from "./to-schedule-panel";
+import { defaultDraft, dropToRange, eventToRange, selectionToDraft, type Draft } from "./time";
 import { useBoardEvents } from "./use-board-events";
 
 const PLUGINS = [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin, luxon3Plugin];
@@ -63,6 +66,7 @@ export function Board() {
   const [view, setView] = useState<View>("timeGridWeek");
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [dialog, setDialog] = useState<{ open: boolean; draft: Draft | null }>({
     open: false,
     draft: null,
@@ -112,6 +116,43 @@ export function Board() {
     }),
     [workspace?.workDayStart, workspace?.workDayEnd],
   );
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setPaletteOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  const schedule = useMutation({
+    mutationFn: (body: { projectId: string; start: string; end: string; allDay: boolean }) =>
+      api("/api/cards", { method: "POST", json: body }),
+    onSuccess: () => {
+      toast.success(t("scheduled"));
+      void queryClient.invalidateQueries({ queryKey: ["cards"] });
+      void queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+    onError: () => toast.error(t("moveFailed")),
+  });
+
+  function onDrop(info: DropArg) {
+    const projectId = info.draggedEl.dataset.projectId;
+    if (projectId) schedule.mutate({ projectId, ...dropToRange(info.dateStr, info.allDay) });
+  }
+
+  function onPaletteSelect(project: ProjectSuggestion) {
+    setPaletteOpen(false);
+    if (!project.focusCard) {
+      toast.info(t("searchNoCards"));
+      return;
+    }
+    api_()?.gotoDate(new Date(project.focusCard.start));
+    setSelectedId(project.focusCard.id);
+  }
 
   const move = useMutation({
     mutationFn: ({ id, ...body }: Patch) =>
@@ -209,6 +250,12 @@ export function Board() {
               </button>
             ))}
           </div>
+          <Button variant="outline" onClick={() => setPaletteOpen(true)}>
+            <Search /> {t("search")}
+            <kbd className="ml-1 hidden rounded border px-1 text-[10px] text-muted-foreground sm:inline">
+              ⌘K
+            </kbd>
+          </Button>
           <Button onClick={() => openNew(defaultDraft(new Date(), m.workspace.timeZone))}>
             <Plus /> {t("newCard")}
           </Button>
@@ -217,61 +264,73 @@ export function Board() {
 
       <FilterBar meta={m} value={filters} onChange={setFilters} />
 
-      <div className="jakab-calendar rounded-xl border bg-card p-2">
-        <FullCalendar
-          ref={calendarRef}
-          plugins={PLUGINS}
-          initialView={
-            typeof window !== "undefined" && window.innerWidth < 768
-              ? "timeGridDay"
-              : "timeGridWeek"
-          }
-          headerToolbar={false}
-          height="auto"
-          timeZone={m.workspace.timeZone}
-          locales={LOCALES}
-          locale={locale}
-          firstDay={m.workspace.firstDayOfWeek}
-          scrollTime={`${m.workspace.workDayStart}:00`}
-          businessHours={businessHours}
-          nowIndicator
-          editable
-          selectable
-          selectMirror
-          forceEventDuration
-          defaultTimedEventDuration="01:00"
-          dayMaxEvents
-          allDayText={t("allDay")}
-          noEventsText={t("noEvents")}
-          events={events}
-          datesSet={onDatesSet}
-          select={onSelect}
-          eventClick={(info) => setSelectedId(info.event.id)}
-          eventDrop={(info) => applyChange(info, t("moved"))}
-          eventResize={(info) => applyChange(info, t("resized"))}
-          eventContent={(arg) => {
-            const card = arg.event.extendedProps.card as CardDto | undefined;
-            if (!card) return undefined;
-            return (
-              <CardContent
-                card={card}
-                users={m.users}
-                compact={
-                  arg.view.type === "dayGridMonth" ||
-                  arg.view.type === "listWeek" ||
-                  arg.event.allDay
-                }
-              />
-            );
-          }}
-        />
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_16rem]">
+        <div className="jakab-calendar rounded-xl border bg-card p-2">
+          <FullCalendar
+            ref={calendarRef}
+            plugins={PLUGINS}
+            initialView={
+              typeof window !== "undefined" && window.innerWidth < 768
+                ? "timeGridDay"
+                : "timeGridWeek"
+            }
+            headerToolbar={false}
+            height="auto"
+            timeZone={m.workspace.timeZone}
+            locales={LOCALES}
+            locale={locale}
+            firstDay={m.workspace.firstDayOfWeek}
+            scrollTime={`${m.workspace.workDayStart}:00`}
+            businessHours={businessHours}
+            nowIndicator
+            editable
+            selectable
+            selectMirror
+            droppable
+            drop={onDrop}
+            forceEventDuration
+            defaultTimedEventDuration="01:00"
+            dayMaxEvents
+            allDayText={t("allDay")}
+            noEventsText={t("noEvents")}
+            events={events}
+            datesSet={onDatesSet}
+            select={onSelect}
+            eventClick={(info) => setSelectedId(info.event.id)}
+            eventDrop={(info) => applyChange(info, t("moved"))}
+            eventResize={(info) => applyChange(info, t("resized"))}
+            eventContent={(arg) => {
+              const card = arg.event.extendedProps.card as CardDto | undefined;
+              if (!card) return undefined;
+              return (
+                <CardContent
+                  card={card}
+                  users={m.users}
+                  compact={
+                    arg.view.type === "dayGridMonth" ||
+                    arg.view.type === "listWeek" ||
+                    arg.event.allDay
+                  }
+                />
+              );
+            }}
+          />
+        </div>
+        <ToSchedulePanel statuses={m.statuses} />
       </div>
 
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        statuses={m.statuses}
+        onSelect={onPaletteSelect}
+      />
       <NewCardDialog
         open={dialog.open}
         onOpenChange={(open) => setDialog((d) => ({ ...d, open }))}
         draft={dialog.draft ?? defaultDraft(new Date(), m.workspace.timeZone)}
         timeZone={m.workspace.timeZone}
+        statuses={m.statuses}
       />
       <CardPanel card={selected} meta={m} onClose={() => setSelectedId(null)} />
     </div>

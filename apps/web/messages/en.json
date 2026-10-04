@@ -61,7 +61,15 @@
       "allLabels": "All labels",
       "allMembers": "All members",
       "reset": "Reset filters"
-    }
+    },
+    "toSchedule": "To schedule",
+    "toScheduleHelp": "Drag a project onto the calendar to schedule it.",
+    "toScheduleEmpty": "Every active project has an upcoming card.",
+    "scheduled": "Card scheduled",
+    "search": "Quick search",
+    "searchPlaceholder": "Search projects…",
+    "searchEmpty": "No projects found",
+    "searchNoCards": "This project has no cards yet: drag it from “To schedule”"
   },
   "Common": {
     "save": "Save",
@@ -113,7 +121,17 @@
     "cardDeleted": "Card deleted",
     "details": "Card details",
     "openNote": "Open full note",
-    "noteSoon": "Collaborative notes arrive with a later milestone."
+    "noteSoon": "Collaborative notes arrive with a later milestone.",
+    "projectSearch": "Search or create a project…",
+    "createProject": "Create project “{name}”",
+    "noProjects": "No matching projects",
+    "lastCard": "Last card: {date}",
+    "noCards": "No cards yet",
+    "changeProject": "Change project",
+    "willCreate": "New project",
+    "willLink": "Existing project",
+    "suggestions": "Suggestions",
+    "recent": "Recent projects"
   },
   "Settings": {
     "title": "Settings",

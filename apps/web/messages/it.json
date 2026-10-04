@@ -61,7 +61,15 @@
       "allLabels": "Tutte le etichette",
       "allMembers": "Tutti i membri",
       "reset": "Azzera filtri"
-    }
+    },
+    "toSchedule": "Da programmare",
+    "toScheduleHelp": "Trascina un progetto sul calendario per programmarlo.",
+    "toScheduleEmpty": "Ogni progetto attivo ha già una card in programma.",
+    "scheduled": "Card programmata",
+    "search": "Ricerca rapida",
+    "searchPlaceholder": "Cerca progetti…",
+    "searchEmpty": "Nessun progetto trovato",
+    "searchNoCards": "Questo progetto non ha ancora card: trascinalo da “Da programmare”"
   },
   "Common": {
     "save": "Salva",
@@ -113,7 +121,17 @@
     "cardDeleted": "Card eliminata",
     "details": "Dettagli card",
     "openNote": "Apri la nota completa",
-    "noteSoon": "Le note collaborative arrivano con una milestone successiva."
+    "noteSoon": "Le note collaborative arrivano con una milestone successiva.",
+    "projectSearch": "Cerca o crea un progetto…",
+    "createProject": "Crea il progetto “{name}”",
+    "noProjects": "Nessun progetto corrispondente",
+    "lastCard": "Ultima card: {date}",
+    "noCards": "Nessuna card",
+    "changeProject": "Cambia progetto",
+    "willCreate": "Nuovo progetto",
+    "willLink": "Progetto esistente",
+    "suggestions": "Suggerimenti",
+    "recent": "Progetti recenti"
   },
   "Settings": {
     "title": "Impostazioni",
