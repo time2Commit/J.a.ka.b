@@ -12,16 +12,20 @@ test("blocks show who edited them, and 'Show authors' colors the text by author"
   const url = await newProject(request, "Attribution note");
   const { context, page: annaPage } = await signInAsMember(browser, request);
   const mario = await openNote(page, url);
-  const anna = await openNote(annaPage, url);
+  await openNote(annaPage, url);
 
   await mario.click();
   await mario.pressSequentially("Written by Mario");
+  // Mario ends his block with Enter: the empty block below is his too. Anna then writes in that
+  // block directly instead of navigating with the keyboard, so a remote update arriving while she
+  // positions the caret cannot move her into Mario's text.
+  await page.keyboard.press("Enter");
+  await expect(annaPage.locator(".jakab-note p")).toHaveCount(2);
   await expect(annaPage.locator(".jakab-note")).toContainText("Written by Mario");
-  await anna.click();
-  await annaPage.keyboard.press("Control+End");
-  await annaPage.keyboard.press("Enter");
-  await anna.pressSequentially("Written by Anna");
+  await annaPage.locator(".jakab-note p").last().click();
+  await annaPage.keyboard.type("Written by Anna");
   await expect(page.locator(".jakab-note")).toContainText("Written by Anna");
+  await expect(page.locator(".jakab-note p")).toHaveCount(2);
 
   // Hovering a block shows its last editor.
   await annaPage.locator(".jakab-note p", { hasText: "Written by Mario" }).hover();
