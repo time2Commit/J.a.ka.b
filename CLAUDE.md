@@ -31,6 +31,20 @@ Before **every** commit and push:
 4. The only credentials allowed in the repo are throwaway local-dev values (e.g. the `jakab`/`jakab` Postgres user in the SessionStart hook) and placeholders in `.env.example`.
 5. If something sensitive was committed, stop and tell the maintainer: it must be rotated, not just deleted.
 
+## Git workflow (mandatory)
+
+`main` is protected by a GitHub ruleset. The maintainer is allowed to bypass it, and Claude Code acts with the maintainer's credentials, so **GitHub would accept a direct push from Claude: this rule is enforced by Claude, not by GitHub.**
+
+1. Never commit or push directly to `main` (no `git push origin main`, no `HEAD:main`, no force-push to `main`).
+2. Every change goes on a branch created from the latest `main`: `feat/…`, `fix/…`, `docs/…`, `chore/…`. Claude sessions use the `claude/…` branch they were assigned.
+3. Commit on the branch, push it, and open a pull request against `main`. The maintainer reviews and merges.
+4. Keep PRs focused (one milestone or topic). Title and description in English, with a summary and a test plan.
+5. All checks (`pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm secrets`) must pass before opening or updating a PR.
+6. Once a PR is merged, follow-up work starts from a fresh branch off the updated `main`, never on top of the merged branch.
+7. Never rewrite history on someone else's branch.
+
+As a safety net, the `PreToolUse` hook `.claude/hooks/block-main.mjs` (registered in `.claude/settings.json`) blocks Bash commands that push to `main` or commit/push while `main` is checked out. Do not disable or work around it.
+
 ## Layout (pnpm monorepo)
 
 ```
