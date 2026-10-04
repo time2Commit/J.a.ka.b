@@ -134,7 +134,7 @@ model Label {
 model Project {
   id             String    @id @default(cuid())
   name           String    @unique
-  nameNormalized String
+  nameNormalized String    @unique
   statusId       String
   status         Status    @relation(fields: [statusId], references: [id])
   progress       Int       @default(0)

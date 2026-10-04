@@ -1,5 +1,8 @@
 {
-  "App": { "name": "J.a.ka.b", "tagline": "Just another kanban board" },
+  "App": {
+    "name": "J.a.ka.b",
+    "tagline": "Just another kanban board"
+  },
   "Auth": {
     "loginTitle": "Sign in",
     "loginDescription": "Enter your credentials to access the board.",
@@ -23,10 +26,119 @@
     "templates": "Templates",
     "settings": "Settings"
   },
-  "Theme": { "toggle": "Toggle theme", "light": "Light", "dark": "Dark", "system": "System" },
-  "Locale": { "label": "Language", "it": "Italiano", "en": "English" },
+  "Theme": {
+    "toggle": "Toggle theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "Locale": {
+    "label": "Language",
+    "it": "Italiano",
+    "en": "English"
+  },
   "Calendar": {
     "title": "Calendar",
-    "placeholder": "The calendar board arrives with the next milestone."
+    "today": "Today",
+    "newCard": "New card",
+    "views": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month",
+      "list": "List"
+    },
+    "allDay": "All day",
+    "noEvents": "No cards in this period",
+    "moved": "Card moved",
+    "resized": "Card resized",
+    "moveFailed": "Could not update the card",
+    "filters": {
+      "search": "Search projects…",
+      "status": "Status",
+      "label": "Label",
+      "member": "Member",
+      "allStatuses": "All statuses",
+      "allLabels": "All labels",
+      "allMembers": "All members",
+      "reset": "Reset filters"
+    }
+  },
+  "Common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "create": "Create",
+    "add": "Add",
+    "edit": "Edit",
+    "close": "Close",
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "name": "Name",
+    "color": "Color",
+    "none": "None",
+    "all": "All",
+    "saved": "Saved",
+    "deleted": "Deleted",
+    "undo": "Undo",
+    "confirmDelete": "Delete this item?"
+  },
+  "Card": {
+    "newTitle": "New card",
+    "project": "Project",
+    "newProject": "New project",
+    "existingProject": "Existing project",
+    "projectName": "Project name",
+    "selectProject": "Select a project",
+    "title": "Card title (optional)",
+    "start": "Start",
+    "end": "End",
+    "date": "Date",
+    "endDate": "Last day",
+    "allDay": "All day",
+    "startTime": "From",
+    "endTime": "To",
+    "notes": "Short notes",
+    "created": "Card created",
+    "projectExists": "A project with this name already exists: choose it from the list",
+    "invalidRange": "The end must not be before the start",
+    "sectionProject": "Project (shared by all its cards)",
+    "sectionCard": "This card",
+    "status": "Status",
+    "progress": "Progress",
+    "sameAsProject": "Same as project",
+    "override": "Override for this card",
+    "labels": "Labels",
+    "members": "Members",
+    "deleteCard": "Delete card",
+    "cardDeleted": "Card deleted",
+    "details": "Card details",
+    "openNote": "Open full note",
+    "noteSoon": "Collaborative notes arrive with a later milestone."
+  },
+  "Settings": {
+    "title": "Settings",
+    "adminOnly": "Only administrators can change settings.",
+    "workspace": "Workspace",
+    "timeZone": "Time zone",
+    "workDayStart": "Work day starts",
+    "workDayEnd": "Work day ends",
+    "firstDay": "First day of the week",
+    "monday": "Monday",
+    "sunday": "Sunday",
+    "statuses": "Statuses",
+    "statusesHelp": "Shown as a badge on every card. Drag to reorder with the arrows.",
+    "done": "Counts as done",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "statusInUse": "This status is in use and cannot be deleted",
+    "labels": "Labels",
+    "users": "Users",
+    "usersHelp": "Create accounts for your team. They can change their password later.",
+    "role": "Role",
+    "admin": "Administrator",
+    "member": "Member",
+    "newUser": "New user",
+    "userCreated": "User created",
+    "emailInUse": "Email already in use"
   }
 }
