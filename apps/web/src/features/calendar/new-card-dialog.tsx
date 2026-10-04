@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -14,31 +14,29 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 import { api, ApiError } from "@/lib/api";
-import type { ProjectListItem } from "@/lib/types";
+import type { Status } from "@/lib/types";
+import { ProjectCombobox, type ProjectChoice } from "./project-combobox";
 import { draftToRange, type Draft } from "./time";
-
-type Mode = "new" | "existing";
 
 export function NewCardDialog({
   open,
   onOpenChange,
   draft,
   timeZone,
+  statuses,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   draft: Draft;
   timeZone: string;
+  statuses: Status[];
 }) {
   const t = useTranslations("Card");
   const common = useTranslations("Common");
   const queryClient = useQueryClient();
   const [form, setForm] = useState<Draft>(draft);
-  const [mode, setMode] = useState<Mode>("new");
-  const [projectName, setProjectName] = useState("");
-  const [projectId, setProjectId] = useState("");
+  const [choice, setChoice] = useState<ProjectChoice>(null);
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -47,16 +45,9 @@ export function NewCardDialog({
       setForm(draft);
       setTitle("");
       setNotes("");
-      setProjectName("");
-      setProjectId("");
+      setChoice(null);
     }
   }, [open, draft]);
-
-  const projects = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => api<ProjectListItem[]>("/api/projects"),
-    enabled: open,
-  });
 
   const create = useMutation({
     mutationFn: () => {
@@ -64,7 +55,9 @@ export function NewCardDialog({
       return api("/api/cards", {
         method: "POST",
         json: {
-          ...(mode === "new" ? { projectName } : { projectId }),
+          ...(choice?.kind === "existing"
+            ? { projectId: choice.id }
+            : { projectName: choice?.name }),
           title: title || undefined,
           shortNotes: notes || undefined,
           allDay: form.allDay,
@@ -86,8 +79,7 @@ export function NewCardDialog({
 
   const range = draftToRange(form, timeZone);
   const invalidRange = new Date(range.end) < new Date(range.start);
-  const canSubmit =
-    !invalidRange && !create.isPending && (mode === "new" ? projectName.trim() : projectId);
+  const canSubmit = !invalidRange && !create.isPending && choice !== null;
   const set = (patch: Partial<Draft>) => setForm((f) => ({ ...f, ...patch }));
 
   return (
@@ -103,47 +95,10 @@ export function NewCardDialog({
             if (canSubmit) create.mutate();
           }}
         >
-          <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 text-sm font-medium">{t("project")}</legend>
-            <div className="flex gap-4 text-sm">
-              {(["new", "existing"] as const).map((m) => (
-                <label key={m} className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="mode"
-                    checked={mode === m}
-                    onChange={() => setMode(m)}
-                  />
-                  {m === "new" ? t("newProject") : t("existingProject")}
-                </label>
-              ))}
-            </div>
-            {mode === "new" ? (
-              <Input
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                placeholder={t("projectName")}
-                aria-label={t("projectName")}
-                maxLength={120}
-                required
-                autoFocus
-              />
-            ) : (
-              <Select
-                value={projectId}
-                onChange={(e) => setProjectId(e.target.value)}
-                aria-label={t("existingProject")}
-                required
-              >
-                <option value="">{t("selectProject")}</option>
-                {projects.data?.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </fieldset>
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{t("project")}</span>
+            <ProjectCombobox value={choice} onChange={setChoice} statuses={statuses} />
+          </div>
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="card-title">{t("title")}</Label>

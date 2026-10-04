@@ -79,3 +79,21 @@ export function eventToRange(event: { startStr: string; endStr: string; allDay: 
     event.allDay ? `${s.slice(0, 10)}T00:00:00.000Z` : new Date(s).toISOString();
   return { start: toIso(event.startStr), end: toIso(event.endStr), allDay: event.allDay };
 }
+
+/**
+ * Range for a project dropped on the calendar. `dateStr` is the drop target as given by the
+ * calendar: a date-only string on all-day cells, otherwise a timestamp with offset.
+ * Timed drops get a one-hour card, all-day drops a single day.
+ */
+export function dropToRange(dateStr: string, allDay: boolean) {
+  if (allDay) {
+    const start = DateTime.fromISO(dateStr.slice(0, 10), { zone: "utc" });
+    return { start: start.toISO()!, end: start.plus({ days: 1 }).toISO()!, allDay };
+  }
+  const start = new Date(dateStr);
+  return {
+    start: start.toISOString(),
+    end: new Date(start.getTime() + 3600_000).toISOString(),
+    allDay,
+  };
+}

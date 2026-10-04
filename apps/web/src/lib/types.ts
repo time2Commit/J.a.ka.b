@@ -48,3 +48,6 @@ export interface ProjectListItem {
   progress: number;
   lastCardEnd: string | null;
 }
+export interface ProjectSuggestion extends ProjectListItem {
+  focusCard: { id: string; start: string } | null;
+}
