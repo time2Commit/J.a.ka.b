@@ -1,11 +1,11 @@
 import { getTranslations } from "next-intl/server";
+import { Board } from "@/features/calendar/board";
 
-export default async function CalendarPage() {
+export async function generateMetadata() {
   const t = await getTranslations("Calendar");
-  return (
-    <section>
-      <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-      <p className="mt-2 text-muted-foreground">{t("placeholder")}</p>
-    </section>
-  );
+  return { title: t("title") };
+}
+
+export default function CalendarPage() {
+  return <Board />;
 }

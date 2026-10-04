@@ -1,5 +1,8 @@
 {
-  "App": { "name": "J.a.ka.b", "tagline": "Just another kanban board" },
+  "App": {
+    "name": "J.a.ka.b",
+    "tagline": "Just another kanban board"
+  },
   "Auth": {
     "loginTitle": "Accedi",
     "loginDescription": "Inserisci le tue credenziali per accedere alla bacheca.",
@@ -23,10 +26,119 @@
     "templates": "Template",
     "settings": "Impostazioni"
   },
-  "Theme": { "toggle": "Cambia tema", "light": "Chiaro", "dark": "Scuro", "system": "Sistema" },
-  "Locale": { "label": "Lingua", "it": "Italiano", "en": "English" },
+  "Theme": {
+    "toggle": "Cambia tema",
+    "light": "Chiaro",
+    "dark": "Scuro",
+    "system": "Sistema"
+  },
+  "Locale": {
+    "label": "Lingua",
+    "it": "Italiano",
+    "en": "English"
+  },
   "Calendar": {
     "title": "Calendario",
-    "placeholder": "La bacheca calendario arriva con la prossima milestone."
+    "today": "Oggi",
+    "newCard": "Nuova card",
+    "views": {
+      "day": "Giorno",
+      "week": "Settimana",
+      "month": "Mese",
+      "list": "Elenco"
+    },
+    "allDay": "Tutto il giorno",
+    "noEvents": "Nessuna card in questo periodo",
+    "moved": "Card spostata",
+    "resized": "Card ridimensionata",
+    "moveFailed": "Impossibile aggiornare la card",
+    "filters": {
+      "search": "Cerca progetti…",
+      "status": "Stato",
+      "label": "Etichetta",
+      "member": "Membro",
+      "allStatuses": "Tutti gli stati",
+      "allLabels": "Tutte le etichette",
+      "allMembers": "Tutti i membri",
+      "reset": "Azzera filtri"
+    }
+  },
+  "Common": {
+    "save": "Salva",
+    "cancel": "Annulla",
+    "delete": "Elimina",
+    "create": "Crea",
+    "add": "Aggiungi",
+    "edit": "Modifica",
+    "close": "Chiudi",
+    "loading": "Caricamento…",
+    "error": "Qualcosa è andato storto",
+    "name": "Nome",
+    "color": "Colore",
+    "none": "Nessuno",
+    "all": "Tutti",
+    "saved": "Salvato",
+    "deleted": "Eliminato",
+    "undo": "Annulla",
+    "confirmDelete": "Eliminare questo elemento?"
+  },
+  "Card": {
+    "newTitle": "Nuova card",
+    "project": "Progetto",
+    "newProject": "Nuovo progetto",
+    "existingProject": "Progetto esistente",
+    "projectName": "Nome del progetto",
+    "selectProject": "Seleziona un progetto",
+    "title": "Titolo della card (facoltativo)",
+    "start": "Inizio",
+    "end": "Fine",
+    "date": "Data",
+    "endDate": "Ultimo giorno",
+    "allDay": "Tutto il giorno",
+    "startTime": "Dalle",
+    "endTime": "Alle",
+    "notes": "Note brevi",
+    "created": "Card creata",
+    "projectExists": "Esiste già un progetto con questo nome: sceglilo dall'elenco",
+    "invalidRange": "La fine non può precedere l'inizio",
+    "sectionProject": "Progetto (condiviso da tutte le sue card)",
+    "sectionCard": "Questa card",
+    "status": "Stato",
+    "progress": "Avanzamento",
+    "sameAsProject": "Come il progetto",
+    "override": "Personalizza per questa card",
+    "labels": "Etichette",
+    "members": "Membri",
+    "deleteCard": "Elimina card",
+    "cardDeleted": "Card eliminata",
+    "details": "Dettagli card",
+    "openNote": "Apri la nota completa",
+    "noteSoon": "Le note collaborative arrivano con una milestone successiva."
+  },
+  "Settings": {
+    "title": "Impostazioni",
+    "adminOnly": "Solo gli amministratori possono modificare le impostazioni.",
+    "workspace": "Workspace",
+    "timeZone": "Fuso orario",
+    "workDayStart": "Inizio giornata",
+    "workDayEnd": "Fine giornata",
+    "firstDay": "Primo giorno della settimana",
+    "monday": "Lunedì",
+    "sunday": "Domenica",
+    "statuses": "Stati",
+    "statusesHelp": "Mostrati come badge su ogni card. Usa le frecce per riordinarli.",
+    "done": "Conta come completato",
+    "moveUp": "Sposta su",
+    "moveDown": "Sposta giù",
+    "statusInUse": "Questo stato è in uso e non può essere eliminato",
+    "labels": "Etichette",
+    "users": "Utenti",
+    "usersHelp": "Crea gli account per il tuo team. Potranno cambiare la password in seguito.",
+    "role": "Ruolo",
+    "admin": "Amministratore",
+    "member": "Membro",
+    "newUser": "Nuovo utente",
+    "userCreated": "Utente creato",
+    "emailInUse": "Email già in uso"
   }
 }

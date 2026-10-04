@@ -79,3 +79,29 @@
     @apply bg-background text-foreground antialiased;
   }
 }
+
+/* FullCalendar theming through the app's design tokens */
+.jakab-calendar {
+  --fc-border-color: var(--border);
+  --fc-page-bg-color: var(--card);
+  --fc-neutral-bg-color: var(--muted);
+  --fc-list-event-hover-bg-color: var(--accent);
+  --fc-today-bg-color: color-mix(in oklab, var(--primary) 8%, transparent);
+  --fc-now-indicator-color: var(--destructive);
+  --fc-non-business-color: color-mix(in oklab, var(--muted) 50%, transparent);
+  --fc-highlight-color: color-mix(in oklab, var(--primary) 18%, transparent);
+  font-size: 0.875rem;
+}
+.jakab-calendar .fc-event {
+  border-width: 0 0 0 3px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-xs, none);
+  cursor: pointer;
+}
+.jakab-calendar .fc-col-header-cell-cushion,
+.jakab-calendar .fc-daygrid-day-number,
+.jakab-calendar .fc-list-day-text,
+.jakab-calendar .fc-list-day-side-text {
+  color: var(--foreground);
+  text-decoration: none;
+}
