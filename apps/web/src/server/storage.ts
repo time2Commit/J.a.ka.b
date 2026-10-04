@@ -68,7 +68,7 @@ let storage: StorageDriver | undefined;
 /** Shared driver configured through `UPLOAD_DIR` (a Docker volume in production). */
 export function getStorage(): StorageDriver {
   return (storage ??= new FileSystemStorage(
-    path.resolve(process.env.UPLOAD_DIR ?? "./data/uploads"),
+    path.resolve(/* turbopackIgnore: true */ process.env.UPLOAD_DIR ?? "./data/uploads"),
   ));
 }
 

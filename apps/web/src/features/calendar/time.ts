@@ -97,3 +97,15 @@ export function dropToRange(dateStr: string, allDay: boolean) {
     allDay,
   };
 }
+
+/**
+ * Last day of a card whose end date the user has not chosen: the same day, or the next one when the
+ * end time is earlier than the start time (23:00 → 00:30 crosses midnight).
+ */
+export function autoEndDate(
+  draft: Pick<Draft, "allDay" | "date" | "startTime" | "endTime">,
+): string {
+  if (draft.allDay || draft.endTime >= draft.startTime) return draft.date;
+  const next = DateTime.fromISO(draft.date, { zone: "utc" }).plus({ days: 1 });
+  return next.isValid ? next.toISODate()! : draft.date;
+}
