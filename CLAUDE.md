@@ -1,12 +1,13 @@
 # CLAUDE.md
 
-J.a.ka.b ("Just another kanban board") is a **calendar** board for scheduling projects, with a **collaborative project note** (OneNote-style) linked to every card. The full plan and architecture are in `docs/ARCHITECTURE.md`: read it before starting a new milestone.
+J.a.ka.b ("Just another kanban board") is a **calendar** board for scheduling projects, with a **collaborative project note** (rich text, inline files, authorship, versions) linked to every card. The full plan and architecture are in `docs/ARCHITECTURE.md`: read it before starting a new milestone.
 
 ## Language
 
 - **Everything written to the repository is in English**: code, comments, docs, commit messages, PR titles and descriptions, issues.
 - The maintainer talks to Claude in Italian; reply in Italian in chat, but keep the repository in English.
 - UI strings go through i18n (next-intl) with Italian and English locales; never hard-code user-facing text.
+- Describe features on their own terms: never name or compare with other products or competitors in docs, README, UI text, comments or PRs.
 
 ## Commands
 

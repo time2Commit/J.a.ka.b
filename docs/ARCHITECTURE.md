@@ -4,9 +4,9 @@
 
 J.a.ka.b is a self-hosted web app (Docker) for a small team (<50 users, internal server) that combines:
 
-- a **calendar board** (day / week / month, with times, like Trello's calendar view) used to _schedule_ projects;
+- a **calendar board** (day / week / month, with times) used to _schedule_ projects;
 - **progress shown on the card** (not as board columns): configurable statuses plus a percentage;
-- a **project note** (OneNote-style) linked to every card: rich text, files placed exactly where you want them in the text, who changed what, real-time co-editing, versions with rollback, Markdown export with an attachments folder;
+- a **collaborative project note** linked to every card: rich text, files placed exactly where you want them in the text, who changed what, real-time co-editing, versions with rollback, Markdown export with an attachments folder;
 - project **templates** and **cloning**, plus **auto-suggestions** to link new cards to existing projects.
 
 Decisions taken: multi-user full-stack web app · configurable statuses + % · real-time collaborative editing · local email+password accounts · single Docker host with attachments on a volume.
@@ -121,12 +121,12 @@ docker-compose.yml, .env.example
 - Menu options: **Link to existing project** · **New empty project** · **New from template…** · **Clone from project…**.
 - Creating a new project happens in one transaction: `Project` + empty (or template-prefilled) `NoteDocument` + `Card` + `Activity`.
 
-### 5.3 Project note (OneNote-style)
+### 5.3 Project note
 
 - `/projects/[id]` page with a full-width Tiptap editor: headings, lists, checklists, tables, highlight, colors, code, links, @member mentions, "/" slash commands.
 - **Collaboration**: `HocuspocusProvider` (document `project:<id>`), colored cursors with each user's name, presence (avatars of who is in the note).
 - **Who changed what**:
-  1. `BlockAttribution` extension (in `packages/editor`): an `appendTransaction` writes `lastEditedBy` / `lastEditedAt` on changed blocks → hovering the margin shows "Edited by Mario · 10:42" (like OneNote);
+  1. `BlockAttribution` extension (in `packages/editor`): an `appendTransaction` writes `lastEditedBy` / `lastEditedAt` on changed blocks → hovering the margin shows "Edited by Mario · 10:42";
   2. a "Show authors" toggle that colors text by author using `Y.PermanentUserData` + Yjs snapshots;
   3. `Activity` log for high-level events (file added, version restored).
 - **Files placed anywhere in the note**: custom `fileEmbed` node (block or inline) with attributes `{attachmentId, name, mime, size}`; drop or paste into the editor → upload `POST /api/projects/:id/attachments` (streamed to disk, sha256 hash) → node inserted at the cursor or drop position. Rendering: resizable inline images, PDF preview, other files as a chip with icon, size and download. Unreferenced files are marked orphaned and cleaned up after N days (job), never deleted while a version references them.

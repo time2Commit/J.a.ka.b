@@ -4,13 +4,11 @@ Just another kanban board (J.a.ka.b) is an open-source project aimed at creating
 
 > **Status: early development.** The architecture is defined and the repository skeleton is in place; the features below are being built milestone by milestone (see [Roadmap](#roadmap)).
 
-## Why another kanban board?
+## How it works
 
-Classic kanban boards use columns to show progress: _To do → In progress → Done_. J.a.ka.b turns this around:
-
-- **The board is a calendar.** Columns are days, weeks or months, and cards are placed on them with start and end times, like Trello's calendar view. The board answers _"what are we working on, and when?"_.
-- **Progress lives on the card.** Each card shows its own status (from a list you configure) and a completion percentage, so you never have to move a card across columns to update it.
-- **Every card has a project note.** Behind each card there is a rich, collaborative note (think OneNote) that describes the whole project and keeps its history. Many cards scheduled on different days can share the same project and note.
+- **The board is a calendar.** Projects are scheduled on a day, week or month view, with start and end times. The board answers _"what are we working on, and when?"_.
+- **Progress lives on the card.** Each card shows its own status (from a list you configure) and a completion percentage, so updating progress never means moving the card.
+- **Every card has a project note.** Behind each card there is a rich, collaborative note that describes the whole project and keeps its history. Many cards scheduled on different days can share the same project and note.
 
 ## Features
 
