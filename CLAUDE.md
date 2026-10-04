@@ -16,9 +16,20 @@ pnpm lint             # ESLint (flat config, typescript-eslint)
 pnpm format           # Prettier write; `pnpm format:check` in CI
 pnpm typecheck        # tsc across all packages
 pnpm test             # Vitest (unit); single file: pnpm vitest run <path>
+pnpm secrets          # secretlint scan of the whole working tree
 ```
 
-Before every commit: `pnpm lint && pnpm format:check && pnpm typecheck && pnpm test`.
+Before every commit: `pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm secrets`.
+
+## Never commit personal or secret material (mandatory)
+
+Before **every** commit and push:
+
+1. Run `pnpm secrets` and review `git status` / `git diff --cached` file by file.
+2. Never commit: `.env` files, API keys, tokens, passwords, private keys or certificates, credentials JSON, SSH keys, password vaults, `.claude/settings.local.json`, IDE settings, uploads, backups or database dumps.
+3. No personal data: no real names, emails, phone numbers or home paths in code, fixtures, docs or commit messages. Use obviously fake data (`mario.rossi@example.com`).
+4. The only credentials allowed in the repo are throwaway local-dev values (e.g. the `jakab`/`jakab` Postgres user in the SessionStart hook) and placeholders in `.env.example`.
+5. If something sensitive was committed, stop and tell the maintainer: it must be rotated, not just deleted.
 
 ## Layout (pnpm monorepo)
 

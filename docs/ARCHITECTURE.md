@@ -179,7 +179,7 @@ docker-compose.yml, .env.example
 
 ## 7. Roadmap (milestones)
 
-1. **Foundations** – monorepo, configs, Prisma + migrations, Better Auth, shadcn layout with light/dark theme, i18n, CI (lint, typecheck, test), dev compose.
+1. **Foundations** – monorepo, configs, Prisma + migrations, Better Auth, shadcn layout with light/dark theme, i18n, CI (lint, typecheck, test, secretlint secret scan) and a Husky pre-commit hook running secretlint, dev compose.
 2. **Calendar board** – statuses/labels/members CRUD, projects and cards, FullCalendar views with drag & drop, custom card with status and %, filters, live SSE.
 3. **Smart creation** – pg_trgm suggestions, linking to existing projects, "To schedule" backlog.
 4. **Collaborative notes** – Hocuspocus service, Tiptap editor, cursors/presence, block attribution, `fileEmbed` + upload.
@@ -196,7 +196,7 @@ Each milestone ends with tests and a working demo, so the app is usable from mil
 
 **Libraries (look & UX):** shadcn/ui, Tailwind v4, lucide-react, sonner, motion, next-themes, cmdk, @tiptap/\* (starter-kit, table, task-list, highlight, color, mention, collaboration, collaboration-caret, drag-handle), FullCalendar, react-dropzone, nanoid, date-fns, next-intl.
 
-**Development:** Prettier + prettier-plugin-tailwindcss, ESLint (typescript-eslint, react-hooks, jsx-a11y), Husky + lint-staged, Vitest + Testing Library, Playwright, Prisma Studio.
+**Development:** Prettier + prettier-plugin-tailwindcss, secretlint (secret scanning), ESLint (typescript-eslint, react-hooks, jsx-a11y), Husky + lint-staged, Vitest + Testing Library, Playwright, Prisma Studio.
 
 **Claude Code:** Context7 and Playwright MCP plugins, frontend-design skill, SessionStart hook (`.claude/hooks/session-start.sh`), `CLAUDE.md` with project conventions.
 
