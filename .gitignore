@@ -35,3 +35,8 @@ uploads/
 backups/
 *.dump
 *.sql.gz
+**/src/generated/
+next-env.d.ts
+*.tsbuildinfo
+test-results/
+playwright-report/

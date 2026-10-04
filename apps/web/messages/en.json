@@ -1,0 +1,32 @@
+{
+  "App": { "name": "J.a.ka.b", "tagline": "Just another kanban board" },
+  "Auth": {
+    "loginTitle": "Sign in",
+    "loginDescription": "Enter your credentials to access the board.",
+    "registerTitle": "Create the admin account",
+    "registerDescription": "The first account becomes the workspace administrator.",
+    "name": "Name",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "signOut": "Sign out",
+    "invalidCredentials": "Invalid email or password.",
+    "genericError": "Something went wrong. Please try again.",
+    "passwordHint": "At least 8 characters.",
+    "firstRunLink": "First time here? Create the admin account",
+    "haveAccount": "Already have an account? Sign in"
+  },
+  "Nav": {
+    "calendar": "Calendar",
+    "projects": "Projects",
+    "templates": "Templates",
+    "settings": "Settings"
+  },
+  "Theme": { "toggle": "Toggle theme", "light": "Light", "dark": "Dark", "system": "System" },
+  "Locale": { "label": "Language", "it": "Italiano", "en": "English" },
+  "Calendar": {
+    "title": "Calendar",
+    "placeholder": "The calendar board arrives with the next milestone."
+  }
+}

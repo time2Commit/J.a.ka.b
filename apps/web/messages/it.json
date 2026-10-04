@@ -1,0 +1,32 @@
+{
+  "App": { "name": "J.a.ka.b", "tagline": "Just another kanban board" },
+  "Auth": {
+    "loginTitle": "Accedi",
+    "loginDescription": "Inserisci le tue credenziali per accedere alla bacheca.",
+    "registerTitle": "Crea l'account amministratore",
+    "registerDescription": "Il primo account diventa l'amministratore del workspace.",
+    "name": "Nome",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Accedi",
+    "signUp": "Crea account",
+    "signOut": "Esci",
+    "invalidCredentials": "Email o password non valide.",
+    "genericError": "Qualcosa è andato storto. Riprova.",
+    "passwordHint": "Almeno 8 caratteri.",
+    "firstRunLink": "Prima volta qui? Crea l'account amministratore",
+    "haveAccount": "Hai già un account? Accedi"
+  },
+  "Nav": {
+    "calendar": "Calendario",
+    "projects": "Progetti",
+    "templates": "Template",
+    "settings": "Impostazioni"
+  },
+  "Theme": { "toggle": "Cambia tema", "light": "Chiaro", "dark": "Scuro", "system": "Sistema" },
+  "Locale": { "label": "Lingua", "it": "Italiano", "en": "English" },
+  "Calendar": {
+    "title": "Calendario",
+    "placeholder": "La bacheca calendario arriva con la prossima milestone."
+  }
+}

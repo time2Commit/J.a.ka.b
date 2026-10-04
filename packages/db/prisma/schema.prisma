@@ -1,0 +1,294 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  admin
+  member
+}
+
+enum VersionReason {
+  auto
+  manual
+  pre_restore @map("pre-restore")
+}
+
+// ---------------------------------------------------------------------------
+// Users and authentication (Better Auth tables + app-specific fields)
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String   @id
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  avatarColor   String   @default("#6366f1")
+  role          Role     @default(member)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions Session[]
+  accounts Account[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ---------------------------------------------------------------------------
+// Workspace settings, statuses and labels
+// ---------------------------------------------------------------------------
+
+model Workspace {
+  id             String   @id @default("default")
+  name           String   @default("J.a.ka.b")
+  timeZone       String   @default("Europe/Rome")
+  workDayStart   String   @default("08:00")
+  workDayEnd     String   @default("19:00")
+  firstDayOfWeek Int      @default(1) // 0 = Sunday, 1 = Monday
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("workspace")
+}
+
+model Status {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  color  String
+  order  Int
+  isDone Boolean @default(false)
+
+  projects Project[]
+  cards    Card[]
+
+  @@map("status")
+}
+
+model Label {
+  id    String @id @default(cuid())
+  name  String @unique
+  color String
+
+  projects ProjectLabel[]
+  cards    CardLabel[]
+
+  @@map("label")
+}
+
+// ---------------------------------------------------------------------------
+// Projects, cards and notes
+// ---------------------------------------------------------------------------
+
+model Project {
+  id             String    @id @default(cuid())
+  name           String    @unique
+  nameNormalized String
+  statusId       String
+  status         Status    @relation(fields: [statusId], references: [id])
+  progress       Int       @default(0)
+  color          String?
+  archivedAt     DateTime?
+  createdById    String
+  templateId     String?
+  template       Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  clonedFromId   String?
+  clonedFrom     Project?  @relation("ProjectClone", fields: [clonedFromId], references: [id], onDelete: SetNull)
+  clones         Project[] @relation("ProjectClone")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  labels      ProjectLabel[]
+  members     ProjectMember[]
+  cards       Card[]
+  note        NoteDocument?
+  versions    NoteVersion[]
+  attachments Attachment[]
+  activities  Activity[]
+
+  @@index([statusId])
+  @@map("project")
+}
+
+model ProjectLabel {
+  projectId String
+  labelId   String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  label     Label   @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, labelId])
+  @@map("project_label")
+}
+
+model ProjectMember {
+  projectId String
+  userId    String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, userId])
+  @@map("project_member")
+}
+
+model Card {
+  id               String   @id @default(cuid())
+  projectId        String
+  project          Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title            String?
+  start            DateTime
+  end              DateTime
+  allDay           Boolean  @default(false)
+  statusOverrideId String?
+  statusOverride   Status?  @relation(fields: [statusOverrideId], references: [id], onDelete: SetNull)
+  progressOverride Int?
+  shortNotes       String?
+  createdById      String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  members CardMember[]
+  labels  CardLabel[]
+
+  @@index([projectId])
+  @@index([start, end])
+  @@map("card")
+}
+
+model CardMember {
+  cardId String
+  userId String
+  card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@id([cardId, userId])
+  @@map("card_member")
+}
+
+model CardLabel {
+  cardId  String
+  labelId String
+  card    Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  label   Label  @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([cardId, labelId])
+  @@map("card_label")
+}
+
+model NoteDocument {
+  projectId String   @id
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  yState    Bytes?
+  json      Json?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@map("note_document")
+}
+
+model NoteVersion {
+  id        String        @id @default(cuid())
+  projectId String
+  project   Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  yState    Bytes
+  json      Json
+  authors   String[]
+  reason    VersionReason
+  label     String?
+  createdBy String?
+  createdAt DateTime      @default(now())
+
+  @@index([projectId, createdAt])
+  @@map("note_version")
+}
+
+model Attachment {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  originalName String
+  mime         String
+  size         Int
+  sha256       String
+  storageKey   String
+  uploadedBy   String
+  createdAt    DateTime @default(now())
+
+  @@index([projectId])
+  @@map("attachment")
+}
+
+model Template {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  defaults  Json
+  noteJson  Json?
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects Project[]
+
+  @@map("template")
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  type      String
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([projectId, createdAt])
+  @@map("activity")
+}

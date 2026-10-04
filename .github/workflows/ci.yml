@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: jakab
+          POSTGRES_USER: jakab
+          POSTGRES_PASSWORD: jakab
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U jakab -d jakab"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://jakab:jakab@localhost:5432/jakab
+      AUTH_SECRET: ci-only-secret-ci-only-secret-ci-only
+      APP_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: PGPASSWORD=jakab psql -h localhost -U jakab -d jakab -c 'CREATE EXTENSION IF NOT EXISTS pg_trgm'
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm --filter @jakab/db generate
+      - run: pnpm typecheck
+      - run: pnpm --filter @jakab/db migrate:deploy
+      - run: pnpm test
+      - run: pnpm secrets
