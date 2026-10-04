@@ -7,7 +7,7 @@ import { ySyncPluginKey } from "@tiptap/y-tiptap";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import { getExtensions, NOTE_FIELD, noteDocumentName } from "@jakab/editor";
 import { useFormatter, useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import * as Y from "yjs";
 import { cn } from "@/lib/utils";
@@ -37,30 +37,35 @@ interface EditedLabel {
   text: string;
 }
 
-/** Collaborative editor for a project note (Yjs document `project:<id>` on the collab server). */
-export function NoteEditor({
-  projectId,
-  user,
-  users,
-  collabUrl,
-}: {
+interface Session {
+  doc: Y.Doc;
+  provider: HocuspocusProvider;
+  permanentUserData: Y.PermanentUserData;
+  colorMapping: Map<string, { light: string; dark: string }>;
+}
+
+interface NoteEditorProps {
   projectId: string;
   user: NoteUser;
   /** Everybody who can edit, to resolve authors by id. */
   users: NoteUser[];
   collabUrl: string;
-}) {
-  const t = useTranslations("Note");
-  const format = useFormatter();
-  const [status, setStatus] = useState<ConnectionStatus>("connecting");
-  const [peers, setPeers] = useState<Peer[]>([]);
-  const [showAuthors, setShowAuthors] = useState(false);
-  const [legend, setLegend] = useState<NoteUser[]>([]);
-  const [edited, setEdited] = useState<EditedLabel | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+}
 
-  // One Yjs document and provider per note; they live as long as the editor is mounted.
-  const { doc, provider, permanentUserData, colorMapping } = useMemo(() => {
+/**
+ * Collaborative editor for a project note (Yjs document `project:<id>` on the collab server).
+ * The connection is opened in an effect, so it only ever exists in the browser: creating it while
+ * rendering would also open (and leak) a socket from the server-side render, and would break when
+ * React re-runs effects in development.
+ */
+export function NoteEditor(props: NoteEditorProps) {
+  const { projectId, user, collabUrl } = props;
+  const [session, setSession] = useState<Session | null>(null);
+  // Users only color the authors: a changed list must not recreate the connection.
+  const usersRef = useRef(props.users);
+  usersRef.current = props.users;
+
+  useEffect(() => {
     const doc = new Y.Doc();
     const provider = new HocuspocusProvider({
       url: collabUrl,
@@ -72,10 +77,38 @@ export function NoteEditor({
     // Remembers which user each Yjs client id belongs to: this powers "Show authors".
     const permanentUserData = new Y.PermanentUserData(doc, doc.getMap("users"));
     permanentUserData.setUserMapping(doc, doc.clientID, user.id);
-    const colorMapping = new Map(users.map((u) => [u.id, { light: u.color, dark: u.color }]));
-    return { doc, provider, permanentUserData, colorMapping };
-    // Users are only used to color authors; a changed list must not recreate the connection.
+    const colorMapping = new Map(
+      usersRef.current.map((u) => [u.id, { light: u.color, dark: u.color }]),
+    );
+    setSession({ doc, provider, permanentUserData, colorMapping });
+    return () => {
+      setSession(null);
+      provider.destroy();
+      doc.destroy();
+    };
   }, [collabUrl, projectId, user.id]);
+
+  if (!session) {
+    return <div aria-busy className="h-96 animate-pulse rounded-xl border bg-muted/40" />;
+  }
+  return <NoteEditorView {...props} session={session} />;
+}
+
+function NoteEditorView({
+  projectId,
+  user,
+  users,
+  session,
+}: NoteEditorProps & { session: Session }) {
+  const { doc, provider, permanentUserData, colorMapping } = session;
+  const t = useTranslations("Note");
+  const format = useFormatter();
+  const [status, setStatus] = useState<ConnectionStatus>("connecting");
+  const [peers, setPeers] = useState<Peer[]>([]);
+  const [showAuthors, setShowAuthors] = useState(false);
+  const [legend, setLegend] = useState<NoteUser[]>([]);
+  const [edited, setEdited] = useState<EditedLabel | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onStatus = ({ status }: { status: string }) =>
@@ -97,10 +130,8 @@ export function NoteEditor({
     return () => {
       provider.off("status", onStatus);
       provider.off("awarenessChange", onAwareness);
-      provider.destroy();
-      doc.destroy();
     };
-  }, [provider, doc]);
+  }, [provider]);
 
   const upload = useCallback(
     async (file: File): Promise<UploadedFile | null> => {
