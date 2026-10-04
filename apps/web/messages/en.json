@@ -199,7 +199,8 @@
       "deleteTable": "Delete table",
       "linkPrompt": "Link address (empty to remove)",
       "attach": "Attach file",
-      "authors": "Show authors"
+      "authors": "Show authors",
+      "textColor": "Text color"
     },
     "files": {
       "uploading": "Uploading {name}…",
@@ -213,6 +214,19 @@
     "edited": "Edited by {name} · {time}",
     "unknownUser": "someone",
     "authorsLegend": "Authors",
-    "authorsReadOnly": "Showing authors: the note is read-only until you turn this off."
+    "authorsReadOnly": "Showing authors: the note is read-only until you turn this off.",
+    "colors": {
+      "default": "Default",
+      "red": "Red",
+      "orange": "Orange",
+      "green": "Green",
+      "blue": "Blue",
+      "purple": "Purple",
+      "gray": "Gray"
+    },
+    "suggestions": {
+      "people": "People",
+      "blocks": "Insert block"
+    }
   }
 }

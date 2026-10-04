@@ -16,14 +16,22 @@ import {
   ListChecks,
   ListOrdered,
   Minus,
+  Palette,
   Paperclip,
   PenLine,
   Quote,
   Strikethrough,
   Table as TableIcon,
 } from "lucide-react";
+import { TEXT_COLORS } from "@jakab/editor";
 import { useTranslations } from "next-intl";
 import { useRef } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 function ToolButton({
@@ -73,6 +81,7 @@ export function NoteToolbar({
   onAttach: (files: File[]) => void;
 }) {
   const t = useTranslations("Note.toolbar");
+  const colors = useTranslations("Note.colors");
   const s = useEditorState({
     editor,
     selector: ({ editor }) => ({
@@ -91,6 +100,7 @@ export function NoteToolbar({
       blockquote: editor.isActive("blockquote"),
       codeBlock: editor.isActive("codeBlock"),
       inTable: editor.isActive("table"),
+      textColor: (editor.getAttributes("textStyle").color as string | undefined) ?? null,
     }),
   });
   const chain = () => editor.chain().focus();
@@ -154,6 +164,38 @@ export function NoteToolbar({
         <ToolButton label={t("code")} active={s.code} onClick={() => chain().toggleCode().run()}>
           <Code />
         </ToolButton>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              title={t("textColor")}
+              aria-label={t("textColor")}
+              onMouseDown={(e) => e.preventDefault()}
+              className="relative inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:opacity-40 [&_svg]:size-4"
+            >
+              <Palette />
+              <span
+                className="absolute right-1.5 bottom-1 left-1.5 h-0.5 rounded-full"
+                style={{ backgroundColor: s.textColor ?? "transparent" }}
+              />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            // Do not steal the editor focus when closing: the color applies to the current selection.
+            onCloseAutoFocus={(e) => e.preventDefault()}
+          >
+            <DropdownMenuItem onSelect={() => chain().unsetColor().run()}>
+              <span className="size-3 rounded-full border" /> {colors("default")}
+            </DropdownMenuItem>
+            {TEXT_COLORS.map((c) => (
+              <DropdownMenuItem key={c.key} onSelect={() => chain().setColor(c.value).run()}>
+                <span className="size-3 rounded-full" style={{ backgroundColor: c.value }} />{" "}
+                {colors(c.key)}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
         <ToolButton
           label={t("highlight")}
           active={s.highlight}

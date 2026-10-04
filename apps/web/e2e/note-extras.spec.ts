@@ -1,46 +1,8 @@
-import { expect, test, type APIRequestContext, type Browser, type Page } from "@playwright/test";
-import { STORAGE_STATE, todayInRome } from "./helpers";
+import { expect, test } from "@playwright/test";
+import { newProject, openNote, PNG, signInAsMember, STORAGE_STATE } from "./helpers";
 
 // Runs after note.spec.ts (single worker); it only needs the admin account.
 test.use({ storageState: STORAGE_STATE });
-
-const MEMBER = { name: "Anna Bianchi", email: "anna.extras@example.com", password: "password456" };
-// A valid 1x1 PNG.
-const PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
-  "base64",
-);
-
-async function newProject(request: APIRequestContext, name: string) {
-  const day = todayInRome();
-  const res = await request.post("/api/cards", {
-    data: { projectName: name, start: `${day}T08:00:00Z`, end: `${day}T09:00:00Z` },
-  });
-  const { card } = (await res.json()) as { card: { projectId: string } };
-  return `/projects/${card.projectId}`;
-}
-
-async function openNote(page: Page, url: string) {
-  await page.goto(url);
-  await expect(page.getByTestId("note-status")).toHaveAttribute("data-status", "connected");
-  const editor = page.getByRole("textbox", { name: "Write the project note…" });
-  await expect(editor).toBeVisible();
-  return editor;
-}
-
-async function signInAsMember(browser: Browser, request: APIRequestContext) {
-  await request.post("/api/users", { data: { ...MEMBER, role: "member" } }); // 409 when it exists
-  // Empty storage state: the context must not inherit the admin session from `test.use`.
-  const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
-  const page = await context.newPage();
-  await page.goto("/login");
-  await page.waitForLoadState("networkidle");
-  await page.getByLabel("Email").fill(MEMBER.email);
-  await page.getByLabel("Password").fill(MEMBER.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("button", { name: "New card" })).toBeVisible();
-  return { context, page };
-}
 
 test("blocks show who edited them, and 'Show authors' colors the text by author", async ({
   page,
@@ -50,22 +12,26 @@ test("blocks show who edited them, and 'Show authors' colors the text by author"
   const url = await newProject(request, "Attribution note");
   const { context, page: annaPage } = await signInAsMember(browser, request);
   const mario = await openNote(page, url);
-  const anna = await openNote(annaPage, url);
+  await openNote(annaPage, url);
 
   await mario.click();
   await mario.pressSequentially("Written by Mario");
+  // Mario ends his block with Enter: the empty block below is his too. Anna then writes in that
+  // block directly instead of navigating with the keyboard, so a remote update arriving while she
+  // positions the caret cannot move her into Mario's text.
+  await page.keyboard.press("Enter");
+  await expect(annaPage.locator(".jakab-note p")).toHaveCount(2);
   await expect(annaPage.locator(".jakab-note")).toContainText("Written by Mario");
-  await anna.click();
-  await annaPage.keyboard.press("Control+End");
-  await annaPage.keyboard.press("Enter");
-  await anna.pressSequentially("Written by Anna");
+  await annaPage.locator(".jakab-note p").last().click();
+  await annaPage.keyboard.type("Written by Anna");
   await expect(page.locator(".jakab-note")).toContainText("Written by Anna");
+  await expect(page.locator(".jakab-note p")).toHaveCount(2);
 
   // Hovering a block shows its last editor.
   await annaPage.locator(".jakab-note p", { hasText: "Written by Mario" }).hover();
   await expect(annaPage.getByTestId("edited-label")).toContainText("Edited by Mario Rossi");
   await page.locator(".jakab-note p", { hasText: "Written by Anna" }).hover();
-  await expect(page.getByTestId("edited-label")).toContainText("Edited by Anna Bianchi");
+  await expect(page.getByTestId("edited-label")).toContainText("Edited by Anna Neri");
 
   // Show authors: text is tinted per author and the note is read-only meanwhile.
   await page.getByRole("button", { name: "Show authors" }).click();

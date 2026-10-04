@@ -1,4 +1,5 @@
-import { fileKind } from "@jakab/editor";
+// Subpath import: the whole editor package (Tiptap, Yjs) is not needed on this server route.
+import { fileKind } from "@jakab/editor/files";
 import { Readable } from "node:stream";
 import { getAttachment } from "@/server/attachments";
 import { notFound } from "@/server/errors";

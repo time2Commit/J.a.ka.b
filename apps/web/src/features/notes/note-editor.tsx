@@ -7,12 +7,14 @@ import { ySyncPluginKey } from "@tiptap/y-tiptap";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import { getExtensions, NOTE_FIELD, noteDocumentName } from "@jakab/editor";
 import { useFormatter, useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import * as Y from "yjs";
 import { cn } from "@/lib/utils";
 import { FileEmbedWithView } from "./file-embed-view";
 import { FileUpload, type UploadedFile } from "./file-upload";
+import { createMentionExtension } from "./mention-extension";
+import { pickFiles, SlashCommand, type SlashCommandItem } from "./slash-command";
 import { NoteToolbar } from "./note-toolbar";
 
 export interface NoteUser {
@@ -35,30 +37,35 @@ interface EditedLabel {
   text: string;
 }
 
-/** Collaborative editor for a project note (Yjs document `project:<id>` on the collab server). */
-export function NoteEditor({
-  projectId,
-  user,
-  users,
-  collabUrl,
-}: {
+interface Session {
+  doc: Y.Doc;
+  provider: HocuspocusProvider;
+  permanentUserData: Y.PermanentUserData;
+  colorMapping: Map<string, { light: string; dark: string }>;
+}
+
+interface NoteEditorProps {
   projectId: string;
   user: NoteUser;
   /** Everybody who can edit, to resolve authors by id. */
   users: NoteUser[];
   collabUrl: string;
-}) {
-  const t = useTranslations("Note");
-  const format = useFormatter();
-  const [status, setStatus] = useState<ConnectionStatus>("connecting");
-  const [peers, setPeers] = useState<Peer[]>([]);
-  const [showAuthors, setShowAuthors] = useState(false);
-  const [legend, setLegend] = useState<NoteUser[]>([]);
-  const [edited, setEdited] = useState<EditedLabel | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+}
 
-  // One Yjs document and provider per note; they live as long as the editor is mounted.
-  const { doc, provider, permanentUserData, colorMapping } = useMemo(() => {
+/**
+ * Collaborative editor for a project note (Yjs document `project:<id>` on the collab server).
+ * The connection is opened in an effect, so it only ever exists in the browser: creating it while
+ * rendering would also open (and leak) a socket from the server-side render, and would break when
+ * React re-runs effects in development.
+ */
+export function NoteEditor(props: NoteEditorProps) {
+  const { projectId, user, collabUrl } = props;
+  const [session, setSession] = useState<Session | null>(null);
+  // Users only color the authors: a changed list must not recreate the connection.
+  const usersRef = useRef(props.users);
+  usersRef.current = props.users;
+
+  useEffect(() => {
     const doc = new Y.Doc();
     const provider = new HocuspocusProvider({
       url: collabUrl,
@@ -70,10 +77,38 @@ export function NoteEditor({
     // Remembers which user each Yjs client id belongs to: this powers "Show authors".
     const permanentUserData = new Y.PermanentUserData(doc, doc.getMap("users"));
     permanentUserData.setUserMapping(doc, doc.clientID, user.id);
-    const colorMapping = new Map(users.map((u) => [u.id, { light: u.color, dark: u.color }]));
-    return { doc, provider, permanentUserData, colorMapping };
-    // Users are only used to color authors; a changed list must not recreate the connection.
+    const colorMapping = new Map(
+      usersRef.current.map((u) => [u.id, { light: u.color, dark: u.color }]),
+    );
+    setSession({ doc, provider, permanentUserData, colorMapping });
+    return () => {
+      setSession(null);
+      provider.destroy();
+      doc.destroy();
+    };
   }, [collabUrl, projectId, user.id]);
+
+  if (!session) {
+    return <div aria-busy className="h-96 animate-pulse rounded-xl border bg-muted/40" />;
+  }
+  return <NoteEditorView {...props} session={session} />;
+}
+
+function NoteEditorView({
+  projectId,
+  user,
+  users,
+  session,
+}: NoteEditorProps & { session: Session }) {
+  const { doc, provider, permanentUserData, colorMapping } = session;
+  const t = useTranslations("Note");
+  const format = useFormatter();
+  const [status, setStatus] = useState<ConnectionStatus>("connecting");
+  const [peers, setPeers] = useState<Peer[]>([]);
+  const [showAuthors, setShowAuthors] = useState(false);
+  const [legend, setLegend] = useState<NoteUser[]>([]);
+  const [edited, setEdited] = useState<EditedLabel | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onStatus = ({ status }: { status: string }) =>
@@ -95,10 +130,8 @@ export function NoteEditor({
     return () => {
       provider.off("status", onStatus);
       provider.off("awarenessChange", onAwareness);
-      provider.destroy();
-      doc.destroy();
     };
-  }, [provider, doc]);
+  }, [provider]);
 
   const upload = useCallback(
     async (file: File): Promise<UploadedFile | null> => {
@@ -127,6 +160,88 @@ export function NoteEditor({
     [projectId, t],
   );
 
+  // Latest slash items, read lazily by the extension (the editor is created only once).
+  const slashItems = useRef<SlashCommandItem[]>([]);
+  slashItems.current = [
+    {
+      id: "h1",
+      label: t("toolbar.h1"),
+      keywords: ["heading", "title", "titolo"],
+      run: (e, r) => e.chain().focus().deleteRange(r).toggleHeading({ level: 1 }).run(),
+    },
+    {
+      id: "h2",
+      label: t("toolbar.h2"),
+      keywords: ["heading", "title", "titolo"],
+      run: (e, r) => e.chain().focus().deleteRange(r).toggleHeading({ level: 2 }).run(),
+    },
+    {
+      id: "h3",
+      label: t("toolbar.h3"),
+      keywords: ["heading", "title", "titolo"],
+      run: (e, r) => e.chain().focus().deleteRange(r).toggleHeading({ level: 3 }).run(),
+    },
+    {
+      id: "bullet",
+      label: t("toolbar.bulletList"),
+      keywords: ["list", "elenco", "puntato"],
+      run: (e, r) => e.chain().focus().deleteRange(r).toggleBulletList().run(),
+    },
+    {
+      id: "ordered",
+      label: t("toolbar.orderedList"),
+      keywords: ["number", "numerato", "elenco"],
+      run: (e, r) => e.chain().focus().deleteRange(r).toggleOrderedList().run(),
+    },
+    {
+      id: "task",
+      label: t("toolbar.taskList"),
+      keywords: ["checklist", "todo", "task", "attivita"],
+      run: (e, r) => e.chain().focus().deleteRange(r).toggleTaskList().run(),
+    },
+    {
+      id: "quote",
+      label: t("toolbar.quote"),
+      keywords: ["quote", "citazione"],
+      run: (e, r) => e.chain().focus().deleteRange(r).toggleBlockquote().run(),
+    },
+    {
+      id: "code",
+      label: t("toolbar.codeBlock"),
+      keywords: ["code", "codice"],
+      run: (e, r) => e.chain().focus().deleteRange(r).toggleCodeBlock().run(),
+    },
+    {
+      id: "table",
+      label: t("toolbar.table"),
+      keywords: ["table", "tabella"],
+      run: (e, r) =>
+        e
+          .chain()
+          .focus()
+          .deleteRange(r)
+          .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+          .run(),
+    },
+    {
+      id: "rule",
+      label: t("toolbar.rule"),
+      keywords: ["divider", "rule", "line", "linea", "separatore"],
+      run: (e, r) => e.chain().focus().deleteRange(r).setHorizontalRule().run(),
+    },
+    {
+      id: "file",
+      label: t("toolbar.attach"),
+      keywords: ["file", "attach", "allega", "upload"],
+      run: (e, r) => {
+        e.chain().focus().deleteRange(r).run();
+        void pickFiles().then(
+          (files) => files.length > 0 && e.chain().focus().uploadFiles(files).run(),
+        );
+      },
+    },
+  ];
+
   const editor = useEditor(
     {
       immediatelyRender: false,
@@ -135,6 +250,7 @@ export function NoteEditor({
           placeholder: t("placeholder"),
           getUser: () => ({ id: user.id }),
           fileEmbed: FileEmbedWithView,
+          mention: createMentionExtension(users, t("suggestions.people")),
         }),
         Collaboration.configure({
           document: doc,
@@ -143,6 +259,10 @@ export function NoteEditor({
         }),
         CollaborationCaret.configure({ provider, user }),
         FileUpload.configure({ upload }),
+        SlashCommand.configure({
+          getItems: () => slashItems.current,
+          listLabel: t("suggestions.blocks"),
+        }),
       ],
       editorProps: {
         attributes: { class: "jakab-note focus:outline-none", "aria-label": t("placeholder") },

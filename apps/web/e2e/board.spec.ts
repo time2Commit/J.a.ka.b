@@ -181,3 +181,30 @@ test("quick search (Ctrl+K) jumps to a project's card and opens it", async ({ pa
   await palette.getByRole("option", { name: /Searchable project/ }).click();
   await expect(page.getByRole("dialog").getByText("Card details")).toBeVisible();
 });
+
+test("the last day follows the start and the times until it is chosen, also late in the evening", async ({
+  page,
+}) => {
+  // 22:30 in Rome: the default one-hour draft starts at 23:00 and ends after midnight.
+  await page.clock.setFixedTime(new Date("2026-10-04T20:30:00Z"));
+  await page.goto("/");
+  await page.getByRole("button", { name: "New card" }).click();
+  const dialog = page.getByRole("dialog");
+  const date = dialog.getByLabel("Date", { exact: true });
+  const lastDay = dialog.getByLabel("Last day");
+  await expect(date).toHaveValue("2026-10-04");
+  await expect(lastDay).toHaveValue("2026-10-05"); // 23:00 -> 00:00 crosses midnight
+
+  // Moving the date keeps the span; fixing the times makes it a same-day card again.
+  await date.fill("2026-10-10");
+  await expect(lastDay).toHaveValue("2026-10-11");
+  await dialog.getByLabel("From", { exact: true }).fill("06:00");
+  await dialog.getByLabel("To", { exact: true }).fill("07:00");
+  await expect(lastDay).toHaveValue("2026-10-10");
+
+  // Once the last day is chosen by hand it is left alone.
+  await lastDay.fill("2026-10-12");
+  await dialog.getByLabel("To", { exact: true }).fill("08:00");
+  await date.fill("2026-10-11");
+  await expect(lastDay).toHaveValue("2026-10-12");
+});

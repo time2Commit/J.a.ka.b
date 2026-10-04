@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { defaultDraft, draftToRange, dropToRange, eventToRange, selectionToDraft } from "./time";
+import {
+  autoEndDate,
+  defaultDraft,
+  draftToRange,
+  dropToRange,
+  eventToRange,
+  selectionToDraft,
+} from "./time";
 
 describe("draftToRange", () => {
   it("converts workspace-local times to UTC instants (CEST, UTC+2)", () => {
@@ -100,5 +107,35 @@ describe("dropToRange", () => {
       end: "2026-10-06T00:00:00.000Z",
       allDay: true,
     });
+  });
+});
+
+describe("autoEndDate", () => {
+  const base = { allDay: false, date: "2026-10-04", startTime: "09:00", endTime: "10:00" };
+  it("stays on the same day unless the end time is earlier than the start", () => {
+    expect(autoEndDate(base)).toBe("2026-10-04");
+    expect(autoEndDate({ ...base, endTime: "09:00" })).toBe("2026-10-04");
+    expect(autoEndDate({ ...base, startTime: "23:00", endTime: "00:30" })).toBe("2026-10-05");
+  });
+  it("rolls over month and year ends", () => {
+    expect(autoEndDate({ ...base, date: "2026-12-31", startTime: "23:00", endTime: "01:00" })).toBe(
+      "2027-01-01",
+    );
+  });
+  it("ignores times for all-day cards and tolerates an empty date", () => {
+    expect(autoEndDate({ ...base, allDay: true, startTime: "23:00", endTime: "00:00" })).toBe(
+      "2026-10-04",
+    );
+    expect(autoEndDate({ ...base, date: "" })).toBe("");
+  });
+  it("matches the default draft, which may end after midnight", () => {
+    const draft = defaultDraft(new Date("2026-10-04T20:30:00Z"), "Europe/Rome"); // 22:30 in Rome
+    expect(draft).toMatchObject({
+      date: "2026-10-04",
+      startTime: "23:00",
+      endTime: "00:00",
+      endDate: "2026-10-05",
+    });
+    expect(autoEndDate(draft)).toBe(draft.endDate);
   });
 });

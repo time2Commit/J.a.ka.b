@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { api, ApiError } from "@/lib/api";
 import type { Status } from "@/lib/types";
 import { ProjectCombobox, type ProjectChoice } from "./project-combobox";
-import { draftToRange, type Draft } from "./time";
+import { autoEndDate, draftToRange, type Draft } from "./time";
 
 export function NewCardDialog({
   open,
@@ -36,6 +36,8 @@ export function NewCardDialog({
   const common = useTranslations("Common");
   const queryClient = useQueryClient();
   const [form, setForm] = useState<Draft>(draft);
+  // Until the user picks the last day, it follows the start date and the times.
+  const [endManual, setEndManual] = useState(false);
   const [choice, setChoice] = useState<ProjectChoice>(null);
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
@@ -43,6 +45,7 @@ export function NewCardDialog({
   useEffect(() => {
     if (open) {
       setForm(draft);
+      setEndManual(draft.endDate !== autoEndDate(draft));
       setTitle("");
       setNotes("");
       setChoice(null);
@@ -80,7 +83,13 @@ export function NewCardDialog({
   const range = draftToRange(form, timeZone);
   const invalidRange = new Date(range.end) < new Date(range.start);
   const canSubmit = !invalidRange && !create.isPending && choice !== null;
-  const set = (patch: Partial<Draft>) => setForm((f) => ({ ...f, ...patch }));
+  const set = (patch: Partial<Draft>) => {
+    if ("endDate" in patch) setEndManual(true);
+    setForm((f) => {
+      const next = { ...f, ...patch };
+      return endManual || "endDate" in patch ? next : { ...next, endDate: autoEndDate(next) };
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -126,12 +135,7 @@ export function NewCardDialog({
                 id="card-date"
                 type="date"
                 value={form.date}
-                onChange={(e) =>
-                  set({
-                    date: e.target.value,
-                    endDate: form.endDate < e.target.value ? e.target.value : form.endDate,
-                  })
-                }
+                onChange={(e) => set({ date: e.target.value })}
                 required
               />
             </div>
