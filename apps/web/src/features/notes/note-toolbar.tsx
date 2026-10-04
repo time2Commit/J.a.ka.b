@@ -16,11 +16,14 @@ import {
   ListChecks,
   ListOrdered,
   Minus,
+  Paperclip,
+  PenLine,
   Quote,
   Strikethrough,
   Table as TableIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useRef } from "react";
 import { cn } from "@/lib/utils";
 
 function ToolButton({
@@ -58,7 +61,17 @@ function ToolButton({
 
 const Separator = () => <span className="mx-1 h-5 w-px bg-border" aria-hidden />;
 
-export function NoteToolbar({ editor }: { editor: Editor }) {
+export function NoteToolbar({
+  editor,
+  showAuthors,
+  onToggleAuthors,
+  onAttach,
+}: {
+  editor: Editor;
+  showAuthors: boolean;
+  onToggleAuthors: () => void;
+  onAttach: (files: File[]) => void;
+}) {
   const t = useTranslations("Note.toolbar");
   const s = useEditorState({
     editor,
@@ -81,6 +94,7 @@ export function NoteToolbar({ editor }: { editor: Editor }) {
     }),
   });
   const chain = () => editor.chain().focus();
+  const fileInput = useRef<HTMLInputElement>(null);
 
   function toggleLink() {
     const previous = editor.getAttributes("link").href as string | undefined;
@@ -94,119 +108,140 @@ export function NoteToolbar({ editor }: { editor: Editor }) {
     <div
       role="toolbar"
       aria-label={t("label")}
-      className="flex flex-wrap items-center gap-0.5 border-b px-2 py-1.5"
+      className="flex flex-wrap items-center justify-between gap-0.5 border-b px-2 py-1.5"
     >
-      <ToolButton
-        label={t("h1")}
-        active={s.h1}
-        onClick={() => chain().toggleHeading({ level: 1 }).run()}
-      >
-        <Heading1 />
+      {/* Disabled as a whole while authors are shown (the note is read-only then). */}
+      <fieldset disabled={showAuthors} className="flex flex-wrap items-center gap-0.5">
+        <ToolButton
+          label={t("h1")}
+          active={s.h1}
+          onClick={() => chain().toggleHeading({ level: 1 }).run()}
+        >
+          <Heading1 />
+        </ToolButton>
+        <ToolButton
+          label={t("h2")}
+          active={s.h2}
+          onClick={() => chain().toggleHeading({ level: 2 }).run()}
+        >
+          <Heading2 />
+        </ToolButton>
+        <ToolButton
+          label={t("h3")}
+          active={s.h3}
+          onClick={() => chain().toggleHeading({ level: 3 }).run()}
+        >
+          <Heading3 />
+        </ToolButton>
+        <Separator />
+        <ToolButton label={t("bold")} active={s.bold} onClick={() => chain().toggleBold().run()}>
+          <Bold />
+        </ToolButton>
+        <ToolButton
+          label={t("italic")}
+          active={s.italic}
+          onClick={() => chain().toggleItalic().run()}
+        >
+          <Italic />
+        </ToolButton>
+        <ToolButton
+          label={t("strike")}
+          active={s.strike}
+          onClick={() => chain().toggleStrike().run()}
+        >
+          <Strikethrough />
+        </ToolButton>
+        <ToolButton label={t("code")} active={s.code} onClick={() => chain().toggleCode().run()}>
+          <Code />
+        </ToolButton>
+        <ToolButton
+          label={t("highlight")}
+          active={s.highlight}
+          onClick={() => chain().toggleHighlight({ color: "#fde68a" }).run()}
+        >
+          <Highlighter />
+        </ToolButton>
+        <ToolButton label={t("link")} active={s.link} onClick={toggleLink}>
+          <LinkIcon />
+        </ToolButton>
+        <Separator />
+        <ToolButton
+          label={t("bulletList")}
+          active={s.bulletList}
+          onClick={() => chain().toggleBulletList().run()}
+        >
+          <List />
+        </ToolButton>
+        <ToolButton
+          label={t("orderedList")}
+          active={s.orderedList}
+          onClick={() => chain().toggleOrderedList().run()}
+        >
+          <ListOrdered />
+        </ToolButton>
+        <ToolButton
+          label={t("taskList")}
+          active={s.taskList}
+          onClick={() => chain().toggleTaskList().run()}
+        >
+          <ListChecks />
+        </ToolButton>
+        <Separator />
+        <ToolButton
+          label={t("quote")}
+          active={s.blockquote}
+          onClick={() => chain().toggleBlockquote().run()}
+        >
+          <Quote />
+        </ToolButton>
+        <ToolButton
+          label={t("codeBlock")}
+          active={s.codeBlock}
+          onClick={() => chain().toggleCodeBlock().run()}
+        >
+          <Code2 />
+        </ToolButton>
+        <ToolButton label={t("rule")} onClick={() => chain().setHorizontalRule().run()}>
+          <Minus />
+        </ToolButton>
+        <ToolButton
+          label={t("table")}
+          onClick={() => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+        >
+          <TableIcon />
+        </ToolButton>
+        {s.inTable && (
+          <>
+            <ToolButton label={t("addRow")} onClick={() => chain().addRowAfter().run()}>
+              <span className="text-xs font-semibold">+R</span>
+            </ToolButton>
+            <ToolButton label={t("addColumn")} onClick={() => chain().addColumnAfter().run()}>
+              <span className="text-xs font-semibold">+C</span>
+            </ToolButton>
+            <ToolButton label={t("deleteTable")} onClick={() => chain().deleteTable().run()}>
+              <span className="text-xs font-semibold">×T</span>
+            </ToolButton>
+          </>
+        )}
+        <ToolButton label={t("attach")} onClick={() => fileInput.current?.click()}>
+          <Paperclip />
+        </ToolButton>
+        <input
+          ref={fileInput}
+          type="file"
+          multiple
+          hidden
+          data-testid="file-input"
+          aria-label={t("attach")}
+          onChange={(e) => {
+            onAttach(Array.from(e.target.files ?? []));
+            e.target.value = "";
+          }}
+        />
+      </fieldset>
+      <ToolButton label={t("authors")} active={showAuthors} onClick={onToggleAuthors}>
+        <PenLine />
       </ToolButton>
-      <ToolButton
-        label={t("h2")}
-        active={s.h2}
-        onClick={() => chain().toggleHeading({ level: 2 }).run()}
-      >
-        <Heading2 />
-      </ToolButton>
-      <ToolButton
-        label={t("h3")}
-        active={s.h3}
-        onClick={() => chain().toggleHeading({ level: 3 }).run()}
-      >
-        <Heading3 />
-      </ToolButton>
-      <Separator />
-      <ToolButton label={t("bold")} active={s.bold} onClick={() => chain().toggleBold().run()}>
-        <Bold />
-      </ToolButton>
-      <ToolButton
-        label={t("italic")}
-        active={s.italic}
-        onClick={() => chain().toggleItalic().run()}
-      >
-        <Italic />
-      </ToolButton>
-      <ToolButton
-        label={t("strike")}
-        active={s.strike}
-        onClick={() => chain().toggleStrike().run()}
-      >
-        <Strikethrough />
-      </ToolButton>
-      <ToolButton label={t("code")} active={s.code} onClick={() => chain().toggleCode().run()}>
-        <Code />
-      </ToolButton>
-      <ToolButton
-        label={t("highlight")}
-        active={s.highlight}
-        onClick={() => chain().toggleHighlight({ color: "#fde68a" }).run()}
-      >
-        <Highlighter />
-      </ToolButton>
-      <ToolButton label={t("link")} active={s.link} onClick={toggleLink}>
-        <LinkIcon />
-      </ToolButton>
-      <Separator />
-      <ToolButton
-        label={t("bulletList")}
-        active={s.bulletList}
-        onClick={() => chain().toggleBulletList().run()}
-      >
-        <List />
-      </ToolButton>
-      <ToolButton
-        label={t("orderedList")}
-        active={s.orderedList}
-        onClick={() => chain().toggleOrderedList().run()}
-      >
-        <ListOrdered />
-      </ToolButton>
-      <ToolButton
-        label={t("taskList")}
-        active={s.taskList}
-        onClick={() => chain().toggleTaskList().run()}
-      >
-        <ListChecks />
-      </ToolButton>
-      <Separator />
-      <ToolButton
-        label={t("quote")}
-        active={s.blockquote}
-        onClick={() => chain().toggleBlockquote().run()}
-      >
-        <Quote />
-      </ToolButton>
-      <ToolButton
-        label={t("codeBlock")}
-        active={s.codeBlock}
-        onClick={() => chain().toggleCodeBlock().run()}
-      >
-        <Code2 />
-      </ToolButton>
-      <ToolButton label={t("rule")} onClick={() => chain().setHorizontalRule().run()}>
-        <Minus />
-      </ToolButton>
-      <ToolButton
-        label={t("table")}
-        onClick={() => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-      >
-        <TableIcon />
-      </ToolButton>
-      {s.inTable && (
-        <>
-          <ToolButton label={t("addRow")} onClick={() => chain().addRowAfter().run()}>
-            <span className="text-xs font-semibold">+R</span>
-          </ToolButton>
-          <ToolButton label={t("addColumn")} onClick={() => chain().addColumnAfter().run()}>
-            <span className="text-xs font-semibold">+C</span>
-          </ToolButton>
-          <ToolButton label={t("deleteTable")} onClick={() => chain().deleteTable().run()}>
-            <span className="text-xs font-semibold">×T</span>
-          </ToolButton>
-        </>
-      )}
     </div>
   );
 }

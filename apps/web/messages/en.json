@@ -197,7 +197,22 @@
       "addRow": "Add row",
       "addColumn": "Add column",
       "deleteTable": "Delete table",
-      "linkPrompt": "Link address (empty to remove)"
-    }
+      "linkPrompt": "Link address (empty to remove)",
+      "attach": "Attach file",
+      "authors": "Show authors"
+    },
+    "files": {
+      "uploading": "Uploading {name}…",
+      "uploaded": "{name} added",
+      "tooLarge": "{name} is too large",
+      "failed": "Could not upload {name}",
+      "download": "Download",
+      "resize": "Resize image",
+      "preview": "Preview of {name}"
+    },
+    "edited": "Edited by {name} · {time}",
+    "unknownUser": "someone",
+    "authorsLegend": "Authors",
+    "authorsReadOnly": "Showing authors: the note is read-only until you turn this off."
   }
 }
