@@ -121,7 +121,7 @@
     "cardDeleted": "Card eliminata",
     "details": "Dettagli card",
     "openNote": "Apri la nota completa",
-    "noteSoon": "Le note collaborative arrivano con una milestone successiva.",
+    "noteSoon": "Apri la nota del progetto per scrivere e collaborare in tempo reale.",
     "projectSearch": "Cerca o crea un progetto…",
     "createProject": "Crea il progetto “{name}”",
     "noProjects": "Nessun progetto corrispondente",
@@ -158,5 +158,46 @@
     "newUser": "Nuovo utente",
     "userCreated": "Utente creato",
     "emailInUse": "Email già in uso"
+  },
+  "Projects": {
+    "title": "Progetti",
+    "empty": "Nessun progetto. Crea una card per iniziarne uno.",
+    "cards": "{count, plural, =0 {Nessuna card} one {# card} other {# card}}",
+    "open": "Apri la nota",
+    "back": "Torna al calendario",
+    "notFound": "Progetto non trovato"
+  },
+  "Note": {
+    "placeholder": "Scrivi la nota del progetto…",
+    "status": {
+      "connecting": "Connessione…",
+      "connected": "In diretta",
+      "offline": "Offline: le modifiche sono conservate e si sincronizzeranno"
+    },
+    "online": "{count, plural, =1 {Solo tu} other {# persone qui}}",
+    "you": "tu",
+    "toolbar": {
+      "label": "Formattazione",
+      "bold": "Grassetto",
+      "italic": "Corsivo",
+      "strike": "Barrato",
+      "code": "Codice in linea",
+      "highlight": "Evidenzia",
+      "link": "Link",
+      "h1": "Titolo 1",
+      "h2": "Titolo 2",
+      "h3": "Titolo 3",
+      "bulletList": "Elenco puntato",
+      "orderedList": "Elenco numerato",
+      "taskList": "Checklist",
+      "quote": "Citazione",
+      "codeBlock": "Blocco di codice",
+      "rule": "Divisore",
+      "table": "Inserisci tabella",
+      "addRow": "Aggiungi riga",
+      "addColumn": "Aggiungi colonna",
+      "deleteTable": "Elimina tabella",
+      "linkPrompt": "Indirizzo del link (vuoto per rimuoverlo)"
+    }
   }
 }

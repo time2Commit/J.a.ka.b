@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
+import { FileText, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -301,6 +302,11 @@ export function CardPanel({
               </div>
             </section>
 
+            <Button asChild variant="outline" className="self-start">
+              <Link href={`/projects/${card.projectId}`}>
+                <FileText /> {t("openNote")}
+              </Link>
+            </Button>
             <p className="text-xs text-muted-foreground">{t("noteSoon")}</p>
           </>
         )}

@@ -17,11 +17,21 @@ export default defineConfig({
     // Cloud sessions ship a preinstalled Chromium: set PW_CHROMIUM_PATH to use it.
     launchOptions: { executablePath: process.env.PW_CHROMIUM_PATH || undefined },
   },
-  webServer: {
-    command: "pnpm build && pnpm start:standalone",
-    url: "http://localhost:3000/login",
-    reuseExistingServer: true,
-    timeout: 180_000,
-    env: { PORT: "3000", HOSTNAME: "localhost" },
-  },
+  webServer: [
+    {
+      command: "pnpm build && pnpm start:standalone",
+      url: "http://localhost:3000/login",
+      reuseExistingServer: true,
+      timeout: 180_000,
+      env: { PORT: "3000", HOSTNAME: "localhost" },
+    },
+    {
+      // Real-time notes: the collab server validates sessions against the web app above.
+      command: "pnpm --filter @jakab/collab start",
+      url: "http://localhost:1234",
+      reuseExistingServer: true,
+      timeout: 60_000,
+      env: { COLLAB_PORT: "1234", WEB_INTERNAL_URL: "http://localhost:3000" },
+    },
+  ],
 });

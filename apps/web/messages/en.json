@@ -121,7 +121,7 @@
     "cardDeleted": "Card deleted",
     "details": "Card details",
     "openNote": "Open full note",
-    "noteSoon": "Collaborative notes arrive with a later milestone.",
+    "noteSoon": "Open the project note to write and collaborate in real time.",
     "projectSearch": "Search or create a project…",
     "createProject": "Create project “{name}”",
     "noProjects": "No matching projects",
@@ -158,5 +158,46 @@
     "newUser": "New user",
     "userCreated": "User created",
     "emailInUse": "Email already in use"
+  },
+  "Projects": {
+    "title": "Projects",
+    "empty": "No projects yet. Create a card to start one.",
+    "cards": "{count, plural, =0 {No cards} one {# card} other {# cards}}",
+    "open": "Open note",
+    "back": "Back to calendar",
+    "notFound": "Project not found"
+  },
+  "Note": {
+    "placeholder": "Write the project note…",
+    "status": {
+      "connecting": "Connecting…",
+      "connected": "Live",
+      "offline": "Offline: changes are kept and will sync"
+    },
+    "online": "{count, plural, =1 {Only you} other {# people here}}",
+    "you": "you",
+    "toolbar": {
+      "label": "Formatting",
+      "bold": "Bold",
+      "italic": "Italic",
+      "strike": "Strikethrough",
+      "code": "Inline code",
+      "highlight": "Highlight",
+      "link": "Link",
+      "h1": "Heading 1",
+      "h2": "Heading 2",
+      "h3": "Heading 3",
+      "bulletList": "Bullet list",
+      "orderedList": "Numbered list",
+      "taskList": "Checklist",
+      "quote": "Quote",
+      "codeBlock": "Code block",
+      "rule": "Divider",
+      "table": "Insert table",
+      "addRow": "Add row",
+      "addColumn": "Add column",
+      "deleteTable": "Delete table",
+      "linkPrompt": "Link address (empty to remove)"
+    }
   }
 }

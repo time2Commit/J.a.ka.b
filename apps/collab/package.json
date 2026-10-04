@@ -1,0 +1,25 @@
+{
+  "name": "@jakab/collab",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@hocuspocus/server": "^4.7.0",
+    "@jakab/db": "workspace:*",
+    "@jakab/editor": "workspace:*",
+    "dotenv": "^18.0.5",
+    "yjs": "^13.6.33"
+  },
+  "devDependencies": {
+    "@hocuspocus/provider": "^4.7.0",
+    "@types/node": "^26.6.4",
+    "@types/ws": "^8.18.2",
+    "tsx": "^4.23.15",
+    "ws": "^8.22.0"
+  }
+}
