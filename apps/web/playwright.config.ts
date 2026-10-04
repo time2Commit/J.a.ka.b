@@ -23,7 +23,13 @@ export default defineConfig({
       url: "http://localhost:3000/login",
       reuseExistingServer: true,
       timeout: 180_000,
-      env: { PORT: "3000", HOSTNAME: "localhost" },
+      env: {
+        PORT: "3000",
+        HOSTNAME: "localhost",
+        // Small limit so the "too large" path can be tested with a 2 MB file.
+        UPLOAD_MAX_MB: "1",
+        UPLOAD_DIR: "./data/e2e-uploads",
+      },
     },
     {
       // Real-time notes: the collab server validates sessions against the web app above.

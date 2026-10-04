@@ -197,7 +197,22 @@
       "addRow": "Aggiungi riga",
       "addColumn": "Aggiungi colonna",
       "deleteTable": "Elimina tabella",
-      "linkPrompt": "Indirizzo del link (vuoto per rimuoverlo)"
-    }
+      "linkPrompt": "Indirizzo del link (vuoto per rimuoverlo)",
+      "attach": "Allega file",
+      "authors": "Mostra autori"
+    },
+    "files": {
+      "uploading": "Caricamento di {name}…",
+      "uploaded": "{name} aggiunto",
+      "tooLarge": "{name} è troppo grande",
+      "failed": "Impossibile caricare {name}",
+      "download": "Scarica",
+      "resize": "Ridimensiona l'immagine",
+      "preview": "Anteprima di {name}"
+    },
+    "edited": "Modificato da {name} · {time}",
+    "unknownUser": "qualcuno",
+    "authorsLegend": "Autori",
+    "authorsReadOnly": "Autori in evidenza: la nota è in sola lettura finché non lo disattivi."
   }
 }

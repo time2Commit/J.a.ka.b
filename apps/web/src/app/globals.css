@@ -231,3 +231,22 @@
   white-space: nowrap;
   user-select: none;
 }
+
+/* "Show authors": runs of text tinted with their author's color */
+.jakab-author {
+  border-bottom: 2px solid var(--author-color);
+  background: color-mix(in oklab, var(--author-color) 22%, transparent);
+}
+.jakab-upload-placeholder {
+  margin: 0.5rem 0;
+  height: 3rem;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: var(--muted);
+  animation: jakab-pulse 1.2s ease-in-out infinite;
+}
+@keyframes jakab-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
