@@ -1,0 +1,37 @@
+node_modules/
+dist/
+.next/
+coverage/
+.turbo/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+
+# Secrets and personal files: never commit
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+id_rsa*
+id_ed25519*
+*.kdbx
+.npmrc
+.netrc
+credentials*.json
+service-account*.json
+secrets/
+
+# Local/personal tool settings
+.claude/settings.local.json
+.vscode/
+.idea/
+
+# Runtime data (uploads, backups, database dumps)
+data/
+uploads/
+backups/
+*.dump
+*.sql.gz
