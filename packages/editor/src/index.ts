@@ -4,3 +4,5 @@ export { noteDocumentName, parseNoteDocumentName } from "./names";
 export { ATTRIBUTED_BLOCKS, stampBlocks, type AttributionUser } from "./block-attribution";
 export { fileKind, formatBytes, type FileKind } from "./files";
 export { FileEmbed } from "./file-embed";
+export { Mention } from "@tiptap/extension-mention";
+export { TEXT_COLORS } from "./colors";

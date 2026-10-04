@@ -1,46 +1,8 @@
-import { expect, test, type APIRequestContext, type Browser, type Page } from "@playwright/test";
-import { STORAGE_STATE, todayInRome } from "./helpers";
+import { expect, test } from "@playwright/test";
+import { newProject, openNote, PNG, signInAsMember, STORAGE_STATE } from "./helpers";
 
 // Runs after note.spec.ts (single worker); it only needs the admin account.
 test.use({ storageState: STORAGE_STATE });
-
-const MEMBER = { name: "Anna Bianchi", email: "anna.extras@example.com", password: "password456" };
-// A valid 1x1 PNG.
-const PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
-  "base64",
-);
-
-async function newProject(request: APIRequestContext, name: string) {
-  const day = todayInRome();
-  const res = await request.post("/api/cards", {
-    data: { projectName: name, start: `${day}T08:00:00Z`, end: `${day}T09:00:00Z` },
-  });
-  const { card } = (await res.json()) as { card: { projectId: string } };
-  return `/projects/${card.projectId}`;
-}
-
-async function openNote(page: Page, url: string) {
-  await page.goto(url);
-  await expect(page.getByTestId("note-status")).toHaveAttribute("data-status", "connected");
-  const editor = page.getByRole("textbox", { name: "Write the project note…" });
-  await expect(editor).toBeVisible();
-  return editor;
-}
-
-async function signInAsMember(browser: Browser, request: APIRequestContext) {
-  await request.post("/api/users", { data: { ...MEMBER, role: "member" } }); // 409 when it exists
-  // Empty storage state: the context must not inherit the admin session from `test.use`.
-  const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
-  const page = await context.newPage();
-  await page.goto("/login");
-  await page.waitForLoadState("networkidle");
-  await page.getByLabel("Email").fill(MEMBER.email);
-  await page.getByLabel("Password").fill(MEMBER.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("button", { name: "New card" })).toBeVisible();
-  return { context, page };
-}
 
 test("blocks show who edited them, and 'Show authors' colors the text by author", async ({
   page,
@@ -65,7 +27,7 @@ test("blocks show who edited them, and 'Show authors' colors the text by author"
   await annaPage.locator(".jakab-note p", { hasText: "Written by Mario" }).hover();
   await expect(annaPage.getByTestId("edited-label")).toContainText("Edited by Mario Rossi");
   await page.locator(".jakab-note p", { hasText: "Written by Anna" }).hover();
-  await expect(page.getByTestId("edited-label")).toContainText("Edited by Anna Bianchi");
+  await expect(page.getByTestId("edited-label")).toContainText("Edited by Anna Neri");
 
   // Show authors: text is tinted per author and the note is read-only meanwhile.
   await page.getByRole("button", { name: "Show authors" }).click();

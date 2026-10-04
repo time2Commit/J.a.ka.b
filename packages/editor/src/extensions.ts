@@ -1,4 +1,5 @@
 import { Highlight } from "@tiptap/extension-highlight";
+import { Mention } from "@tiptap/extension-mention";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
@@ -24,6 +25,8 @@ export function getExtensions(
     getUser?: () => AttributionUser | null;
     /** Replaces the plain file embed with a version that has a node view (web only). */
     fileEmbed?: AnyExtension;
+    /** Replaces the plain mention with a version that has the `@` suggestion popup (web only). */
+    mention?: AnyExtension;
   } = {},
 ): AnyExtension[] {
   return [
@@ -41,6 +44,7 @@ export function getExtensions(
     TableHeader,
     TableCell,
     options.fileEmbed ?? FileEmbed,
+    options.mention ?? Mention,
     AuthorMark,
     BlockAttribution.configure({ getUser: options.getUser ?? null }),
     ...(options.placeholder ? [Placeholder.configure({ placeholder: options.placeholder })] : []),

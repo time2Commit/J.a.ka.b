@@ -42,6 +42,30 @@ describe("note documents", () => {
     expect(json.content?.[2]?.content?.[2]?.marks?.[0]?.type).toBe("highlight");
   });
 
+  it("keeps mentions and text colors through Yjs", () => {
+    const json = ydocToJson(
+      jsonToYdoc({
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [
+              { type: "mention", attrs: { id: "u1", label: "Anna Bianchi" } },
+              {
+                type: "text",
+                text: " hi",
+                marks: [{ type: "textStyle", attrs: { color: "#dc2626" } }],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    const [mention, text] = json.content?.[0]?.content ?? [];
+    expect(mention).toMatchObject({ type: "mention", attrs: { id: "u1", label: "Anna Bianchi" } });
+    expect(text?.marks?.[0]).toMatchObject({ type: "textStyle", attrs: { color: "#dc2626" } });
+  });
+
   it("keeps the content when the Yjs state is encoded and applied elsewhere", async () => {
     const { encodeStateAsUpdate, applyUpdate } = await import("yjs");
     const copy = new Doc();

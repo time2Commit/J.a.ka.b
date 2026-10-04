@@ -199,7 +199,8 @@
       "deleteTable": "Elimina tabella",
       "linkPrompt": "Indirizzo del link (vuoto per rimuoverlo)",
       "attach": "Allega file",
-      "authors": "Mostra autori"
+      "authors": "Mostra autori",
+      "textColor": "Colore del testo"
     },
     "files": {
       "uploading": "Caricamento di {name}…",
@@ -213,6 +214,19 @@
     "edited": "Modificato da {name} · {time}",
     "unknownUser": "qualcuno",
     "authorsLegend": "Autori",
-    "authorsReadOnly": "Autori in evidenza: la nota è in sola lettura finché non lo disattivi."
+    "authorsReadOnly": "Autori in evidenza: la nota è in sola lettura finché non lo disattivi.",
+    "colors": {
+      "default": "Predefinito",
+      "red": "Rosso",
+      "orange": "Arancione",
+      "green": "Verde",
+      "blue": "Blu",
+      "purple": "Viola",
+      "gray": "Grigio"
+    },
+    "suggestions": {
+      "people": "Persone",
+      "blocks": "Inserisci blocco"
+    }
   }
 }

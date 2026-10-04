@@ -13,6 +13,8 @@ import * as Y from "yjs";
 import { cn } from "@/lib/utils";
 import { FileEmbedWithView } from "./file-embed-view";
 import { FileUpload, type UploadedFile } from "./file-upload";
+import { createMentionExtension } from "./mention-extension";
+import { pickFiles, SlashCommand, type SlashCommandItem } from "./slash-command";
 import { NoteToolbar } from "./note-toolbar";
 
 export interface NoteUser {
@@ -127,6 +129,88 @@ export function NoteEditor({
     [projectId, t],
   );
 
+  // Latest slash items, read lazily by the extension (the editor is created only once).
+  const slashItems = useRef<SlashCommandItem[]>([]);
+  slashItems.current = [
+    {
+      id: "h1",
+      label: t("toolbar.h1"),
+      keywords: ["heading", "title", "titolo"],
+      run: (e, r) => e.chain().focus().deleteRange(r).toggleHeading({ level: 1 }).run(),
+    },
+    {
+      id: "h2",
+      label: t("toolbar.h2"),
+      keywords: ["heading", "title", "titolo"],
+      run: (e, r) => e.chain().focus().deleteRange(r).toggleHeading({ level: 2 }).run(),
+    },
+    {
+      id: "h3",
+      label: t("toolbar.h3"),
+      keywords: ["heading", "title", "titolo"],
+      run: (e, r) => e.chain().focus().deleteRange(r).toggleHeading({ level: 3 }).run(),
+    },
+    {
+      id: "bullet",
+      label: t("toolbar.bulletList"),
+      keywords: ["list", "elenco", "puntato"],
+      run: (e, r) => e.chain().focus().deleteRange(r).toggleBulletList().run(),
+    },
+    {
+      id: "ordered",
+      label: t("toolbar.orderedList"),
+      keywords: ["number", "numerato", "elenco"],
+      run: (e, r) => e.chain().focus().deleteRange(r).toggleOrderedList().run(),
+    },
+    {
+      id: "task",
+      label: t("toolbar.taskList"),
+      keywords: ["checklist", "todo", "task", "attivita"],
+      run: (e, r) => e.chain().focus().deleteRange(r).toggleTaskList().run(),
+    },
+    {
+      id: "quote",
+      label: t("toolbar.quote"),
+      keywords: ["quote", "citazione"],
+      run: (e, r) => e.chain().focus().deleteRange(r).toggleBlockquote().run(),
+    },
+    {
+      id: "code",
+      label: t("toolbar.codeBlock"),
+      keywords: ["code", "codice"],
+      run: (e, r) => e.chain().focus().deleteRange(r).toggleCodeBlock().run(),
+    },
+    {
+      id: "table",
+      label: t("toolbar.table"),
+      keywords: ["table", "tabella"],
+      run: (e, r) =>
+        e
+          .chain()
+          .focus()
+          .deleteRange(r)
+          .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+          .run(),
+    },
+    {
+      id: "rule",
+      label: t("toolbar.rule"),
+      keywords: ["divider", "rule", "line", "linea", "separatore"],
+      run: (e, r) => e.chain().focus().deleteRange(r).setHorizontalRule().run(),
+    },
+    {
+      id: "file",
+      label: t("toolbar.attach"),
+      keywords: ["file", "attach", "allega", "upload"],
+      run: (e, r) => {
+        e.chain().focus().deleteRange(r).run();
+        void pickFiles().then(
+          (files) => files.length > 0 && e.chain().focus().uploadFiles(files).run(),
+        );
+      },
+    },
+  ];
+
   const editor = useEditor(
     {
       immediatelyRender: false,
@@ -135,6 +219,7 @@ export function NoteEditor({
           placeholder: t("placeholder"),
           getUser: () => ({ id: user.id }),
           fileEmbed: FileEmbedWithView,
+          mention: createMentionExtension(users, t("suggestions.people")),
         }),
         Collaboration.configure({
           document: doc,
@@ -143,6 +228,10 @@ export function NoteEditor({
         }),
         CollaborationCaret.configure({ provider, user }),
         FileUpload.configure({ upload }),
+        SlashCommand.configure({
+          getItems: () => slashItems.current,
+          listLabel: t("suggestions.blocks"),
+        }),
       ],
       editorProps: {
         attributes: { class: "jakab-note focus:outline-none", "aria-label": t("placeholder") },
