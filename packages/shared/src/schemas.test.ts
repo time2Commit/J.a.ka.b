@@ -4,6 +4,7 @@ import {
   cardUpdateSchema,
   projectUpdateSchema,
   statusInputSchema,
+  templateInputSchema,
   versionCreateSchema,
 } from "./schemas";
 
@@ -62,5 +63,48 @@ describe("versionCreateSchema", () => {
     expect(versionCreateSchema.parse({ label: "  Draft 1 " })).toEqual({ label: "Draft 1" });
     expect(versionCreateSchema.safeParse({ label: "   " }).success).toBe(false);
     expect(versionCreateSchema.safeParse({ label: "x".repeat(121) }).success).toBe(false);
+  });
+});
+
+describe("cardCreateSchema templates and clones", () => {
+  const base = { start: "2026-05-04T08:00:00Z", end: "2026-05-04T09:00:00Z" };
+  it("accepts a template or a clone source for a new project, never both or with an existing project", () => {
+    expect(cardCreateSchema.safeParse({ ...base, projectName: "A", templateId: "t" }).success).toBe(
+      true,
+    );
+    const clone = cardCreateSchema.parse({ ...base, projectName: "A", cloneFromProjectId: "p" });
+    expect(clone.cloneNote).toBeUndefined();
+    expect(
+      cardCreateSchema.safeParse({
+        ...base,
+        projectName: "A",
+        templateId: "t",
+        cloneFromProjectId: "p",
+      }).success,
+    ).toBe(false);
+    expect(cardCreateSchema.safeParse({ ...base, projectId: "p", templateId: "t" }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe("templateInputSchema", () => {
+  it("fills the defaults and bounds duration and checklist", () => {
+    const t = templateInputSchema.parse({ name: " Kick-off " });
+    expect(t).toMatchObject({
+      name: "Kick-off",
+      note: null,
+      defaults: { statusId: null, labelIds: [], durationMin: 60, checklist: [] },
+    });
+    expect(templateInputSchema.safeParse({ name: "x", defaults: { durationMin: 1 } }).success).toBe(
+      false,
+    );
+    expect(
+      templateInputSchema.safeParse({ name: "x", defaults: { checklist: Array(51).fill("a") } })
+        .success,
+    ).toBe(false);
+    expect(templateInputSchema.safeParse({ name: "x", note: { type: "paragraph" } }).success).toBe(
+      false,
+    );
   });
 });

@@ -109,3 +109,16 @@ export function autoEndDate(
   const next = DateTime.fromISO(draft.date, { zone: "utc" }).plus({ days: 1 });
   return next.isValid ? next.toISODate()! : draft.date;
 }
+
+/**
+ * Draft whose end is `minutes` after its start (wall-clock arithmetic, so it never depends on
+ * daylight saving). All-day drafts are returned unchanged.
+ */
+export function withDuration(draft: Draft, minutes: number): Draft {
+  if (draft.allDay) return draft;
+  const end = DateTime.fromISO(`${draft.date}T${draft.startTime}`, { zone: "utc" }).plus({
+    minutes,
+  });
+  if (!end.isValid) return draft;
+  return { ...draft, endDate: end.toISODate()!, endTime: end.toFormat("HH:mm") };
+}

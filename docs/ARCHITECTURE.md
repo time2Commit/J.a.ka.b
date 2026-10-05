@@ -140,9 +140,11 @@ docker-compose.yml, .env.example
 
 ### 5.5 Templates and cloning
 
-- `/templates` section: template CRUD with the same (non-collaborative) editor for the initial content, plus defaults (status, labels, members, default card duration, checklist).
-- "Save project as template" from the project page.
-- **Clone from existing project**: copies settings (labels, members, initial status = first status) and, optionally, the note content with **physical duplication of attachments** (new `attachmentId`s, references rewritten in the JSON).
+- `/templates` section: template CRUD with the same editor, without collaboration, for the initial content, plus defaults: status, labels, people, length of the first card and a checklist that is added to the top of the note. **Files are not part of a template** (a template owns no attachments); embeds are stripped when it is saved.
+- "Save as template" on the project page: the project's settings and note text become a template; the first card's length becomes the default duration.
+- **New project from a template**: in the new-card dialog, "Start from" a template pre-fills status, labels and people (explicit choices win; entries deleted since are ignored) and the end time of the card; the note is created from the template's content. The link to the template is kept and cleared if the template is deleted.
+- **Copy of an existing project** (same "Start from" menu): copies colour, labels, people (the status is the first status, progress starts at 0) and, optionally, the note with **physical duplication of the attachments it embeds** (new attachment ids, references rewritten, so the two projects never share files; embeds whose file is gone are dropped). The files are copied before the transaction that creates the project and removed again if it fails.
+- Templates are part of the board archive (5.6) and are matched by name on import.
 
 ### 5.6 Backup, export and import
 

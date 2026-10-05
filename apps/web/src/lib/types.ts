@@ -51,3 +51,21 @@ export interface ProjectListItem {
 export interface ProjectSuggestion extends ProjectListItem {
   focusCard: { id: string; start: string } | null;
 }
+
+export interface TemplateDefaults {
+  statusId: string | null;
+  labelIds: string[];
+  memberIds: string[];
+  durationMin: number;
+  checklist: string[];
+}
+export interface TemplateItem {
+  id: string;
+  name: string;
+  defaults: TemplateDefaults;
+  hasNote: boolean;
+  updatedAt: string;
+}
+export interface TemplateFull extends TemplateItem {
+  note: { type: "doc"; content?: unknown[] } | null;
+}

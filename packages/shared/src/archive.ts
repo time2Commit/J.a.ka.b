@@ -41,6 +41,23 @@ export const archiveManifestSchema = z.object({
   projects: z.array(z.object({ slug: slugSchema, name: z.string().min(1) })),
 });
 
+export const archiveTemplateSchema = z.object({
+  name: z.string().min(1).max(80),
+  defaults: z.object({
+    /** Catalog entries by name and people by e-mail, so another instance can match them. */
+    status: z.string().nullable(),
+    labels: z.array(z.string()),
+    members: z.array(z.string()),
+    durationMin: z
+      .number()
+      .int()
+      .min(5)
+      .max(7 * 24 * 60),
+    checklist: z.array(z.string().max(200)).max(50),
+  }),
+  note: noteJson.nullable(),
+});
+
 export const archiveBoardSchema = z.object({
   workspace: z.object({
     name: z.string(),
@@ -51,6 +68,7 @@ export const archiveBoardSchema = z.object({
   }),
   statuses: z.array(archiveStatusSchema),
   labels: z.array(archiveLabelSchema),
+  templates: z.array(archiveTemplateSchema).default([]),
   /** People, never credentials: accounts are re-created by an admin on the new instance. */
   users: z.array(
     z.object({
@@ -113,6 +131,7 @@ export const archiveVersionsSchema = z.object({
 
 export type ArchiveManifest = z.infer<typeof archiveManifestSchema>;
 export type ArchiveBoard = z.infer<typeof archiveBoardSchema>;
+export type ArchiveTemplate = z.infer<typeof archiveTemplateSchema>;
 export type ArchiveProject = z.infer<typeof archiveProjectSchema>;
 export type ArchiveVersions = z.infer<typeof archiveVersionsSchema>;
 

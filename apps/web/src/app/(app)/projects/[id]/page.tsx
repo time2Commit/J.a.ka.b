@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { NoteEditor } from "@/features/notes/note-editor";
 import { ProjectExport } from "@/features/notes/project-export";
+import { SaveAsTemplate } from "@/features/notes/project-template";
 import { Badge } from "@/components/ui/badge";
 import { requireSession } from "@/lib/session";
 
@@ -37,7 +38,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         <h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
         <Badge color={project.status.color}>{project.status.name}</Badge>
         <span className="text-sm text-muted-foreground tabular-nums">{project.progress}%</span>
-        <div className="ml-auto">
+        <div className="ml-auto flex gap-2">
+          <SaveAsTemplate projectId={project.id} projectName={project.name} />
           <ProjectExport projectId={project.id} />
         </div>
       </div>

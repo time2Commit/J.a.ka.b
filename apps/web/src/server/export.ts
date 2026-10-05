@@ -15,6 +15,7 @@ import { HttpError, notFound } from "./errors";
 import { sanitizeFileName } from "./attachments";
 import { mapNoteIds } from "./note-json";
 import type { StorageDriver } from "./storage";
+import { parseDefaults } from "./templates";
 
 export interface ExportOptions {
   /** Include the version history of every note. */
@@ -258,7 +259,7 @@ export async function exportBoard(
   storage: StorageDriver,
   options: ExportOptions,
 ): Promise<{ stream: Readable; fileName: string }> {
-  const [workspace, statuses, labels, users, projects] = await Promise.all([
+  const [workspace, statuses, labels, users, projects, templates] = await Promise.all([
     db.workspace.findUnique({ where: { id: "default" } }),
     db.status.findMany({ orderBy: { order: "asc" } }),
     db.label.findMany({ orderBy: { name: "asc" } }),
@@ -268,6 +269,7 @@ export async function exportBoard(
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
+    db.template.findMany({ orderBy: { name: "asc" } }),
   ]);
   const emailById = new Map(users.map((u) => [u.id, u.email]));
 
@@ -297,6 +299,20 @@ export async function exportBoard(
       isDone: s.isDone,
     })),
     labels: labels.map((l) => ({ name: l.name, color: l.color })),
+    templates: templates.map((t) => {
+      const defaults = parseDefaults(t.defaults);
+      return {
+        name: t.name,
+        defaults: {
+          status: statuses.find((s) => s.id === defaults.statusId)?.name ?? null,
+          labels: defaults.labelIds.flatMap((id) => labels.find((l) => l.id === id)?.name ?? []),
+          members: defaults.memberIds.flatMap((id) => emailById.get(id) ?? []),
+          durationMin: defaults.durationMin,
+          checklist: defaults.checklist,
+        },
+        note: portableNote(t.noteJson, emailById),
+      };
+    }),
     users: users.map((u) => ({
       name: u.name,
       email: u.email,

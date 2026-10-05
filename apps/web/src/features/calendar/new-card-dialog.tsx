@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -14,10 +14,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { api, ApiError } from "@/lib/api";
-import type { Status } from "@/lib/types";
+import { templatesKey } from "@/features/templates/template-dialog";
+import type { ProjectListItem, Status, TemplateItem } from "@/lib/types";
 import { ProjectCombobox, type ProjectChoice } from "./project-combobox";
-import { autoEndDate, draftToRange, type Draft } from "./time";
+import { autoEndDate, draftToRange, withDuration, type Draft } from "./time";
 
 export function NewCardDialog({
   open,
@@ -41,6 +43,21 @@ export function NewCardDialog({
   const [choice, setChoice] = useState<ProjectChoice>(null);
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
+  // New projects only: "" (empty), "t:<template id>" or "p:<project id>" (a copy of it).
+  const [startFrom, setStartFrom] = useState("");
+  const [cloneNote, setCloneNote] = useState(true);
+
+  const isNewProject = choice?.kind === "new";
+  const templates = useQuery({
+    queryKey: templatesKey,
+    queryFn: () => api<TemplateItem[]>("/api/templates"),
+    enabled: open && isNewProject,
+  });
+  const projects = useQuery({
+    queryKey: ["projects"],
+    queryFn: () => api<ProjectListItem[]>("/api/projects"),
+    enabled: open && isNewProject,
+  });
 
   useEffect(() => {
     if (open) {
@@ -49,6 +66,8 @@ export function NewCardDialog({
       setTitle("");
       setNotes("");
       setChoice(null);
+      setStartFrom("");
+      setCloneNote(true);
     }
   }, [open, draft]);
 
@@ -60,7 +79,14 @@ export function NewCardDialog({
         json: {
           ...(choice?.kind === "existing"
             ? { projectId: choice.id }
-            : { projectName: choice?.name }),
+            : {
+                projectName: choice?.name,
+                ...(startFrom.startsWith("t:") && { templateId: startFrom.slice(2) }),
+                ...(startFrom.startsWith("p:") && {
+                  cloneFromProjectId: startFrom.slice(2),
+                  cloneNote,
+                }),
+              }),
           title: title || undefined,
           shortNotes: notes || undefined,
           allDay: form.allDay,
@@ -106,8 +132,66 @@ export function NewCardDialog({
         >
           <div className="flex flex-col gap-2">
             <span className="text-sm font-medium">{t("project")}</span>
-            <ProjectCombobox value={choice} onChange={setChoice} statuses={statuses} />
+            <ProjectCombobox
+              value={choice}
+              onChange={(next) => {
+                setChoice(next);
+                setStartFrom("");
+              }}
+              statuses={statuses}
+            />
           </div>
+
+          {isNewProject &&
+            ((templates.data?.length ?? 0) > 0 || (projects.data?.length ?? 0) > 0) && (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="card-start-from">{t("startFrom")}</Label>
+                <Select
+                  id="card-start-from"
+                  value={startFrom}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setStartFrom(value);
+                    const template = templates.data?.find((x) => `t:${x.id}` === value);
+                    // A template also sets how long its first card is.
+                    if (template) {
+                      setEndManual(true);
+                      setForm((f) => withDuration(f, template.defaults.durationMin));
+                    }
+                  }}
+                >
+                  <option value="">{t("startEmpty")}</option>
+                  {(templates.data?.length ?? 0) > 0 && (
+                    <optgroup label={t("startTemplates")}>
+                      {templates.data?.map((x) => (
+                        <option key={x.id} value={`t:${x.id}`}>
+                          {x.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {(projects.data?.length ?? 0) > 0 && (
+                    <optgroup label={t("startClone")}>
+                      {projects.data?.map((x) => (
+                        <option key={x.id} value={`p:${x.id}`}>
+                          {x.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </Select>
+                {startFrom.startsWith("p:") && (
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={cloneNote}
+                      onChange={(e) => setCloneNote(e.target.checked)}
+                    />
+                    {t("cloneNote")}
+                  </label>
+                )}
+              </div>
+            )}
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="card-title">{t("title")}</Label>

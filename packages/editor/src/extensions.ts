@@ -17,7 +17,7 @@ export const NOTE_FIELD = "default";
  * The note schema, shared by the web editor, the collaboration server and the export.
  * Every node/mark that ends up in a note must be declared here.
  * `getUser` (web only) turns on block attribution; without it the attributes are only declared.
- * Undo/redo is left to the collaboration extension (per-user undo), hence `undoRedo: false`.
+ * Undo/redo is left to the collaboration extension (per-user undo), hence `undoRedo: false` unless `history`.
  */
 export function getExtensions(
   options: {
@@ -27,11 +27,13 @@ export function getExtensions(
     fileEmbed?: AnyExtension;
     /** Replaces the plain mention with a version that has the `@` suggestion popup (web only). */
     mention?: AnyExtension;
+    /** Local undo/redo, for editors that are not collaborative (templates). */
+    history?: boolean;
   } = {},
 ): AnyExtension[] {
   return [
     StarterKit.configure({
-      undoRedo: false,
+      undoRedo: options.history ? {} : false,
       link: { openOnClick: false, autolink: true, defaultProtocol: "https" },
     }),
     TextStyle,

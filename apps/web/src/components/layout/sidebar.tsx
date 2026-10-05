@@ -1,15 +1,15 @@
 "use client";
 
-import { CalendarDays, FileText, Settings } from "lucide-react";
+import { CalendarDays, FileStack, FileText, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
-// Further sections (templates) are added by later milestones.
 const items = [
   { href: "/", key: "calendar", icon: CalendarDays, adminOnly: false },
   { href: "/projects", key: "projects", icon: FileText, adminOnly: false },
+  { href: "/templates", key: "templates", icon: FileStack, adminOnly: false },
   { href: "/settings", key: "settings", icon: Settings, adminOnly: true },
 ] as const;
 
