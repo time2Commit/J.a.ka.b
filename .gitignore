@@ -33,6 +33,8 @@ secrets/
 data/
 uploads/
 backups/
+# ...but the source of the backup API lives in a folder with that name
+!apps/web/src/app/api/admin/backups/
 *.dump
 *.sql.gz
 **/src/generated/
