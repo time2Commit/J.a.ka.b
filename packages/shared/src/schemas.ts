@@ -73,6 +73,10 @@ export const projectUpdateSchema = z
   })
   .partial();
 
+/** Body of "save a version": the label is optional. */
+export const versionCreateSchema = z.object({
+  label: z.string().trim().min(1).max(120).optional(),
+});
 export const cardRangeQuerySchema = z.object({
   from: z.coerce.date(),
   to: z.coerce.date(),
@@ -83,6 +87,7 @@ export type LabelInput = z.infer<typeof labelInputSchema>;
 export type UserCreateInput = z.infer<typeof userCreateSchema>;
 export type CardCreateInput = z.infer<typeof cardCreateSchema>;
 export type CardUpdateInput = z.infer<typeof cardUpdateSchema>;
+export type VersionCreateInput = z.infer<typeof versionCreateSchema>;
 export type ProjectUpdateInput = z.infer<typeof projectUpdateSchema>;
 
 const clock = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Expected HH:mm");

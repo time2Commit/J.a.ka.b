@@ -200,7 +200,9 @@
       "linkPrompt": "Indirizzo del link (vuoto per rimuoverlo)",
       "attach": "Allega file",
       "authors": "Mostra autori",
-      "textColor": "Colore del testo"
+      "textColor": "Colore del testo",
+      "saveVersion": "Salva versione",
+      "history": "Cronologia versioni"
     },
     "files": {
       "uploading": "Caricamento di {name}…",
@@ -227,6 +229,37 @@
     "suggestions": {
       "people": "Persone",
       "blocks": "Inserisci blocco"
+    },
+    "history": {
+      "title": "Cronologia versioni",
+      "description": "Stati precedenti di questa nota. Ripristinarne uno non fa mai perdere il contenuto attuale.",
+      "empty": "Ancora nessuna versione. Vengono salvate in automatico mentre lavori.",
+      "list": "Versioni",
+      "view": "Vista",
+      "mode": {
+        "preview": "Anteprima",
+        "changes": "Modifiche da allora"
+      },
+      "reason": {
+        "auto": "Automatica",
+        "manual": "Salvata",
+        "pre_restore": "Prima del ripristino"
+      },
+      "restore": "Ripristina questa versione",
+      "restoreConfirm": "Ripristina",
+      "confirmRestore": "Sostituire la nota con questa versione?",
+      "restoreNote": "Il contenuto attuale viene prima salvato come versione, così puoi annullare.",
+      "restored": "Versione ripristinata",
+      "changesLegend": "I blocchi verdi sono stati aggiunti dopo questa versione, quelli rossi sono stati rimossi.",
+      "noChanges": "La nota è identica a questa versione.",
+      "saveTitle": "Salva una versione",
+      "saveDescription": "Conserva un'istantanea con nome della nota così com'è ora.",
+      "label": "Etichetta (facoltativa)",
+      "labelPlaceholder": "es. Inviata al cliente",
+      "save": "Salva versione",
+      "saved": "Versione salvata",
+      "open": "Cronologia versioni",
+      "saveButton": "Salva versione"
     }
   }
 }

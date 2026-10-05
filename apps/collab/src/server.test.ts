@@ -156,4 +156,110 @@ describe("collab server", () => {
     expect(await late.outcome).toBe("synced");
     expect(ydocToJson(late.doc).content?.[0]?.content?.[0]?.text).toBe("Hello from Anna");
   });
+
+  describe("versions", () => {
+    const url = (path: string) => `http://localhost:${collab.address.port}${path}`;
+    const post = (path: string, cookie?: string, body: unknown = {}) =>
+      fetch(url(path), {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(cookie ? { cookie } : {}) },
+        body: JSON.stringify(body),
+      });
+
+    it("refuses version requests without a valid session", async () => {
+      expect((await post(`/internal/projects/${projectId}/versions`)).status).toBe(401);
+      expect((await post(`/internal/projects/missing/versions`, "s=anna")).status).toBe(401);
+    });
+
+    it("saves a manual version, restores it non-destructively and updates connected editors", async () => {
+      const anna = connect({ cookie: "s=anna" });
+      expect(await anna.outcome).toBe("synced");
+
+      const saved = await post(`/internal/projects/${projectId}/versions`, "s=anna", {
+        label: "First draft",
+      });
+      expect(saved.status).toBe(201);
+      const { id: versionId } = (await saved.json()) as { id: string };
+      const stored = await prisma.noteVersion.findUniqueOrThrow({ where: { id: versionId } });
+      expect(stored).toMatchObject({ reason: "manual", label: "First draft" });
+      expect(JSON.stringify(stored.json)).toContain("Hello from Anna");
+
+      paragraph(anna.doc, "Added later");
+      await until(async () =>
+        JSON.stringify(
+          (await prisma.noteDocument.findUnique({ where: { projectId } }))?.json ?? null,
+        ).includes("Added later"),
+      );
+
+      const restored = await post(
+        `/internal/projects/${projectId}/versions/${versionId}/restore`,
+        "s=luca",
+      );
+      expect(restored.status).toBe(200);
+      const { preRestoreVersionId } = (await restored.json()) as { preRestoreVersionId: string };
+
+      // The content that was live before the restore is kept as a version.
+      const safety = await prisma.noteVersion.findUniqueOrThrow({
+        where: { id: preRestoreVersionId },
+      });
+      expect(safety.reason).toBe("pre_restore");
+      expect(JSON.stringify(safety.json)).toContain("Added later");
+
+      // The connected editor sees the restored content, and so does the database.
+      await until(() => !JSON.stringify(ydocToJson(anna.doc)).includes("Added later"));
+      expect(JSON.stringify(ydocToJson(anna.doc))).toContain("Hello from Anna");
+      await until(
+        async () =>
+          !JSON.stringify(
+            (await prisma.noteDocument.findUnique({ where: { projectId } }))?.json ?? null,
+          ).includes("Added later"),
+      );
+      expect(await prisma.activity.count({ where: { projectId, type: "version.restored" } })).toBe(
+        1,
+      );
+
+      expect(
+        (await post(`/internal/projects/${projectId}/versions/nope/restore`, "s=anna")).status,
+      ).toBe(404);
+    });
+
+    it("takes an automatic version when the last editor leaves", async () => {
+      // A project nobody else is connected to, so this client really is the last one.
+      const name = `Collab solo ${run}`;
+      const solo = await prisma.project.create({
+        data: { name, nameNormalized: name.toLowerCase(), statusId, createdById: "u" },
+      });
+      try {
+        const marta = connect({ cookie: "s=marta", name: noteDocumentName(solo.id) });
+        expect(await marta.outcome).toBe("synced");
+        const stored = async (text: string) => {
+          const note = await prisma.noteDocument.findUnique({ where: { projectId: solo.id } });
+          return JSON.stringify(note?.json ?? null).includes(text);
+        };
+        const versions = () =>
+          prisma.noteVersion.findMany({
+            where: { projectId: solo.id },
+            orderBy: { createdAt: "asc" },
+          });
+
+        // The first save of a note with content is its baseline version.
+        paragraph(marta.doc, "Baseline");
+        await until(async () => (await versions()).length === 1);
+
+        // Within the interval nothing new is taken, until the last editor leaves.
+        paragraph(marta.doc, "Written before leaving");
+        await until(() => stored("Written before leaving"));
+        expect(await versions()).toHaveLength(1);
+
+        marta.provider.destroy();
+        await until(async () => (await versions()).length === 2);
+        const last = (await versions())[1]!;
+        expect(last.reason).toBe("auto");
+        expect(last.authors).toEqual(["u-marta"]);
+        expect(JSON.stringify(last.json)).toContain("Written before leaving");
+      } finally {
+        await prisma.project.delete({ where: { id: solo.id } });
+      }
+    });
+  });
 });

@@ -135,7 +135,7 @@ docker-compose.yml, .env.example
 
 - Hocuspocus `onStoreDocument` (~2 s debounce) saves the current state; a _snapshot_ extension creates an **automatic** `NoteVersion` when ≥10 minutes have passed since the last one and there are changes, and at the end of an editing session. "Save version" button for labelled **manual** versions.
 - "Version history" UI: list with authors and date, read-only preview, **visual diff** against the current version (block-level JSON comparison).
-- **Non-destructive restore**: first creates a `pre-restore` version, then the server replaces the live Yjs document content with the selected version (server-side Yjs transaction, propagated to all connected clients). Restoring can therefore always be undone.
+- **Non-destructive restore**: first creates a `pre-restore` version, then the server replaces the live Yjs document content with the selected version (server-side Yjs transaction, propagated to all connected clients). Restoring can therefore always be undone. Saving a manual version and restoring need the live document, so they are small HTTP routes on the collab server (`/internal/projects/:id/versions[/:versionId/restore]`); the web API forwards the user's session cookie and the collab server authorizes it exactly like a WebSocket connection (`COLLAB_INTERNAL_URL`).
 - Retention: manual versions kept forever; automatic versions all kept for 7 days, then one per day (configurable).
 
 ### 5.5 Templates and cloning
@@ -144,16 +144,26 @@ docker-compose.yml, .env.example
 - "Save project as template" from the project page.
 - **Clone from existing project**: copies settings (labels, members, initial status = first status) and, optionally, the note content with **physical duplication of attachments** (new `attachmentId`s, references rewritten in the JSON).
 
-### 5.6 Backup / Markdown export
+### 5.6 Backup, export and import
 
-- `GET /api/projects/:id/export` → streamed zip:
-  ```
-  <project-name>/
-    <project-name>.md      YAML front matter (status, %, labels, members, scheduled cards, dates)
-    attachments/<file>     images → ![](attachments/x.png), others → [name](attachments/x.pdf)
-  ```
-- Markdown serializer shared in `packages/editor` (GFM: tables, checklists; colors/highlights degrade gracefully).
-- Export of **all projects** (single zip) from the admin page + optional scheduled backup service in compose (nightly MD export + `pg_dump`) to a `/backups` volume with rotation.
+Everything leaves and enters the app through one **structured archive format** (a zip), so a project or a whole board can be moved to another instance (hardware upgrade, system recovery, new server).
+
+```
+manifest.json            { format: "jakab-backup", version, kind: "project" | "board", exportedAt }
+board.json               (board only) workspace settings, statuses, labels, members (name, email, colour, role: no passwords), templates
+projects/<slug>/
+  project.json           name, status, progress, colour, archived flag, labels, members (by email), cards, attachment list (sha256), note as editor JSON
+  note.md                readable Markdown with YAML front matter (GFM: tables, checklists; colours/highlights degrade gracefully)
+  attachments/<file>     images → ![](attachments/x.png), others → [name](attachments/x.pdf)
+  versions.json          optional: version history (labels, authors, dates, editor JSON)
+```
+
+- **Single project**: `GET /api/projects/:id/export` → streamed zip with one `projects/<slug>/` folder.
+- **Whole board**: `GET /api/export` (admin) → streamed zip with `board.json` and every project. Options: include archived projects, include version history.
+- **Import** (`POST /api/import`, admin; also usable on an empty instance right after the first sign-up): validates the manifest and every file (zod, size limits, zip-slip safe paths), then a dry-run **preview** (what will be created, matched or skipped) before anything is written. Statuses and labels are matched by name and created when missing, members by e-mail (unknown ones are reported and dropped, never invented), attachments are re-stored and their `fileEmbed` references rewritten to the new ids. A project whose name already exists is skipped, renamed or replaces the existing one, as chosen in the preview. The whole import runs in one transaction per project and is idempotent to retry.
+- The Markdown is for people and portability; the **JSON is the lossless source** used by import (round-trips the note exactly, including authorship-free structure).
+- Markdown serializer shared in `packages/editor` (same schema as web and collab).
+- Optional scheduled backup service in compose (nightly board export + `pg_dump`) to a `/backups` volume with rotation.
 
 ### 5.7 Authentication and permissions
 
@@ -185,7 +195,7 @@ docker-compose.yml, .env.example
 4. **Collaborative notes** – Hocuspocus service, Tiptap editor, cursors/presence, block attribution, `fileEmbed` + upload.
 5. **Versioning** – snapshots, history, preview/diff, non-destructive restore, retention.
 6. **Templates and cloning**.
-7. **Export/backup** – MD serializer, per-project and full zip, backup service.
+7. **Export, import and backup** – MD serializer, structured archive format, per-project and whole-board export, import with preview (move a board to a new instance), backup service.
 8. **Production** – Dockerfiles, Caddy, full compose, hardening (upload limits, rate limiting, CSP), README.
 
 Each milestone ends with tests and a working demo, so the app is usable from milestone 2 onwards.

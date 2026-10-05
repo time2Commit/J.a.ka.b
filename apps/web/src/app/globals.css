@@ -259,3 +259,17 @@
   color: var(--primary);
   font-weight: 500;
 }
+
+/* Version comparison: blocks added or removed since the selected version */
+.jakab-change-added {
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, #16a34a 16%, transparent);
+  box-shadow: -3px 0 0 #16a34a;
+}
+.jakab-change-removed {
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, #dc2626 14%, transparent);
+  box-shadow: -3px 0 0 #dc2626;
+  text-decoration: line-through;
+  opacity: 0.8;
+}

@@ -12,7 +12,7 @@ export interface AuthContext {
   projectId: string;
 }
 
-type SessionFetcher = (cookie: string) => Promise<{
+export type SessionFetcher = (cookie: string) => Promise<{
   user?: { id: string; name: string; avatarColor?: string };
 } | null>;
 

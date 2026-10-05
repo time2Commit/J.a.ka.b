@@ -4,6 +4,7 @@ import {
   cardUpdateSchema,
   projectUpdateSchema,
   statusInputSchema,
+  versionCreateSchema,
 } from "./schemas";
 
 const base = { start: "2026-10-05T09:00:00Z", end: "2026-10-05T12:00:00Z" };
@@ -52,5 +53,14 @@ describe("projectUpdateSchema / statusInputSchema", () => {
   it("validates colors", () => {
     expect(statusInputSchema.safeParse({ name: "A", color: "red" }).success).toBe(false);
     expect(statusInputSchema.safeParse({ name: "A", color: "#ff0000" }).success).toBe(true);
+  });
+});
+
+describe("versionCreateSchema", () => {
+  it("accepts no label or a trimmed one, rejects blank or very long labels", () => {
+    expect(versionCreateSchema.parse({})).toEqual({});
+    expect(versionCreateSchema.parse({ label: "  Draft 1 " })).toEqual({ label: "Draft 1" });
+    expect(versionCreateSchema.safeParse({ label: "   " }).success).toBe(false);
+    expect(versionCreateSchema.safeParse({ label: "x".repeat(121) }).success).toBe(false);
   });
 });

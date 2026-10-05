@@ -16,6 +16,8 @@ import { FileUpload, type UploadedFile } from "./file-upload";
 import { createMentionExtension } from "./mention-extension";
 import { pickFiles, SlashCommand, type SlashCommandItem } from "./slash-command";
 import { NoteToolbar } from "./note-toolbar";
+import { SaveVersionDialog } from "./save-version-dialog";
+import { VersionHistory } from "./version-history";
 
 export interface NoteUser {
   id: string;
@@ -106,6 +108,8 @@ function NoteEditorView({
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [peers, setPeers] = useState<Peer[]>([]);
   const [showAuthors, setShowAuthors] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [saveOpen, setSaveOpen] = useState(false);
   const [legend, setLegend] = useState<NoteUser[]>([]);
   const [edited, setEdited] = useState<EditedLabel | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -370,6 +374,8 @@ function NoteEditorView({
             showAuthors={showAuthors}
             onToggleAuthors={toggleAuthors}
             onAttach={(files) => editor.chain().focus().uploadFiles(files).run()}
+            onSaveVersion={() => setSaveOpen(true)}
+            onOpenHistory={() => setHistoryOpen(true)}
           />
         )}
         {showAuthors && (
@@ -406,6 +412,13 @@ function NoteEditorView({
           )}
         </div>
       </div>
+      <SaveVersionDialog projectId={projectId} open={saveOpen} onOpenChange={setSaveOpen} />
+      <VersionHistory
+        projectId={projectId}
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        getCurrentJson={() => editor?.getJSON() ?? { type: "doc", content: [] }}
+      />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import {
   Heading2,
   Heading3,
   Highlighter,
+  History,
   Italic,
   Link as LinkIcon,
   List,
@@ -20,6 +21,7 @@ import {
   Paperclip,
   PenLine,
   Quote,
+  Save,
   Strikethrough,
   Table as TableIcon,
 } from "lucide-react";
@@ -74,11 +76,15 @@ export function NoteToolbar({
   showAuthors,
   onToggleAuthors,
   onAttach,
+  onSaveVersion,
+  onOpenHistory,
 }: {
   editor: Editor;
   showAuthors: boolean;
   onToggleAuthors: () => void;
   onAttach: (files: File[]) => void;
+  onSaveVersion: () => void;
+  onOpenHistory: () => void;
 }) {
   const t = useTranslations("Note.toolbar");
   const colors = useTranslations("Note.colors");
@@ -281,9 +287,17 @@ export function NoteToolbar({
           }}
         />
       </fieldset>
-      <ToolButton label={t("authors")} active={showAuthors} onClick={onToggleAuthors}>
-        <PenLine />
-      </ToolButton>
+      <div className="flex items-center gap-0.5">
+        <ToolButton label={t("saveVersion")} onClick={onSaveVersion}>
+          <Save />
+        </ToolButton>
+        <ToolButton label={t("history")} onClick={onOpenHistory}>
+          <History />
+        </ToolButton>
+        <ToolButton label={t("authors")} active={showAuthors} onClick={onToggleAuthors}>
+          <PenLine />
+        </ToolButton>
+      </div>
     </div>
   );
 }

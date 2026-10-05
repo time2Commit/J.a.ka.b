@@ -200,7 +200,9 @@
       "linkPrompt": "Link address (empty to remove)",
       "attach": "Attach file",
       "authors": "Show authors",
-      "textColor": "Text color"
+      "textColor": "Text color",
+      "saveVersion": "Save version",
+      "history": "Version history"
     },
     "files": {
       "uploading": "Uploading {name}…",
@@ -227,6 +229,37 @@
     "suggestions": {
       "people": "People",
       "blocks": "Insert block"
+    },
+    "history": {
+      "title": "Version history",
+      "description": "Earlier states of this note. Restoring one never loses the current content.",
+      "empty": "No versions yet. They are saved automatically while you work.",
+      "list": "Versions",
+      "view": "View",
+      "mode": {
+        "preview": "Preview",
+        "changes": "Changes since then"
+      },
+      "reason": {
+        "auto": "Automatic",
+        "manual": "Saved",
+        "pre_restore": "Before restore"
+      },
+      "restore": "Restore this version",
+      "restoreConfirm": "Restore",
+      "confirmRestore": "Replace the note with this version?",
+      "restoreNote": "The current content is saved as a version first, so you can undo this.",
+      "restored": "Version restored",
+      "changesLegend": "Green blocks were added since this version, red ones were removed.",
+      "noChanges": "The note is identical to this version.",
+      "saveTitle": "Save a version",
+      "saveDescription": "Keep a named snapshot of the note as it is now.",
+      "label": "Label (optional)",
+      "labelPlaceholder": "e.g. Sent to the client",
+      "save": "Save version",
+      "saved": "Version saved",
+      "open": "Version history",
+      "saveButton": "Save version"
     }
   }
 }

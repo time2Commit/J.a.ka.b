@@ -1,10 +1,12 @@
 import type { PrismaClient } from "@jakab/db";
-import { Server } from "@hocuspocus/server";
+import { Server, type Hocuspocus } from "@hocuspocus/server";
 import * as Y from "yjs";
 import { parseNoteDocumentName } from "@jakab/editor";
 import { authenticate, fetchSessionFromWeb, type AuthContext } from "./auth";
 import { config } from "./config";
+import { handleInternalRequest } from "./internal-api";
 import { loadNote, storeNote } from "./persistence";
+import { maybeAutoVersion } from "./versions";
 
 export function createCollabServer(options: {
   db: PrismaClient;
@@ -15,8 +17,33 @@ export function createCollabServer(options: {
 }) {
   const { db } = options;
   const getSession = fetchSessionFromWeb(options.webUrl ?? config.webUrl);
+  const allowedOrigin = options.allowedOrigin ?? config.allowedOrigin;
 
-  return new Server<AuthContext>({
+  // Users who edited a live note since its last version (becomes the version's author list).
+  const pendingAuthors = new Map<string, Set<string>>();
+  const takeAuthors = (documentName: string) => {
+    const authors = [...(pendingAuthors.get(documentName) ?? [])];
+    pendingAuthors.delete(documentName);
+    return authors;
+  };
+  const snapshot = (
+    documentName: string,
+    document: Y.Doc,
+    userId: string | null,
+    force: boolean,
+  ) => {
+    const projectId = parseNoteDocumentName(documentName);
+    if (!projectId) return Promise.resolve(false);
+    const authors = [...(pendingAuthors.get(documentName) ?? [])];
+    return maybeAutoVersion(db, { projectId, doc: document, authors, userId, force }).then(
+      (created) => {
+        if (created) pendingAuthors.delete(documentName);
+        return created;
+      },
+    );
+  };
+
+  const server = new Server<AuthContext>({
     port: options.port ?? config.port,
     name: "jakab-collab",
     quiet: true,
@@ -29,7 +56,7 @@ export function createCollabServer(options: {
         documentName,
         cookie: requestHeaders.get("cookie"),
         origin: requestHeaders.get("origin"),
-        allowedOrigin: options.allowedOrigin ?? config.allowedOrigin,
+        allowedOrigin,
         db,
         getSession,
       });
@@ -42,9 +69,39 @@ export function createCollabServer(options: {
       return document;
     },
 
+    async onChange({ documentName, context }) {
+      const userId = context?.user?.id;
+      if (!userId) return;
+      const authors = pendingAuthors.get(documentName) ?? new Set<string>();
+      authors.add(userId);
+      pendingAuthors.set(documentName, authors);
+    },
+
     async onStoreDocument({ document, documentName, lastContext }) {
       const projectId = parseNoteDocumentName(documentName);
-      if (projectId) await storeNote(db, projectId, document, lastContext?.user?.id ?? null);
+      if (!projectId) return;
+      const userId = lastContext?.user?.id ?? null;
+      await storeNote(db, projectId, document, userId);
+      await snapshot(documentName, document, userId, false);
+    },
+
+    // The last editor left: keep the state they ended with, even if the interval has not passed.
+    async beforeUnloadDocument({ document, documentName }) {
+      await snapshot(documentName, document, null, true);
+      pendingAuthors.delete(documentName);
+    },
+
+    async onRequest({ request, response, instance }) {
+      const handled = await handleInternalRequest(request, response, {
+        db,
+        hocuspocus: instance as Hocuspocus<AuthContext>,
+        getSession,
+        allowedOrigin,
+        takeAuthors,
+      });
+      // Throwing nothing stops Hocuspocus from sending its default reply.
+      if (handled) throw undefined;
     },
   });
+  return server;
 }
