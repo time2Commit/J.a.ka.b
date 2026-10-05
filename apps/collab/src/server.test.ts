@@ -83,6 +83,7 @@ beforeAll(async () => {
     webUrl: `http://localhost:${(web.address() as AddressInfo).port}`,
     allowedOrigin: ORIGIN,
     storeDebounceMs: 100,
+    maxPayloadBytes: 1024 * 1024,
   });
   await collab.listen();
   statusId = (
@@ -114,6 +115,16 @@ const paragraph = (doc: Y.Doc, text: string) => {
 };
 
 describe("collab server", () => {
+  it("closes a connection that sends a message above the size limit", async () => {
+    const socket = new WebSocket(collab.webSocketURL, { headers: { origin: ORIGIN } });
+    const code = await new Promise<number>((resolve, reject) => {
+      socket.on("open", () => socket.send(Buffer.alloc(2 * 1024 * 1024)));
+      socket.on("close", (c) => resolve(c));
+      socket.on("error", reject);
+    });
+    expect(code).toBe(1009);
+  });
+
   it("rejects connections without a session, from another origin, or to unknown documents", async () => {
     expect(await connect({}).outcome).toBe("denied");
     expect(await connect({ cookie: "s=anna", origin: "http://evil.example.com" }).outcome).toBe(

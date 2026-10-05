@@ -175,6 +175,13 @@ projects/<slug>/
 - Better Auth with email+password; first registered user = admin; afterwards invitations by the admin only (open sign-up can be disabled).
 - Roles: **admin** (statuses, labels, users, backups), **member** (everything else). The Hocuspocus WebSocket validates the session cookie in `onAuthenticate`.
 
+**Hardening** (milestone 8):
+
+- `AUTH_SECRET` is checked at start-up in production (present, at least 32 characters, not a placeholder from the docs); the build itself needs no secret.
+- **Content-Security-Policy** on every page, set in the Next proxy with a fresh nonce per request (`script-src 'self' 'nonce-…' 'strict-dynamic'`, no inline scripts or `eval` in production; the collab WebSocket origin is derived from `COLLAB_PUBLIC_URL`). Plus `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`/`frame-ancestors`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, and HSTS when `APP_URL` is HTTPS. Uploaded files are served from the app's origin as downloads or inert images/PDFs with `nosniff`, never as pages.
+- **Rate limiting** per signed-in user on the expensive routes (uploads, exports, imports, manual backups), answering `429` with `Retry-After`; the auth library rate-limits sign-in itself. The limiter is in memory, which fits the single web process the app runs as.
+- The collab server closes connections that send a message above `COLLAB_MAX_PAYLOAD_MB` and checks the browser origin and the session on every connection.
+
 ---
 
 ## 6. Docker deployment
