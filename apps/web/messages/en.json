@@ -131,7 +131,12 @@
     "willCreate": "New project",
     "willLink": "Existing project",
     "suggestions": "Suggestions",
-    "recent": "Recent projects"
+    "recent": "Recent projects",
+    "startFrom": "Start from",
+    "startEmpty": "Empty project",
+    "startTemplates": "Template",
+    "startClone": "Copy of a project",
+    "cloneNote": "Copy the note and its files too"
   },
   "Settings": {
     "title": "Settings",
@@ -193,7 +198,9 @@
       "importing": "Importing…",
       "result": "Imported {imported}, skipped {skipped}, failed {failed}.",
       "tempPasswords": "Temporary passwords",
-      "tempPasswordsHelp": "Shown only now. Give each person their password; they can change it after signing in."
+      "tempPasswordsHelp": "Shown only now. Give each person their password; they can change it after signing in.",
+      "templates": "{count, plural, =0 {No new templates} one {# template will be created} other {# templates will be created}}{skipped, plural, =0 {} other { ({skipped} already exist and stay as they are)}}.",
+      "templatesResult": "{count, plural, one {# template created.} other {# templates created.}}"
     }
   },
   "Projects": {
@@ -207,6 +214,15 @@
       "button": "Export",
       "withoutVersions": "Note, files and cards",
       "withVersions": "Including version history"
+    },
+    "template": {
+      "button": "Save as template",
+      "title": "Save as template",
+      "description": "Keeps the settings and the text of the note. Files are not included.",
+      "name": "Template name",
+      "save": "Save template",
+      "saved": "Template saved",
+      "nameTaken": "A template with this name already exists"
     }
   },
   "Note": {
@@ -303,5 +319,32 @@
       "open": "Version history",
       "saveButton": "Save version"
     }
+  },
+  "Templates": {
+    "title": "Templates",
+    "help": "Start new projects with the same status, labels, people, duration, checklist and note every time.",
+    "new": "New template",
+    "empty": "No templates yet. Create one here, or save an existing project as a template from its page.",
+    "minutes": "{count} min",
+    "checklistCount": "{count, plural, one {# checklist item} other {# checklist items}}",
+    "withNote": "with note",
+    "edit": "Edit {name}",
+    "delete": "Delete {name}",
+    "confirmDelete": "Delete the template “{name}”? Projects already made from it are not affected.",
+    "newTitle": "New template",
+    "editTitle": "Edit template",
+    "name": "Name",
+    "status": "Status of new projects",
+    "firstStatus": "First status",
+    "duration": "First card length (minutes)",
+    "labels": "Labels",
+    "members": "People",
+    "checklist": "Checklist",
+    "checklistPlaceholder": "One item per line",
+    "checklistHelp": "Added to the top of the note as a checklist.",
+    "note": "Initial note",
+    "noteHelp": "Files cannot be part of a template.",
+    "saved": "Template saved",
+    "nameTaken": "A template with this name already exists"
   }
 }

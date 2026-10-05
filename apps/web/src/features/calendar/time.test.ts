@@ -6,6 +6,7 @@ import {
   dropToRange,
   eventToRange,
   selectionToDraft,
+  withDuration,
 } from "./time";
 
 describe("draftToRange", () => {
@@ -137,5 +138,26 @@ describe("autoEndDate", () => {
       endDate: "2026-10-05",
     });
     expect(autoEndDate(draft)).toBe(draft.endDate);
+  });
+});
+
+describe("withDuration", () => {
+  const draft = {
+    allDay: false,
+    date: "2026-10-04",
+    startTime: "09:30",
+    endDate: "2026-10-04",
+    endTime: "10:30",
+  };
+  it("moves the end to start + duration, across midnight too", () => {
+    expect(withDuration(draft, 90)).toMatchObject({ endDate: "2026-10-04", endTime: "11:00" });
+    expect(withDuration({ ...draft, startTime: "23:00" }, 150)).toMatchObject({
+      endDate: "2026-10-05",
+      endTime: "01:30",
+    });
+  });
+  it("leaves all-day drafts alone", () => {
+    const allDay = { ...draft, allDay: true };
+    expect(withDuration(allDay, 90)).toBe(allDay);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapNoteIds } from "./note-json";
+import { checklistNode, filterFileEmbeds, mapNoteIds, noteFromTemplate } from "./note-json";
 
 describe("mapNoteIds", () => {
   const note = {
@@ -35,5 +35,42 @@ describe("mapNoteIds", () => {
 
   it("changes nothing without maps", () => {
     expect(mapNoteIds(note, {})).toEqual(note);
+  });
+});
+
+describe("filterFileEmbeds", () => {
+  const note = {
+    type: "doc",
+    content: [
+      { type: "paragraph", content: [{ type: "text", text: "keep me" }] },
+      { type: "fileEmbed", attrs: { attachmentId: "a" } },
+      {
+        type: "blockquote",
+        content: [{ type: "fileEmbed", attrs: { attachmentId: "b" } }],
+      },
+    ],
+  };
+  it("drops every embed by default, at any depth", () => {
+    const out = JSON.stringify(filterFileEmbeds(note));
+    expect(out).not.toContain("fileEmbed");
+    expect(out).toContain("keep me");
+  });
+  it("keeps the listed attachments", () => {
+    const out = JSON.stringify(filterFileEmbeds(note, new Set(["b"])));
+    expect(out).toContain('"attachmentId":"b"');
+    expect(out).not.toContain('"attachmentId":"a"');
+  });
+});
+
+describe("noteFromTemplate", () => {
+  it("appends the checklist after the content, and is null when both are empty", () => {
+    const body = { type: "doc", content: [{ type: "paragraph" }] };
+    const note = noteFromTemplate(body, ["Call", "Write"])!;
+    expect(note.content).toHaveLength(2);
+    expect(JSON.stringify(note.content![1])).toContain('"checked":false');
+    expect(JSON.stringify(note.content![1])).toContain("Write");
+    expect(noteFromTemplate(null, [])).toBeNull();
+    expect(noteFromTemplate({ type: "doc" }, [])).toBeNull();
+    expect(checklistNode([])).toBeNull();
   });
 });

@@ -73,18 +73,19 @@ const Separator = () => <span className="mx-1 h-5 w-px bg-border" aria-hidden />
 
 export function NoteToolbar({
   editor,
-  showAuthors,
+  showAuthors = false,
   onToggleAuthors,
   onAttach,
   onSaveVersion,
   onOpenHistory,
 }: {
   editor: Editor;
-  showAuthors: boolean;
-  onToggleAuthors: () => void;
-  onAttach: (files: File[]) => void;
-  onSaveVersion: () => void;
-  onOpenHistory: () => void;
+  showAuthors?: boolean;
+  /** The actions below are left out of the toolbar when not provided (templates have no files, authors or versions). */
+  onToggleAuthors?: () => void;
+  onAttach?: (files: File[]) => void;
+  onSaveVersion?: () => void;
+  onOpenHistory?: () => void;
 }) {
   const t = useTranslations("Note.toolbar");
   const colors = useTranslations("Note.colors");
@@ -271,32 +272,42 @@ export function NoteToolbar({
             </ToolButton>
           </>
         )}
-        <ToolButton label={t("attach")} onClick={() => fileInput.current?.click()}>
-          <Paperclip />
-        </ToolButton>
-        <input
-          ref={fileInput}
-          type="file"
-          multiple
-          hidden
-          data-testid="file-input"
-          aria-label={t("attach")}
-          onChange={(e) => {
-            onAttach(Array.from(e.target.files ?? []));
-            e.target.value = "";
-          }}
-        />
+        {onAttach && (
+          <>
+            <ToolButton label={t("attach")} onClick={() => fileInput.current?.click()}>
+              <Paperclip />
+            </ToolButton>
+            <input
+              ref={fileInput}
+              type="file"
+              multiple
+              hidden
+              data-testid="file-input"
+              aria-label={t("attach")}
+              onChange={(e) => {
+                onAttach(Array.from(e.target.files ?? []));
+                e.target.value = "";
+              }}
+            />
+          </>
+        )}
       </fieldset>
       <div className="flex items-center gap-0.5">
-        <ToolButton label={t("saveVersion")} onClick={onSaveVersion}>
-          <Save />
-        </ToolButton>
-        <ToolButton label={t("history")} onClick={onOpenHistory}>
-          <History />
-        </ToolButton>
-        <ToolButton label={t("authors")} active={showAuthors} onClick={onToggleAuthors}>
-          <PenLine />
-        </ToolButton>
+        {onSaveVersion && (
+          <ToolButton label={t("saveVersion")} onClick={onSaveVersion}>
+            <Save />
+          </ToolButton>
+        )}
+        {onOpenHistory && (
+          <ToolButton label={t("history")} onClick={onOpenHistory}>
+            <History />
+          </ToolButton>
+        )}
+        {onToggleAuthors && (
+          <ToolButton label={t("authors")} active={showAuthors} onClick={onToggleAuthors}>
+            <PenLine />
+          </ToolButton>
+        )}
       </div>
     </div>
   );

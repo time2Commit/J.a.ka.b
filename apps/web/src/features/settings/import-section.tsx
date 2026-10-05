@@ -24,6 +24,7 @@ interface Preview {
   }[];
   newStatuses: string[];
   newLabels: string[];
+  templates: { name: string; exists: boolean }[];
   people: { email: string; name: string | null; exists: boolean }[];
 }
 
@@ -31,6 +32,7 @@ interface Result {
   imported: { slug: string; name: string; projectId: string; renamedFrom?: string }[];
   skipped: { slug: string; name: string }[];
   failed: { slug: string; name: string; message: string }[];
+  templatesImported: number;
   createdUsers: { email: string; name: string; password: string }[];
 }
 
@@ -171,6 +173,15 @@ export function ImportSection() {
               </p>
             )}
 
+            {upload.preview.templates.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                {t("templates", {
+                  count: upload.preview.templates.filter((x) => !x.exists).length,
+                  skipped: upload.preview.templates.filter((x) => x.exists).length,
+                })}
+              </p>
+            )}
+
             {upload.preview.projects.some((p) => p.exists) && (
               <fieldset className="flex flex-col gap-1 text-sm">
                 <legend className="mb-1 font-medium">{t("conflict")}</legend>
@@ -245,6 +256,9 @@ export function ImportSection() {
                 failed: result.failed.length,
               })}
             </p>
+            {result.templatesImported > 0 && (
+              <p>{t("templatesResult", { count: result.templatesImported })}</p>
+            )}
             {result.failed.length > 0 && (
               <ul className="text-destructive">
                 {result.failed.map((f) => (

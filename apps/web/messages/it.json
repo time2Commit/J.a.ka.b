@@ -131,7 +131,12 @@
     "willCreate": "Nuovo progetto",
     "willLink": "Progetto esistente",
     "suggestions": "Suggerimenti",
-    "recent": "Progetti recenti"
+    "recent": "Progetti recenti",
+    "startFrom": "Parti da",
+    "startEmpty": "Progetto vuoto",
+    "startTemplates": "Template",
+    "startClone": "Copia di un progetto",
+    "cloneNote": "Copia anche la nota e i suoi file"
   },
   "Settings": {
     "title": "Impostazioni",
@@ -193,7 +198,9 @@
       "importing": "Importazione…",
       "result": "Importati {imported}, saltati {skipped}, falliti {failed}.",
       "tempPasswords": "Password temporanee",
-      "tempPasswordsHelp": "Mostrate solo adesso. Consegna a ciascuno la sua password: potrà cambiarla dopo l'accesso."
+      "tempPasswordsHelp": "Mostrate solo adesso. Consegna a ciascuno la sua password: potrà cambiarla dopo l'accesso.",
+      "templates": "{count, plural, =0 {Nessun nuovo template} one {Verrà creato # template} other {Verranno creati # template}}{skipped, plural, =0 {} other { ({skipped} esistono già e restano come sono)}}.",
+      "templatesResult": "{count, plural, one {Creato # template.} other {Creati # template.}}"
     }
   },
   "Projects": {
@@ -207,6 +214,15 @@
       "button": "Esporta",
       "withoutVersions": "Nota, file e card",
       "withVersions": "Con la cronologia delle versioni"
+    },
+    "template": {
+      "button": "Salva come template",
+      "title": "Salva come template",
+      "description": "Conserva le impostazioni e il testo della nota. I file non sono inclusi.",
+      "name": "Nome del template",
+      "save": "Salva template",
+      "saved": "Template salvato",
+      "nameTaken": "Esiste già un template con questo nome"
     }
   },
   "Note": {
@@ -303,5 +319,32 @@
       "open": "Cronologia versioni",
       "saveButton": "Salva versione"
     }
+  },
+  "Templates": {
+    "title": "Template",
+    "help": "Avvia nuovi progetti sempre con lo stesso stato, etichette, persone, durata, checklist e nota.",
+    "new": "Nuovo template",
+    "empty": "Ancora nessun template. Creane uno qui, oppure salva un progetto esistente come template dalla sua pagina.",
+    "minutes": "{count} min",
+    "checklistCount": "{count, plural, one {# voce di checklist} other {# voci di checklist}}",
+    "withNote": "con nota",
+    "edit": "Modifica {name}",
+    "delete": "Elimina {name}",
+    "confirmDelete": "Eliminare il template “{name}”? I progetti già creati non cambiano.",
+    "newTitle": "Nuovo template",
+    "editTitle": "Modifica template",
+    "name": "Nome",
+    "status": "Stato dei nuovi progetti",
+    "firstStatus": "Primo stato",
+    "duration": "Durata della prima card (minuti)",
+    "labels": "Etichette",
+    "members": "Persone",
+    "checklist": "Checklist",
+    "checklistPlaceholder": "Una voce per riga",
+    "checklistHelp": "Aggiunta in cima alla nota come checklist.",
+    "note": "Nota iniziale",
+    "noteHelp": "I file non possono far parte di un template.",
+    "saved": "Template salvato",
+    "nameTaken": "Esiste già un template con questo nome"
   }
 }

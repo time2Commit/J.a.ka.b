@@ -18,6 +18,7 @@ const names = {
   status: `St ${run}`,
   label: `Lb ${run}`,
   email: `round.${run}@example.com`,
+  template: `Tpl ${run}`,
 };
 
 let root: string;
@@ -50,6 +51,7 @@ async function wipeSource() {
   await prisma.label.deleteMany({ where: { name: names.label } });
   await prisma.status.deleteMany({ where: { name: names.status } });
   await prisma.user.deleteMany({ where: { email: names.email } });
+  await prisma.template.deleteMany({ where: { name: names.template } });
 }
 
 beforeAll(async () => {
@@ -87,6 +89,31 @@ beforeAll(async () => {
     },
   });
   sourceProjectId = project.id;
+  await prisma.template.create({
+    data: {
+      name: names.template,
+      createdBy: person.id,
+      defaults: {
+        statusId: status.id,
+        labelIds: [label.id],
+        memberIds: [person.id],
+        durationMin: 90,
+        checklist: ["Step one"],
+      },
+      noteJson: {
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [
+              { type: "mention", attrs: { id: person.id, label: "Anna Person" } },
+              { type: "text", text: " template text" },
+            ],
+          },
+        ],
+      },
+    },
+  });
   const attachmentId = `att-${run}`;
   await storage.put(`${project.id}/${attachmentId}`, Readable.from([FILE]), 1024);
   const { sha256 } = await storage.put(
@@ -152,6 +179,7 @@ afterAll(async () => {
   await prisma.label.deleteMany({ where: { name: names.label } });
   await prisma.status.deleteMany({ where: { name: names.status } });
   await prisma.user.deleteMany({ where: { email: names.email } });
+  await prisma.template.deleteMany({ where: { name: names.template } });
   await prisma.user.deleteMany({ where: { id: { in: [...cleanup.users] } } });
   await prisma.$disconnect();
   await rm(root, { recursive: true, force: true });
@@ -169,6 +197,7 @@ describe("import round trip", () => {
     expect(preview.newStatuses).toContain(names.status);
     expect(preview.newLabels).toContain(names.label);
     expect(preview.people.find((p) => p.email === names.email)).toMatchObject({ exists: false });
+    expect(preview.templates).toContainEqual({ name: names.template, exists: false });
 
     const result = await applyArchive(
       prisma,
@@ -226,6 +255,18 @@ describe("import round trip", () => {
     ]);
     expect(JSON.stringify(imported.versions[0]!.json)).toContain(attachment!.id);
     cleanup.projects.add(imported.id);
+
+    // Templates travel with the board, with their catalog entries and people matched again.
+    expect(result.templatesImported).toBeGreaterThanOrEqual(1);
+    const template = await prisma.template.findUniqueOrThrow({ where: { name: names.template } });
+    expect(template.defaults).toMatchObject({
+      statusId: imported.statusId,
+      labelIds: [imported.labels[0]!.labelId],
+      memberIds: [created.id],
+      durationMin: 90,
+      checklist: ["Step one"],
+    });
+    expect(JSON.stringify(template.noteJson)).toContain(`"id":"${created.id}"`);
     zip.close();
   });
 

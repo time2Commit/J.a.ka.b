@@ -2,7 +2,7 @@ import { rm } from "node:fs/promises";
 import { DEFAULT_STATUSES } from "@jakab/db/defaults";
 import { createPrismaClient } from "@jakab/db";
 
-/** Resets the (local) test database: no users, no projects, default statuses only. */
+/** Resets the (local) test database: no users, no projects or templates, default statuses only. */
 export default async function globalSetup() {
   const url = process.env.DATABASE_URL ?? "";
   if (!/@(localhost|127\.0\.0\.1)[:/]/.test(url)) {
@@ -13,6 +13,7 @@ export default async function globalSetup() {
   const prisma = createPrismaClient(url);
   await prisma.$transaction([
     prisma.project.deleteMany(),
+    prisma.template.deleteMany(),
     prisma.label.deleteMany(),
     prisma.status.deleteMany(),
     prisma.user.deleteMany(),

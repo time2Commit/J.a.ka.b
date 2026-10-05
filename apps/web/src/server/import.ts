@@ -109,6 +109,7 @@ export interface ImportPreview {
   }[];
   newStatuses: string[];
   newLabels: string[];
+  templates: { name: string; exists: boolean }[];
   people: { email: string; name: string | null; exists: boolean }[];
 }
 
@@ -137,7 +138,7 @@ export async function previewArchive(
   db: PrismaClient,
   parsed: ParsedArchive,
 ): Promise<ImportPreview> {
-  const [statuses, labels, users, existing] = await Promise.all([
+  const [statuses, labels, users, existing, templates] = await Promise.all([
     db.status.findMany({ select: { name: true } }),
     db.label.findMany({ select: { name: true } }),
     db.user.findMany({ select: { email: true } }),
@@ -147,7 +148,9 @@ export async function previewArchive(
       },
       select: { nameNormalized: true },
     }),
+    db.template.findMany({ select: { name: true } }),
   ]);
+  const haveTemplate = new Set(templates.map((t) => t.name));
   const haveStatus = new Set(statuses.map((s) => s.name));
   const haveLabel = new Set(labels.map((l) => l.name));
   const haveUser = new Set(users.map((u) => emailKey(u.email)));
@@ -176,6 +179,10 @@ export async function previewArchive(
     })),
     newStatuses: [...new Set(wantedStatuses)].filter((n) => !haveStatus.has(n)),
     newLabels: [...new Set(wantedLabels)].filter((n) => !haveLabel.has(n)),
+    templates: (parsed.board?.templates ?? []).map((t) => ({
+      name: t.name,
+      exists: haveTemplate.has(t.name),
+    })),
     people: [...referencedPeople(parsed).values()].map((p) => ({
       email: p.email,
       name: p.name,
@@ -188,6 +195,8 @@ export interface ImportResult {
   imported: { slug: string; name: string; projectId: string; renamedFrom?: string }[];
   skipped: { slug: string; name: string }[];
   failed: { slug: string; name: string; message: string }[];
+  /** Templates created (those whose name already exists here are left as they are). */
+  templatesImported: number;
   /** Temporary passwords of accounts created by the import. Shown once, never stored in clear. */
   createdUsers: { email: string; name: string; password: string }[];
 }
@@ -420,6 +429,39 @@ async function ensureUsers(
   return { userIds, createdUsers };
 }
 
+/** Board archives: templates are matched by name; existing ones are not touched. */
+async function importTemplates(
+  db: PrismaClient,
+  parsed: ParsedArchive,
+  ctx: Pick<Context, "statusIds" | "labelIds" | "userIds">,
+  actorId: string,
+) {
+  let created = 0;
+  for (const t of parsed.board?.templates ?? []) {
+    if (await db.template.findUnique({ where: { name: t.name }, select: { id: true } })) continue;
+    await db.template.create({
+      data: {
+        name: t.name,
+        defaults: {
+          statusId: t.defaults.status ? (ctx.statusIds.get(t.defaults.status) ?? null) : null,
+          labelIds: t.defaults.labels.flatMap((l) => ctx.labelIds.get(l) ?? []),
+          memberIds: t.defaults.members.flatMap((e) => ctx.userIds.get(emailKey(e)) ?? []),
+          durationMin: t.defaults.durationMin,
+          checklist: t.defaults.checklist,
+        },
+        noteJson: t.note
+          ? (mapNoteIds(t.note, {
+              mention: (id) => ctx.userIds.get(emailKey(id)) ?? id,
+            }) as Prisma.InputJsonValue)
+          : undefined,
+        createdBy: actorId,
+      },
+    });
+    created++;
+  }
+  return created;
+}
+
 export async function applyArchive(
   db: PrismaClient,
   storage: StorageDriver,
@@ -454,7 +496,13 @@ export async function applyArchive(
     options,
   };
 
-  const result: ImportResult = { imported: [], skipped: [], failed: [], createdUsers };
+  const result: ImportResult = {
+    imported: [],
+    skipped: [],
+    failed: [],
+    createdUsers,
+    templatesImported: await importTemplates(db, parsed, ctx, env.actorId),
+  };
   const wanted = options.slugs ? new Set(options.slugs) : null;
   for (const project of parsed.projects) {
     if (wanted && !wanted.has(project.slug)) continue;
