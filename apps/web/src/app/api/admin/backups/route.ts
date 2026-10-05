@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { route } from "@/server/http";
 import { backupConfig, listBackups } from "@/server/backup";
 import { runConfiguredBackup } from "@/server/backup-schedule";
+import { LIMITS } from "@/server/rate-limit";
 
 /** Backups on disk, with the schedule they are made on (admin). */
 export const GET = route(
@@ -15,5 +16,5 @@ export const GET = route(
 /** Makes a backup now (admin). */
 export const POST = route(
   async () => NextResponse.json(await runConfiguredBackup(), { status: 201 }),
-  { admin: true },
+  { admin: true, rateLimit: LIMITS.backup },
 );

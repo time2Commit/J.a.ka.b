@@ -14,6 +14,7 @@ export function createCollabServer(options: {
   webUrl?: string;
   allowedOrigin?: string;
   storeDebounceMs?: number;
+  maxPayloadBytes?: number;
 }) {
   const { db } = options;
   const getSession = fetchSessionFromWeb(options.webUrl ?? config.webUrl);
@@ -56,6 +57,8 @@ export function createCollabServer(options: {
     quiet: true,
     debounce: options.storeDebounceMs ?? config.storeDebounceMs,
     maxDebounce: config.storeMaxDebounceMs,
+    // Oversized messages close the connection (code 1009) before they are parsed.
+    websocketOptions: { maxPayload: options.maxPayloadBytes ?? config.maxPayloadBytes },
 
     async onAuthenticate({ documentName, requestHeaders }) {
       // The returned object becomes the connection context.

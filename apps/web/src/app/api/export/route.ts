@@ -1,6 +1,7 @@
 import { Readable } from "node:stream";
 import { prisma, route } from "@/server/http";
 import { exportBoard } from "@/server/export";
+import { LIMITS } from "@/server/rate-limit";
 import { getStorage } from "@/server/storage";
 import { zipResponse } from "@/server/zip-response";
 
@@ -14,5 +15,5 @@ export const GET = route(
     });
     return zipResponse(Readable.toWeb(stream) as unknown as ReadableStream, fileName);
   },
-  { admin: true },
+  { admin: true, rateLimit: LIMITS.export },
 );

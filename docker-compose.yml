@@ -1,0 +1,112 @@
+# Production stack: PostgreSQL, migrations, web app, real-time notes server and Caddy (TLS).
+# Copy .env.example to .env, fill in the values marked "production", then:
+#   docker compose up -d --build
+# Development uses docker-compose.dev.yml instead (PostgreSQL only).
+name: jakab
+
+x-database-url: &database-url
+  DATABASE_URL: postgresql://jakab:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/jakab
+
+x-hardening: &hardening
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: jakab
+      POSTGRES_USER: jakab
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jakab -d jakab"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Applies the migrations, then exits. The app starts only after it succeeded.
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: migrate
+    restart: "no"
+    environment:
+      <<: *database-url
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    <<: *hardening
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: web
+    environment:
+      <<: *database-url
+      AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET in .env (openssl rand -base64 32)}
+      APP_URL: ${APP_URL:?Set APP_URL in .env (the public address, e.g. https://jakab.example.com)}
+      COLLAB_PUBLIC_URL: ${COLLAB_PUBLIC_URL:?Set COLLAB_PUBLIC_URL in .env (e.g. wss://jakab.example.com/collab)}
+      COLLAB_INTERNAL_URL: http://collab:1234
+      TZ: ${TZ:-Europe/Rome}
+      ALLOW_SIGNUP: ${ALLOW_SIGNUP:-false}
+      UPLOAD_MAX_MB: ${UPLOAD_MAX_MB:-50}
+      IMPORT_MAX_MB: ${IMPORT_MAX_MB:-4096}
+      ORPHAN_FILE_DAYS: ${ORPHAN_FILE_DAYS:-14}
+      BACKUP_CRON: ${BACKUP_CRON-0 3 * * *}
+      BACKUP_KEEP: ${BACKUP_KEEP:-7}
+    volumes:
+      - uploads:/data/uploads
+      - backups:/data/backups
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  collab:
+    <<: *hardening
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: collab
+    environment:
+      <<: *database-url
+      APP_URL: ${APP_URL:?Set APP_URL in .env}
+      WEB_INTERNAL_URL: http://web:3000
+      COLLAB_MAX_PAYLOAD_MB: ${COLLAB_MAX_PAYLOAD_MB:-32}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+      UPLOAD_MAX_MB: ${UPLOAD_MAX_MB:-50}
+      IMPORT_MAX_MB: ${IMPORT_MAX_MB:-4096}
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - collab
+
+volumes:
+  pgdata:
+  uploads:
+  backups:
+  caddy_data:
+  caddy_config:

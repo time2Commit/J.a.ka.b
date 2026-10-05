@@ -96,3 +96,31 @@ jobs:
             apps/web/playwright-report/
             apps/web/test-results/
           retention-days: 7
+
+  # Builds the three images and starts the whole production stack (Caddy, web, collab,
+  # migrations, PostgreSQL), then checks it with docker/smoke-test.sh.
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - name: Write a throwaway .env
+        run: |
+          {
+            echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)"
+            echo "AUTH_SECRET=$(openssl rand -base64 32)"
+            echo "APP_URL=http://localhost:8080"
+            echo "COLLAB_PUBLIC_URL=ws://localhost:8080/collab"
+            echo "SITE_ADDRESS=:80"
+            echo "HTTP_PORT=8080"
+            echo "HTTPS_PORT=8443"
+          } > .env
+      - run: docker compose config --quiet
+      - run: docker compose build
+      - run: docker compose up -d
+      - run: docker/smoke-test.sh http://localhost:8080
+      - name: Container logs
+        if: failure()
+        run: docker compose logs --no-color --tail=200
+      - run: docker compose down -v
+        if: always()

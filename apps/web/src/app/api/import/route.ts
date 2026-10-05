@@ -5,6 +5,7 @@ import { badRequest, HttpError } from "@/server/errors";
 import { prisma, route } from "@/server/http";
 import { parseArchive, previewArchive } from "@/server/import";
 import { importMaxBytes, removeImport, saveImportUpload } from "@/server/import-store";
+import { LIMITS } from "@/server/rate-limit";
 import { openZipFile } from "@/server/zip-reader";
 
 /**
@@ -35,5 +36,5 @@ export const POST = route(
       throw error;
     }
   },
-  { admin: true },
+  { admin: true, rateLimit: LIMITS.import },
 );

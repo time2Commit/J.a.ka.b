@@ -2,7 +2,8 @@ import { prisma } from "@jakab/db";
 import { NextResponse } from "next/server";
 import { ZodError, type ZodType } from "zod";
 import { getSession } from "../lib/session";
-import { HttpError } from "./errors";
+import { HttpError, TooManyRequests } from "./errors";
+import { limiterFor, type RateLimitRule } from "./rate-limit";
 
 export interface Actor {
   id: string;
@@ -11,10 +12,13 @@ export interface Actor {
 
 type Handler<P> = (req: Request, ctx: { actor: Actor; params: P }) => Promise<Response | unknown>;
 
-/** Wraps a route handler: authenticates, optionally requires admin, maps errors to JSON responses. */
+/**
+ * Wraps a route handler: authenticates, optionally requires admin and rate-limits per user, maps
+ * errors to JSON responses.
+ */
 export function route<P = Record<string, never>>(
   handler: Handler<P>,
-  options: { admin?: boolean } = {},
+  options: { admin?: boolean; rateLimit?: RateLimitRule } = {},
 ) {
   return async (req: Request, ctx: { params: Promise<P> }) => {
     try {
@@ -25,11 +29,23 @@ export function route<P = Record<string, never>>(
         role: (session.user as { role?: string }).role === "admin" ? "admin" : "member",
       };
       if (options.admin && actor.role !== "admin") throw new HttpError(403, "Forbidden");
+      if (options.rateLimit) {
+        const { allowed, retryAfterMs } = limiterFor(options.rateLimit).hit(actor.id);
+        if (!allowed) throw new TooManyRequests(Math.max(1, Math.ceil(retryAfterMs / 1000)));
+      }
       const result = await handler(req, { actor, params: await ctx.params });
       return result instanceof Response ? result : NextResponse.json(result ?? { ok: true });
     } catch (error) {
       if (error instanceof HttpError) {
-        return NextResponse.json({ error: error.message }, { status: error.status });
+        return NextResponse.json(
+          { error: error.message },
+          {
+            status: error.status,
+            ...(error instanceof TooManyRequests && {
+              headers: { "Retry-After": String(error.retryAfterSeconds) },
+            }),
+          },
+        );
       }
       if (error instanceof ZodError) {
         return NextResponse.json({ error: "Invalid input", issues: error.issues }, { status: 400 });

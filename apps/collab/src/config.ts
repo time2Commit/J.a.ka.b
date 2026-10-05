@@ -11,4 +11,6 @@ export const config = {
   /** Delay before changes are written to Postgres, and the longest a change may wait. */
   storeDebounceMs: 2000,
   storeMaxDebounceMs: 10_000,
+  /** Largest WebSocket message accepted. A note is text; this only stops abuse. */
+  maxPayloadBytes: Number(process.env.COLLAB_MAX_PAYLOAD_MB ?? 32) * 1024 * 1024,
 };
