@@ -1,0 +1,40 @@
+# Reverse proxy and TLS in front of the app (see docker-compose.yml).
+#   SITE_ADDRESS  a domain name gets a certificate automatically (Let's Encrypt);
+#                 ":80" serves plain HTTP (behind another proxy, or for a local trial)
+#   UPLOAD_MAX_MB / IMPORT_MAX_MB  request size limits, the same variables the app reads
+
+{$SITE_ADDRESS:localhost} {
+	encode zstd gzip
+
+	header -Server
+
+	# Real-time notes. Only WebSocket upgrades reach the collab server: its HTTP API (saving
+	# and restoring versions) is meant for the web app alone and stays unreachable from outside.
+	@collab_ws {
+		path /collab /collab/*
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+	handle @collab_ws {
+		uri strip_prefix /collab
+		reverse_proxy collab:1234
+	}
+	handle /collab* {
+		respond "Not found" 404
+	}
+
+	# Backup archives can be large; everything else is capped at the upload limit.
+	handle /api/import {
+		request_body {
+			max_size {$IMPORT_MAX_MB:4096}MB
+		}
+		reverse_proxy web:3000
+	}
+
+	handle {
+		request_body {
+			max_size {$UPLOAD_MAX_MB:50}MB
+		}
+		reverse_proxy web:3000
+	}
+}

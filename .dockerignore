@@ -1,0 +1,14 @@
+# Never ship local state, secrets or build output into an image.
+.git
+.github
+.husky/_
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/test-results
+**/playwright-report
+**/data
+**/.env
+**/.env.*
+!**/.env.example

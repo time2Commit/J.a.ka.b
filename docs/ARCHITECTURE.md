@@ -186,16 +186,17 @@ projects/<slug>/
 
 ## 6. Docker deployment
 
-`docker-compose.yml`:
+`docker-compose.yml` (the images come from one multi-stage `docker/Dockerfile`, targets `web`, `collab` and `migrate`):
 
-- `postgres:16-alpine` (volume `pgdata`, healthcheck)
-- `web` (multi-stage image, Next.js `output: "standalone"`, runs `prisma migrate deploy` on start)
-- `collab` (Hocuspocus, Node 22 alpine)
-- `caddy` (ports 80/443, `Caddyfile` proxying `/collab` as WebSocket)
-- `backup` (optional, compose profile `backup`: cron export + pg_dump)
-- Volumes: `pgdata`, `uploads` (shared web/collab), `backups`, `caddy_data`
-- `.env.example`: `DATABASE_URL`, `AUTH_SECRET`, `APP_URL`, `TZ`, `UPLOAD_MAX_MB`, `BACKUP_CRON`
+- `postgres:16-alpine` (volume `pgdata`, healthcheck, `pg_trgm` created at first start).
+- `migrate`: one-shot job running `prisma migrate deploy` (the schema engine is fetched at image build, so running it needs no internet); `web` and `collab` wait for it with `service_completed_successfully`.
+- `web`: Next.js `output: "standalone"` on Alpine with the PostgreSQL client tools (for `pg_dump`); volumes `uploads` and `backups`; runs as `node`, no capabilities, `no-new-privileges`. The nightly backup runs inside it (5.6), so there is no separate backup service.
+- `collab`: Hocuspocus on Node 22 Alpine (TypeScript sources of the workspace packages run with `tsx`), same hardening. It does not need the upload volume.
+- `caddy`: ports 80/443, automatic HTTPS for a domain name. Only WebSocket upgrades on `/collab` reach the collab server (its HTTP API for versions stays internal); request bodies are capped (`UPLOAD_MAX_MB`, and `IMPORT_MAX_MB` for `/api/import`).
+- Volumes: `pgdata`, `uploads`, `backups`, `caddy_data`, `caddy_config`.
+- Configuration: `.env` (template `.env.production.example`; compose refuses to start without `POSTGRES_PASSWORD`, `AUTH_SECRET`, `APP_URL`, `COLLAB_PUBLIC_URL`). The images contain no secrets and read everything at start, so one image works behind any domain.
 - `docker-compose.dev.yml` for development (Postgres only; apps started with `pnpm dev`).
+- **Verification**: the CI job `docker` builds the images, starts the stack and runs `docker/smoke-test.sh` (migrations, security headers, WebSocket upgrade through Caddy, internal API not exposed, first sign-up, a backup with its database dump).
 
 ---
 
@@ -208,7 +209,7 @@ projects/<slug>/
 5. **Versioning** – snapshots, history, preview/diff, non-destructive restore, retention.
 6. **Templates and cloning**.
 7. **Export, import and backup** – MD serializer, structured archive format, per-project and whole-board export, import with preview (move a board to a new instance), scheduled backups with rotation.
-8. **Production** – Dockerfiles, Caddy, full compose, hardening (upload limits, rate limiting, CSP), README.
+8. **Production** – hardening (CSP, rate limiting, secret and payload checks), Dockerfiles, Caddy, full compose, CI smoke test, README.
 
 Each milestone ends with tests and a working demo, so the app is usable from milestone 2 onwards.
 
