@@ -18,6 +18,7 @@ let statusId: string;
 let projectId: string;
 const providers: HocuspocusProvider[] = [];
 const sockets: HocuspocusProviderWebsocket[] = [];
+const leftovers: string[] = [];
 
 /** Stand-in for the web app: "cookie: s=<name>" is a valid session for that user. */
 function startFakeWeb() {
@@ -100,7 +101,7 @@ afterAll(async () => {
   sockets.forEach((s) => s.destroy());
   await collab.destroy();
   web.close();
-  await prisma.project.deleteMany({ where: { id: projectId } });
+  await prisma.project.deleteMany({ where: { id: { in: [projectId, ...leftovers] } } });
   await prisma.status.deleteMany({ where: { id: statusId } });
   await prisma.$disconnect();
 });
@@ -155,6 +156,30 @@ describe("collab server", () => {
     const late = connect({ cookie: "s=marta" });
     expect(await late.outcome).toBe("synced");
     expect(ydocToJson(late.doc).content?.[0]?.content?.[0]?.text).toBe("Hello from Anna");
+  });
+
+  it("builds the live document from the stored JSON when a note was created from content", async () => {
+    const name = `Collab imported ${run}`;
+    const imported = await prisma.project.create({
+      data: { name, nameNormalized: name.toLowerCase(), statusId, createdById: "u" },
+    });
+    try {
+      await prisma.noteDocument.create({
+        data: {
+          projectId: imported.id,
+          json: {
+            type: "doc",
+            content: [{ type: "paragraph", content: [{ type: "text", text: "From an archive" }] }],
+          },
+        },
+      });
+      const reader = connect({ cookie: "s=anna", name: noteDocumentName(imported.id) });
+      expect(await reader.outcome).toBe("synced");
+      expect(JSON.stringify(ydocToJson(reader.doc))).toContain("From an archive");
+    } finally {
+      // Removed after the server is gone: it still holds the document and would write it back.
+      leftovers.push(imported.id);
+    }
   });
 
   describe("versions", () => {

@@ -157,7 +157,44 @@
     "member": "Membro",
     "newUser": "Nuovo utente",
     "userCreated": "Utente creato",
-    "emailInUse": "Email già in uso"
+    "emailInUse": "Email già in uso",
+    "backup": {
+      "title": "Backup ed export",
+      "help": "Scarica l'intera board (impostazioni, stati, etichette, persone, ogni progetto con nota, file e card) in un unico archivio importabile in un'altra istanza. Le note sono incluse anche in Markdown.",
+      "includeArchived": "Includi i progetti archiviati",
+      "includeVersions": "Includi la cronologia delle versioni",
+      "download": "Scarica archivio della board"
+    },
+    "import": {
+      "title": "Importa un backup",
+      "help": "Ripristina un progetto o un'intera board da un archivio esportato da J.a.ka.b, ad esempio per passare a un nuovo server. Prima di modificare qualsiasi cosa vedrai cosa contiene.",
+      "choose": "Scegli archivio…",
+      "reading": "Lettura dell'archivio…",
+      "invalid": "Questo file non è un archivio J.a.ka.b valido",
+      "tooLarge": "L'archivio è troppo grande",
+      "summaryBoard": "Archivio di una board esportato il {date}.",
+      "summaryProject": "Archivio di un progetto esportato il {date}.",
+      "projects": "Progetti da importare",
+      "exists": "Già presente",
+      "counts": "{cards, plural, =0 {nessuna card} one {# card} other {# card}}, {files, plural, =0 {nessun file} one {# file} other {# file}}",
+      "withVersions": "con cronologia versioni",
+      "willCreate": "Verranno creati: {items}.",
+      "conflict": "Progetti il cui nome esiste già",
+      "conflicts": {
+        "skip": "Salta",
+        "rename": "Importali con un nuovo nome",
+        "replace": "Sostituisci il progetto esistente"
+      },
+      "replaceWarning": "Il progetto esistente, la sua nota e i suoi file vengono eliminati e sostituiti da quelli dell'archivio.",
+      "missingPeople": "{count, plural, one {# persona non è} other {# persone non sono}} ancora presenti in questa istanza.",
+      "createUsers": "Crea i loro account (con password temporanea)",
+      "applyWorkspace": "Applica anche le impostazioni del workspace (fuso orario, orari di lavoro)",
+      "import": "{count, plural, one {Importa # progetto} other {Importa # progetti}}",
+      "importing": "Importazione…",
+      "result": "Importati {imported}, saltati {skipped}, falliti {failed}.",
+      "tempPasswords": "Password temporanee",
+      "tempPasswordsHelp": "Mostrate solo adesso. Consegna a ciascuno la sua password: potrà cambiarla dopo l'accesso."
+    }
   },
   "Projects": {
     "title": "Progetti",
@@ -165,7 +202,12 @@
     "cards": "{count, plural, =0 {Nessuna card} one {# card} other {# card}}",
     "open": "Apri la nota",
     "back": "Torna al calendario",
-    "notFound": "Progetto non trovato"
+    "notFound": "Progetto non trovato",
+    "export": {
+      "button": "Esporta",
+      "withoutVersions": "Nota, file e card",
+      "withVersions": "Con la cronologia delle versioni"
+    }
   },
   "Note": {
     "placeholder": "Scrivi la nota del progetto…",

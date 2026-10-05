@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Download, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { api, ApiError } from "@/lib/api";
 import type { Meta } from "@/lib/types";
+import { ImportSection } from "./import-section";
 
 const PALETTE = [
   "#64748b",
@@ -428,6 +429,47 @@ function UsersSection({ meta }: { meta: Meta }) {
   );
 }
 
+function BackupSection() {
+  const t = useTranslations("Settings.backup");
+  const [versions, setVersions] = useState(false);
+  const [archived, setArchived] = useState(false);
+  const href = `/api/export?${new URLSearchParams({
+    ...(versions && { versions: "1" }),
+    ...(archived && { archived: "1" }),
+  })}`;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{t("title")}</CardTitle>
+        <p className="text-sm text-muted-foreground">{t("help")}</p>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={archived}
+            onChange={(e) => setArchived(e.target.checked)}
+          />
+          {t("includeArchived")}
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={versions}
+            onChange={(e) => setVersions(e.target.checked)}
+          />
+          {t("includeVersions")}
+        </label>
+        <Button asChild className="w-fit">
+          <a href={href} download>
+            <Download /> {t("download")}
+          </a>
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function SettingsPage() {
   const t = useTranslations("Settings");
   const common = useTranslations("Common");
@@ -440,6 +482,8 @@ export function SettingsPage() {
       <StatusesSection meta={meta.data} />
       <LabelsSection meta={meta.data} />
       <UsersSection meta={meta.data} />
+      <BackupSection />
+      <ImportSection />
     </div>
   );
 }
