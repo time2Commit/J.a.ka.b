@@ -7,3 +7,4 @@ export { FileEmbed } from "./file-embed";
 export { Mention } from "@tiptap/extension-mention";
 export { TEXT_COLORS } from "./colors";
 export { canonicalJson, diffBlocks, type BlockChange, type BlockDiff } from "./diff";
+export { jsonToMarkdown, type MarkdownOptions } from "./markdown";

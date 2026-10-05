@@ -157,7 +157,14 @@
     "member": "Membro",
     "newUser": "Nuovo utente",
     "userCreated": "Utente creato",
-    "emailInUse": "Email già in uso"
+    "emailInUse": "Email già in uso",
+    "backup": {
+      "title": "Backup ed export",
+      "help": "Scarica l'intera board (impostazioni, stati, etichette, persone, ogni progetto con nota, file e card) in un unico archivio importabile in un'altra istanza. Le note sono incluse anche in Markdown.",
+      "includeArchived": "Includi i progetti archiviati",
+      "includeVersions": "Includi la cronologia delle versioni",
+      "download": "Scarica archivio della board"
+    }
   },
   "Projects": {
     "title": "Progetti",
@@ -165,7 +172,12 @@
     "cards": "{count, plural, =0 {Nessuna card} one {# card} other {# card}}",
     "open": "Apri la nota",
     "back": "Torna al calendario",
-    "notFound": "Progetto non trovato"
+    "notFound": "Progetto non trovato",
+    "export": {
+      "button": "Esporta",
+      "withoutVersions": "Nota, file e card",
+      "withVersions": "Con la cronologia delle versioni"
+    }
   },
   "Note": {
     "placeholder": "Scrivi la nota del progetto…",

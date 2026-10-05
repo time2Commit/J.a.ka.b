@@ -157,7 +157,14 @@
     "member": "Member",
     "newUser": "New user",
     "userCreated": "User created",
-    "emailInUse": "Email already in use"
+    "emailInUse": "Email already in use",
+    "backup": {
+      "title": "Backup and export",
+      "help": "Download the whole board (settings, statuses, labels, people, every project with its note, files and cards) as one archive you can import into another instance. Notes are included as Markdown too.",
+      "includeArchived": "Include archived projects",
+      "includeVersions": "Include version history",
+      "download": "Download board archive"
+    }
   },
   "Projects": {
     "title": "Projects",
@@ -165,7 +172,12 @@
     "cards": "{count, plural, =0 {No cards} one {# card} other {# cards}}",
     "open": "Open note",
     "back": "Back to calendar",
-    "notFound": "Project not found"
+    "notFound": "Project not found",
+    "export": {
+      "button": "Export",
+      "withoutVersions": "Note, files and cards",
+      "withVersions": "Including version history"
+    }
   },
   "Note": {
     "placeholder": "Write the project note…",
