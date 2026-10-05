@@ -11,7 +11,7 @@ import {
 } from "@jakab/shared";
 import type { Readable } from "node:stream";
 import yazl from "yazl";
-import { notFound } from "./errors";
+import { HttpError, notFound } from "./errors";
 import { sanitizeFileName } from "./attachments";
 import type { StorageDriver } from "./storage";
 
@@ -263,7 +263,17 @@ export async function exportBoard(
     }),
   ]);
   const emailById = new Map(users.map((u) => [u.id, u.email]));
-  const slugs = uniqueSlugs(projects.map((p) => p.name));
+
+  // A project deleted while the export runs is simply left out.
+  const bundles: ProjectBundle[] = [];
+  for (const project of projects) {
+    try {
+      bundles.push(await loadBundle(db, storage, project.id, emailById, options.includeVersions));
+    } catch (error) {
+      if (!(error instanceof HttpError && error.status === 404)) throw error;
+    }
+  }
+  const slugs = uniqueSlugs(bundles.map((b) => b.data.name));
 
   const board: ArchiveBoard = {
     workspace: {
@@ -293,16 +303,13 @@ export async function exportBoard(
     version: ARCHIVE_VERSION,
     kind: "board",
     exportedAt: exportedAt.toISOString(),
-    projects: projects.map((p, i) => ({ slug: slugs[i]!, name: p.name })),
+    projects: bundles.map((b, i) => ({ slug: slugs[i]!, name: b.data.name })),
   };
 
   const zip = new yazl.ZipFile();
   zip.addBuffer(json(manifest), "manifest.json");
   zip.addBuffer(json(board), "board.json");
-  for (const [i, project] of projects.entries()) {
-    const bundle = await loadBundle(db, storage, project.id, emailById, options.includeVersions);
-    addProject(zip, storage, slugs[i]!, bundle);
-  }
+  for (const [i, bundle] of bundles.entries()) addProject(zip, storage, slugs[i]!, bundle);
   return {
     stream: finish(zip),
     fileName: `jakab-board-${exportedAt.toISOString().slice(0, 10)}.zip`,
