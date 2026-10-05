@@ -15,6 +15,11 @@ import { z } from "zod";
 export const ARCHIVE_FORMAT = "jakab-backup";
 export const ARCHIVE_VERSION = 1;
 
+/** Folder name of a project inside the archive; never a path. */
+const slugSchema = z
+  .string()
+  .regex(/^[a-z0-9][a-z0-9-]*$/)
+  .max(80);
 const color = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 const isoDate = z.string().datetime({ offset: true });
 /** A document in the editor's JSON shape; the editor package validates it when it is loaded. */
@@ -33,7 +38,7 @@ export const archiveManifestSchema = z.object({
   version: z.number().int().min(1).max(ARCHIVE_VERSION),
   kind: z.enum(["project", "board"]),
   exportedAt: isoDate,
-  projects: z.array(z.object({ slug: z.string().min(1), name: z.string().min(1) })),
+  projects: z.array(z.object({ slug: slugSchema, name: z.string().min(1) })),
 });
 
 export const archiveBoardSchema = z.object({
@@ -110,3 +115,12 @@ export type ArchiveManifest = z.infer<typeof archiveManifestSchema>;
 export type ArchiveBoard = z.infer<typeof archiveBoardSchema>;
 export type ArchiveProject = z.infer<typeof archiveProjectSchema>;
 export type ArchiveVersions = z.infer<typeof archiveVersionsSchema>;
+
+/** Choices made in the import preview. */
+export const importOptionsSchema = z.object({
+  conflict: z.enum(["skip", "rename", "replace"]).default("skip"),
+  createMissingUsers: z.boolean().default(false),
+  applyWorkspace: z.boolean().default(false),
+  slugs: z.array(slugSchema).optional(),
+});
+export type ImportOptionsInput = z.infer<typeof importOptionsSchema>;

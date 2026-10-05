@@ -55,7 +55,13 @@ function wrap(zip: yauzl.ZipFile): Promise<ZipArchive> {
   });
 }
 
-const options = { lazyEntries: true, strictFileNames: true, validateEntrySizes: true } as const;
+// autoClose is off: entries are read after the directory listing, and callers close the archive.
+const options = {
+  lazyEntries: true,
+  strictFileNames: true,
+  validateEntrySizes: true,
+  autoClose: false,
+} as const;
 
 export function openZipFile(path: string): Promise<ZipArchive> {
   return new Promise((resolve, reject) => {

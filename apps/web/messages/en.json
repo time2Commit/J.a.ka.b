@@ -164,6 +164,36 @@
       "includeArchived": "Include archived projects",
       "includeVersions": "Include version history",
       "download": "Download board archive"
+    },
+    "import": {
+      "title": "Import a backup",
+      "help": "Restore a project or a whole board from an archive exported by J.a.ka.b, for example to move to a new server. You will see what it contains before anything is changed.",
+      "choose": "Choose archive…",
+      "reading": "Reading archive…",
+      "invalid": "This file is not a valid J.a.ka.b archive",
+      "tooLarge": "The archive is too large",
+      "summaryBoard": "Board archive exported on {date}.",
+      "summaryProject": "Project archive exported on {date}.",
+      "projects": "Projects to import",
+      "exists": "Already exists",
+      "counts": "{cards, plural, =0 {no cards} one {# card} other {# cards}}, {files, plural, =0 {no files} one {# file} other {# files}}",
+      "withVersions": "with version history",
+      "willCreate": "Will be created: {items}.",
+      "conflict": "Projects whose name already exists",
+      "conflicts": {
+        "skip": "Skip them",
+        "rename": "Import them under a new name",
+        "replace": "Replace the existing project"
+      },
+      "replaceWarning": "The existing project, its note and files are deleted and replaced by the archived ones.",
+      "missingPeople": "{count, plural, one {# person is} other {# people are}} not on this instance yet.",
+      "createUsers": "Create accounts for them (with a temporary password)",
+      "applyWorkspace": "Also take over the workspace settings (time zone, work hours)",
+      "import": "{count, plural, one {Import # project} other {Import # projects}}",
+      "importing": "Importing…",
+      "result": "Imported {imported}, skipped {skipped}, failed {failed}.",
+      "tempPasswords": "Temporary passwords",
+      "tempPasswordsHelp": "Shown only now. Give each person their password; they can change it after signing in."
     }
   },
   "Projects": {

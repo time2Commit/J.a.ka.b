@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { api, ApiError } from "@/lib/api";
 import type { Meta } from "@/lib/types";
+import { ImportSection } from "./import-section";
 
 const PALETTE = [
   "#64748b",
@@ -482,6 +483,7 @@ export function SettingsPage() {
       <LabelsSection meta={meta.data} />
       <UsersSection meta={meta.data} />
       <BackupSection />
+      <ImportSection />
     </div>
   );
 }

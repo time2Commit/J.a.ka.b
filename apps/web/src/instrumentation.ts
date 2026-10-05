@@ -1,9 +1,10 @@
 /** Starts the daily maintenance job when the server boots (Node runtime only). */
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
-  const { runOrphanCleanup } = await import("./server/maintenance");
+  const { runImportCleanup, runOrphanCleanup } = await import("./server/maintenance");
   const run = () =>
-    runOrphanCleanup()
+    Promise.all([runOrphanCleanup(), runImportCleanup()])
+      .then(([orphans]) => orphans)
       .then(
         ({ removed }) =>
           removed > 0 && console.log(`cleanup: removed ${removed} unreferenced file(s)`),

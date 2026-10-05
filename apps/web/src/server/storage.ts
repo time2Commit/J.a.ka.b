@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { mkdir, rename, rm, stat } from "node:fs/promises";
+import { mkdir, rename, rm, rmdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { Transform, type Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -59,17 +59,22 @@ export class FileSystemStorage implements StorageDriver {
   }
 
   async remove(key: string) {
-    await rm(this.resolve(key), { force: true });
+    const file = this.resolve(key);
+    await rm(file, { force: true });
+    // Drop the project folder once its last file is gone (rmdir refuses a non-empty folder).
+    if (key.includes("/")) await rmdir(path.dirname(file)).catch(() => undefined);
   }
 }
 
 let storage: StorageDriver | undefined;
 
-/** Shared driver configured through `UPLOAD_DIR` (a Docker volume in production). */
+/** Root of the upload volume (`UPLOAD_DIR`; a Docker volume in production). */
+export const uploadRoot = () =>
+  path.resolve(/* turbopackIgnore: true */ process.env.UPLOAD_DIR ?? "./data/uploads");
+
+/** Shared driver configured through `UPLOAD_DIR`. */
 export function getStorage(): StorageDriver {
-  return (storage ??= new FileSystemStorage(
-    path.resolve(/* turbopackIgnore: true */ process.env.UPLOAD_DIR ?? "./data/uploads"),
-  ));
+  return (storage ??= new FileSystemStorage(uploadRoot()));
 }
 
 export const maxUploadBytes = () => Number(process.env.UPLOAD_MAX_MB ?? 50) * 1024 * 1024;

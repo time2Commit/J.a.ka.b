@@ -1,14 +1,19 @@
 import type { PrismaClient } from "@jakab/db";
-import { ydocToJson } from "@jakab/editor";
+import { jsonToYdoc, ydocToJson } from "@jakab/editor";
 import * as Y from "yjs";
 
-/** Persisted Yjs state of a project note, or null when the note was never edited. */
+/** Persisted Yjs state of a project note, or null when the note was never edited or filled. */
 export async function loadNote(db: PrismaClient, projectId: string): Promise<Uint8Array | null> {
   const note = await db.noteDocument.findUnique({
     where: { projectId },
-    select: { yState: true },
+    select: { yState: true, json: true },
   });
-  return note?.yState ? new Uint8Array(note.yState) : null;
+  if (note?.yState) return new Uint8Array(note.yState);
+  // A note created from content (import, template, clone) has JSON only: build the Yjs state now.
+  if (note?.json) {
+    return Y.encodeStateAsUpdate(jsonToYdoc(note.json as Parameters<typeof jsonToYdoc>[0]));
+  }
+  return null;
 }
 
 /** Writes the Yjs state plus a readable JSON copy (used by search and export). */

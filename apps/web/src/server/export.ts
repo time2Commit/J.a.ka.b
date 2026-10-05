@@ -13,6 +13,7 @@ import type { Readable } from "node:stream";
 import yazl from "yazl";
 import { HttpError, notFound } from "./errors";
 import { sanitizeFileName } from "./attachments";
+import { mapNoteIds } from "./note-json";
 import type { StorageDriver } from "./storage";
 
 export interface ExportOptions {
@@ -51,6 +52,12 @@ interface ProjectBundle {
   versions: ArchiveVersions | null;
   /** Archive path (inside the project folder) → storage key of the bytes. */
   files: { file: string; storageKey: string; size: number }[];
+}
+
+/** Mentions carry the person's e-mail instead of a database id, so another instance can match them. */
+function portableNote(json: unknown, emailById: Map<string, string>): ArchiveProject["note"] {
+  if (!json) return null;
+  return mapNoteIds(json, { mention: (id) => emailById.get(id) ?? id }) as ArchiveProject["note"];
 }
 
 async function loadBundle(
@@ -126,7 +133,7 @@ async function loadBundle(
       labels: c.labels.map((l) => l.label.name),
     })),
     attachments,
-    note: (project.note?.json as ArchiveProject["note"]) ?? null,
+    note: portableNote(project.note?.json, emailById),
   };
 
   let versions: ArchiveVersions | null = null;
@@ -142,7 +149,7 @@ async function loadBundle(
         label: v.label,
         createdAt: v.createdAt.toISOString(),
         authors: emails(v.authors),
-        json: v.json as ArchiveVersions["versions"][number]["json"],
+        json: portableNote(v.json, emailById) as ArchiveVersions["versions"][number]["json"],
       })),
     };
   }
