@@ -201,6 +201,19 @@
       "tempPasswordsHelp": "Mostrate solo adesso. Consegna a ciascuno la sua password: potrà cambiarla dopo l'accesso.",
       "templates": "{count, plural, =0 {Nessun nuovo template} one {Verrà creato # template} other {Verranno creati # template}}{skipped, plural, =0 {} other { ({skipped} esistono già e restano come sono)}}.",
       "templatesResult": "{count, plural, one {Creato # template.} other {Creati # template.}}"
+    },
+    "backupFiles": {
+      "title": "Backup automatici",
+      "scheduled": "Eseguiti con la pianificazione “{cron}”. Vengono conservati gli ultimi {keep} di ogni tipo.",
+      "notScheduled": "Nessuna pianificazione (BACKUP_CRON): non parte nulla da solo. Puoi comunque fare un backup adesso.",
+      "now": "Esegui backup adesso",
+      "running": "Backup in corso…",
+      "done": "Backup completato",
+      "noDump": "Archivio salvato, ma non è stato possibile fare il dump del database",
+      "empty": "Ancora nessun backup.",
+      "list": "Backup",
+      "archive": "Archivio della board (importabile)",
+      "database": "Dump del database"
     }
   },
   "Projects": {

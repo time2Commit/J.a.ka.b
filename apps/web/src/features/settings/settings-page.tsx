@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { api, ApiError } from "@/lib/api";
 import type { Meta } from "@/lib/types";
+import { BackupFilesSection } from "./backup-files-section";
 import { ImportSection } from "./import-section";
 
 const PALETTE = [
@@ -482,6 +483,7 @@ export function SettingsPage() {
       <StatusesSection meta={meta.data} />
       <LabelsSection meta={meta.data} />
       <UsersSection meta={meta.data} />
+      <BackupFilesSection />
       <BackupSection />
       <ImportSection />
     </div>

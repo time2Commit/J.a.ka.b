@@ -2,6 +2,13 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
   const { runImportCleanup, runOrphanCleanup } = await import("./server/maintenance");
+  const { startBackupSchedule } = await import("./server/backup-schedule");
+  try {
+    startBackupSchedule();
+  } catch (error) {
+    // A bad BACKUP_CRON must not stop the app from starting.
+    console.error("backup schedule not started", error);
+  }
   const run = () =>
     Promise.all([runOrphanCleanup(), runImportCleanup()])
       .then(([orphans]) => orphans)
