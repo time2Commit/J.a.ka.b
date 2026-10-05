@@ -26,21 +26,28 @@ export function createCollabServer(options: {
     pendingAuthors.delete(documentName);
     return authors;
   };
-  const snapshot = (
+  const snapshot = async (
     documentName: string,
     document: Y.Doc,
     userId: string | null,
     force: boolean,
   ) => {
     const projectId = parseNoteDocumentName(documentName);
-    if (!projectId) return Promise.resolve(false);
-    const authors = [...(pendingAuthors.get(documentName) ?? [])];
-    return maybeAutoVersion(db, { projectId, doc: document, authors, userId, force }).then(
-      (created) => {
-        if (created) pendingAuthors.delete(documentName);
-        return created;
-      },
-    );
+    if (!projectId) return false;
+    // Take the authors before awaiting: whoever edits while the version is being written
+    // must count for the next one, not be wiped when this one is done.
+    const authors = takeAuthors(documentName);
+    let created = false;
+    try {
+      created = await maybeAutoVersion(db, { projectId, doc: document, authors, userId, force });
+    } finally {
+      if (!created) {
+        const pending = pendingAuthors.get(documentName) ?? new Set<string>();
+        for (const author of authors) pending.add(author);
+        if (pending.size > 0) pendingAuthors.set(documentName, pending);
+      }
+    }
+    return created;
   };
 
   const server = new Server<AuthContext>({
