@@ -29,6 +29,7 @@ export default defineConfig({
         // Small limit so the "too large" path can be tested with a 2 MB file.
         UPLOAD_MAX_MB: "1",
         UPLOAD_DIR: "./data/e2e-uploads",
+        BACKUP_DIR: "./data/e2e-backups",
       },
     },
     {

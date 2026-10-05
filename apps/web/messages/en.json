@@ -201,6 +201,19 @@
       "tempPasswordsHelp": "Shown only now. Give each person their password; they can change it after signing in.",
       "templates": "{count, plural, =0 {No new templates} one {# template will be created} other {# templates will be created}}{skipped, plural, =0 {} other { ({skipped} already exist and stay as they are)}}.",
       "templatesResult": "{count, plural, one {# template created.} other {# templates created.}}"
+    },
+    "backupFiles": {
+      "title": "Automatic backups",
+      "scheduled": "Made on the schedule “{cron}”. The newest {keep} of each kind are kept.",
+      "notScheduled": "No schedule is set (BACKUP_CRON), so nothing runs by itself. You can still back up now.",
+      "now": "Back up now",
+      "running": "Backing up…",
+      "done": "Backup completed",
+      "noDump": "Archive saved, but the database dump could not be made",
+      "empty": "No backups yet.",
+      "list": "Backups",
+      "archive": "Board archive (importable)",
+      "database": "Database dump"
     }
   },
   "Projects": {

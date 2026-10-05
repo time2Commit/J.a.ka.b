@@ -166,7 +166,9 @@ projects/<slug>/
 - The imported note has no Yjs state: the collab server builds it from the JSON the first time the note is opened.
 - The Markdown is for people and portability; the **JSON is the lossless source** used by import (round-trips the note exactly, including authorship-free structure).
 - Markdown serializer shared in `packages/editor` (same schema as web and collab).
-- Optional scheduled backup service in compose (nightly board export + `pg_dump`) to a `/backups` volume with rotation.
+- **Automatic backups** run inside the web process (no extra service), on the cron expression `BACKUP_CRON` (in `TZ`; empty = off). Each run writes to `BACKUP_DIR` (a volume in production) two files named by UTC time: `jakab-board-YYYYMMDD-HHMMSS.zip` (the whole-board archive above, with version history and archived projects: importable on any instance) and `jakab-db-YYYYMMDD-HHMMSS.dump` (`pg_dump --format=custom`), then keeps the newest `BACKUP_KEEP` of each kind. Files are written under a temporary name and renamed, a run still in progress is never doubled, and if `pg_dump` is missing or fails the archive is still kept and the problem is reported. Admins see, download and trigger backups from the settings (`/api/admin/backups`; only names the job creates are served).
+- **Restoring**: to bring a board back on a fresh instance, import the archive (settings → "Import a backup"); to restore the whole database as it was, create an empty database and run `pg_restore --no-owner --dbname <url> jakab-db-….dump`, then put back the upload volume (the dump has no files; the archive does). The archive is the portable copy, the dump is the exact one.
+- The Docker image (milestone 8) must include the PostgreSQL client tools (`pg_dump`).
 
 ### 5.7 Authentication and permissions
 
@@ -198,7 +200,7 @@ projects/<slug>/
 4. **Collaborative notes** – Hocuspocus service, Tiptap editor, cursors/presence, block attribution, `fileEmbed` + upload.
 5. **Versioning** – snapshots, history, preview/diff, non-destructive restore, retention.
 6. **Templates and cloning**.
-7. **Export, import and backup** – MD serializer, structured archive format, per-project and whole-board export, import with preview (move a board to a new instance), backup service.
+7. **Export, import and backup** – MD serializer, structured archive format, per-project and whole-board export, import with preview (move a board to a new instance), scheduled backups with rotation.
 8. **Production** – Dockerfiles, Caddy, full compose, hardening (upload limits, rate limiting, CSP), README.
 
 Each milestone ends with tests and a working demo, so the app is usable from milestone 2 onwards.
