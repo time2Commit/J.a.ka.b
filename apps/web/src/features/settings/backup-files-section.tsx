@@ -53,18 +53,21 @@ export function BackupFilesSection() {
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{t("title")}</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          {backups.data?.cron
-            ? t("scheduled", { cron: backups.data.cron, keep: backups.data.keep })
-            : t("notScheduled")}
-        </p>
+        {/* Only once the settings are known: before that, "no schedule" would be a false claim. */}
+        {backups.data && (
+          <p className="text-sm text-muted-foreground">
+            {backups.data.cron
+              ? t("scheduled", { cron: backups.data.cron, keep: backups.data.keep })
+              : t("notScheduled")}
+          </p>
+        )}
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <Button
           type="button"
           variant="outline"
           className="w-fit"
-          disabled={run.isPending}
+          disabled={run.isPending || !backups.data}
           onClick={() => run.mutate()}
         >
           <DatabaseBackup /> {run.isPending ? t("running") : t("now")}

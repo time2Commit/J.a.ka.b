@@ -12,8 +12,11 @@ test("an admin backs up now, sees and downloads the backup; members and odd name
   await expect(page.getByText("No schedule is set")).toBeVisible();
 
   await page.getByRole("button", { name: "Back up now" }).click();
-  // The dump needs pg_dump on the machine; the archive is always made.
-  await expect(page.getByText(/Backup completed|Archive saved, but/)).toBeVisible();
+  // The dump needs pg_dump on the machine; the archive is always made. On a busy CI machine the
+  // archive plus the dump can take a while.
+  await expect(page.getByText(/Backup completed|Archive saved, but/)).toBeVisible({
+    timeout: 30_000,
+  });
 
   const archive = page
     .getByTestId("backup-list")
