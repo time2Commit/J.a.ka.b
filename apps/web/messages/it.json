@@ -394,8 +394,10 @@
     "nameTaken": "Esiste già un template con questo nome"
   },
   "Search": {
-    "label": "Trova un progetto",
-    "placeholder": "Trova un progetto…",
-    "empty": "Nessun progetto trovato"
+    "label": "Trova progetti e note",
+    "placeholder": "Trova progetti e note…",
+    "empty": "Nessun risultato",
+    "projects": "Progetti",
+    "notes": "Nelle note"
   }
 }

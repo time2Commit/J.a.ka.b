@@ -9,3 +9,4 @@ export { TEXT_COLORS } from "./colors";
 export { canonicalJson, diffBlocks, type BlockChange, type BlockDiff } from "./diff";
 export { jsonToMarkdown, type MarkdownOptions } from "./markdown";
 export { normalizeLinkUrl } from "./link";
+export { foldForSearch, jsonToPlainText } from "./plain-text";

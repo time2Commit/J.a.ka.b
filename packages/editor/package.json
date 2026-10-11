@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./files": "./src/files.ts",
-    "./markdown": "./src/markdown.ts"
+    "./markdown": "./src/markdown.ts",
+    "./plain-text": "./src/plain-text.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

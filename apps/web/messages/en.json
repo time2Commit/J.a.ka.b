@@ -394,8 +394,10 @@
     "nameTaken": "A template with this name already exists"
   },
   "Search": {
-    "label": "Find a project",
-    "placeholder": "Find a project…",
-    "empty": "No project found"
+    "label": "Find projects and notes",
+    "placeholder": "Find projects and notes…",
+    "empty": "Nothing found",
+    "projects": "Projects",
+    "notes": "In the notes"
   }
 }

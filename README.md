@@ -24,7 +24,7 @@ Just another kanban board (J.a.ka.b) is an open-source project aimed at creating
 ### Projects section
 
 - A tree of **folders and subfolders** for the projects, so even a long list stays in order. New projects start uncategorized; create folders, move projects and folders by drag and drop (or with "Move to…"), and order the tree by name or by last modification.
-- A **search box in the header**, on every page, finds a project by name and opens its note.
+- A **search box in the header**, on every page, finds a project by name (typos included) or by words written inside its note, shows an excerpt with the match highlighted, and opens the note. Capitals and accents do not matter.
 - The folder structure travels with board and project archives.
 
 ### Project notes

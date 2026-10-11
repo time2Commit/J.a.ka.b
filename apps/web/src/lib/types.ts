@@ -84,3 +84,15 @@ export interface TemplateItem {
 export interface TemplateFull extends TemplateItem {
   note: { type: "doc"; content?: unknown[] } | null;
 }
+
+/** Answer of the header search: projects by name, then projects whose note contains the words. */
+export interface SearchResults {
+  projects: ProjectSuggestion[];
+  notes: {
+    id: string;
+    name: string;
+    folderId: string | null;
+    statusId: string;
+    snippet: { before: string; match: string; after: string };
+  }[];
+}

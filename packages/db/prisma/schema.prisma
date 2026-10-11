@@ -253,6 +253,12 @@ model NoteDocument {
   json      Json?
   updatedAt DateTime @updatedAt
   updatedBy String?
+  // Plain text of `json` for searching it, filled in when a search finds it out of date
+  // (`searchIndexedAt` differs from `updatedAt`). `searchFolded` is lower case without accents
+  // and has a trigram index (see the migration).
+  searchText      String?
+  searchFolded    String?
+  searchIndexedAt DateTime?
 
   @@map("note_document")
 }

@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
-import { STORAGE_STATE, todayInRome } from "./helpers";
+import { newProject as newNoteProject, openNote, STORAGE_STATE, todayInRome } from "./helpers";
 
 // Runs after the other specs (single worker); it only needs the admin account.
 test.use({ storageState: STORAGE_STATE });
@@ -89,7 +89,7 @@ test("projects live in a tree of folders: create, move (menu and drag), search, 
     .not.toBeNull();
 
   // The header search finds a project by name and shows where it is.
-  await page.getByRole("combobox", { name: "Find a project" }).fill("tree alp");
+  await page.getByRole("combobox", { name: "Find projects and notes" }).fill("tree alp");
   const result = page.getByRole("option", { name: /Tree alpha/ });
   await expect(result).toContainText("Clients / 2026");
   await result.click();
@@ -139,4 +139,35 @@ test("the order of the tree is saved per person", async ({ page }) => {
       return meta.preferences.projectSort;
     })
     .toBe("name");
+});
+
+test("the header search also finds what is written inside a note, with an excerpt", async ({
+  page,
+  request,
+}) => {
+  const url = await newNoteProject(request, "Research notebook");
+  const editor = await openNote(page, url);
+  await editor.click();
+  await editor.pressSequentially("The Quarterly review mentions zebraxyz as the main supplier.");
+
+  // The note is stored a moment after typing: search until it shows up.
+  await expect
+    .poll(
+      async () => {
+        const res = await request.get("/api/search?q=ZEBRAXYZ");
+        const found = (await res.json()) as { notes: { name: string }[] };
+        return found.notes.map((n) => n.name);
+      },
+      { timeout: 20_000 },
+    )
+    .toContain("Research notebook");
+
+  await page.goto("/projects");
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("combobox", { name: "Find projects and notes" }).fill("zebraxyz supplier");
+  const hit = page.getByRole("option", { name: /Research notebook/ });
+  await expect(hit).toContainText("mentions");
+  await expect(hit.locator("mark")).toHaveText("zebraxyz");
+  await hit.click();
+  await expect(page).toHaveURL(new RegExp(`${url}$`));
 });
