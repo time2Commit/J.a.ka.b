@@ -29,6 +29,7 @@ model User {
   emailVerified Boolean  @default(false)
   image         String?
   avatarColor   String   @default("#6366f1")
+  calendarView  String? // preferred calendar view, see CALENDAR_VIEWS in @jakab/shared
   role          Role     @default(member)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

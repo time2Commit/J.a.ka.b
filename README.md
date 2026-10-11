@@ -96,16 +96,71 @@ pnpm --filter @jakab/web test:e2e
 
 ## Deploying with Docker
 
-You need a Linux server with Docker (Compose v2), and, for HTTPS, a domain name pointing at it with ports 80 and 443 open.
+This is the way to install J.a.ka.b on a server (or on your own computer, to try it). Everything runs in containers: you only need Docker.
+
+### 1. Requirements
+
+- A machine with **Docker Engine and Docker Compose v2** (`docker compose version` must work) and `git`. About 2 GB of RAM and 5 GB of disk are enough to start.
+- For a public installation with HTTPS: a **domain name** (or sub-domain) whose DNS record points at the machine, and ports **80 and 443** reachable from the internet. Without a domain you can still run it over plain HTTP (see [option B](#2-configure)).
+
+### 2. Configure
 
 ```bash
-git clone <this repository> jakab && cd jakab
+git clone https://github.com/time2Commit/J.a.ka.b.git jakab
+cd jakab
 cp .env.production.example .env
-# edit .env: POSTGRES_PASSWORD, AUTH_SECRET, APP_URL, COLLAB_PUBLIC_URL, SITE_ADDRESS
+```
+
+Generate two secrets and keep them: the database password and the key that signs sessions.
+
+```bash
+openssl rand -hex 24      # use it as POSTGRES_PASSWORD
+openssl rand -base64 32   # use it as AUTH_SECRET
+```
+
+Edit `.env` (it is git-ignored: never commit it) and set these five values, choosing one of the two options for the last three:
+
+| Variable            | Option A: public site with HTTPS | Option B: plain HTTP (trial on your computer, or behind your own proxy) |
+| ------------------- | -------------------------------- | ----------------------------------------------------------------------- |
+| `POSTGRES_PASSWORD` | the first secret                 | the first secret                                                        |
+| `AUTH_SECRET`       | the second secret                | the second secret                                                       |
+| `SITE_ADDRESS`      | `jakab.example.com`              | `:80`                                                                   |
+| `APP_URL`           | `https://jakab.example.com`      | `http://localhost:8080`                                                 |
+| `COLLAB_PUBLIC_URL` | `wss://jakab.example.com/collab` | `ws://localhost:8080/collab`                                            |
+
+For option B on your own computer also set `HTTP_PORT=8080` (and `HTTPS_PORT=8443`) so the stack does not need privileged ports. The other settings are optional; all of them are listed in [Configuration](#configuration).
+
+### 3. Start
+
+```bash
 docker compose up -d --build
 ```
 
-Open the site and register: the first account is the administrator. The stack is:
+The first start builds the images (a few minutes) and then starts, in order: the database, the migrations, the web app, the notes server and the proxy. Check that it is healthy:
+
+```bash
+docker compose ps         # postgres "healthy", web, collab and caddy "running", migrate "exited (0)"
+docker compose logs -f web collab    # Ctrl+C to leave
+```
+
+### 4. First sign-in
+
+Open the address you chose in `APP_URL`. With a domain, Caddy obtains the certificate by itself on the first visit (it can take a few seconds). **Register: the first account becomes the administrator.** Then create the other accounts from **Settings → Users** (open sign-up is off by default, see `ALLOW_SIGNUP`).
+
+### Day-to-day operation
+
+| Task                            | Command                                                                   |
+| ------------------------------- | ------------------------------------------------------------------------- |
+| Stop / start again              | `docker compose stop` / `docker compose start`                            |
+| Restart after editing `.env`    | `docker compose up -d`                                                    |
+| Update to a new version         | `git pull && docker compose up -d --build` (migrations run automatically) |
+| Follow the logs                 | `docker compose logs -f web collab`                                       |
+| Remove containers, keep data    | `docker compose down`                                                     |
+| Remove **everything**, data too | `docker compose down -v` (deletes the database and the uploaded files)    |
+
+Your data lives in Docker volumes (`pgdata`, `uploads`, `backups`), so it survives restarts, updates and `docker compose down`. See [Backups and restore](#backups-and-restore) before you rely on it.
+
+### What is running
 
 | Service    | What it does                                                                          |
 | ---------- | ------------------------------------------------------------------------------------- |
@@ -117,9 +172,17 @@ Open the site and register: the first account is the administrator. The stack is
 
 `docker/smoke-test.sh` checks a running stack end to end (migrations, headers, WebSocket, a backup); CI runs it on every pull request.
 
-**Updating:** `git pull && docker compose up -d --build`. Migrations run automatically.
+### Behind your own reverse proxy
 
-**Without HTTPS or behind another proxy:** set `SITE_ADDRESS=:80`, `APP_URL=http://…` and `COLLAB_PUBLIC_URL=ws://…/collab`, and send `/collab` WebSocket upgrades to the `collab` service and everything else to `web`.
+Set `SITE_ADDRESS=:80` and the `http://` / `ws://` (or `https://` / `wss://` if your proxy terminates TLS) addresses in `.env`, publish `HTTP_PORT`, and point your proxy at it. Make sure it forwards WebSocket upgrades on `/collab` and does not buffer or compress `/api/events` (server-sent events keep the boards up to date).
+
+### Troubleshooting
+
+- **`docker compose` complains about a missing variable:** `POSTGRES_PASSWORD`, `AUTH_SECRET`, `APP_URL` or `COLLAB_PUBLIC_URL` is not set in `.env`.
+- **The site does not open, or the certificate is not issued:** the DNS record must point at the machine and ports 80 and 443 must be open; check `docker compose logs caddy`.
+- **Notes stay "disconnected":** `COLLAB_PUBLIC_URL` must be the public address with `/collab` (and `wss://` when the site is HTTPS).
+- **`web` keeps restarting:** read `docker compose logs web`; a weak `AUTH_SECRET` (under 32 characters) is refused in production.
+- **Start from scratch:** `docker compose down -v` and run step 3 again (this deletes all data).
 
 ### Configuration
 

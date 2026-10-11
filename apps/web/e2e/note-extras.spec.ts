@@ -125,3 +125,41 @@ test("files above the upload limit are refused", async ({ page, request }) => {
   await expect(page.getByText("huge.bin is too large")).toBeVisible();
   await expect(page.locator("[data-file-embed]")).toHaveCount(0);
 });
+
+test("a link can be added without selecting text, gets https:// and opens with Ctrl+click", async ({
+  page,
+  request,
+}) => {
+  const url = await newProject(request, "Links note");
+  const editor = await openNote(page, url);
+  await editor.click();
+
+  // Nothing selected: the address itself becomes the linked text; "example.com" gets a scheme.
+  page.once("dialog", (dialog) => void dialog.accept("example.com/docs"));
+  await page.getByRole("button", { name: /^Link/ }).click();
+  const link = page.locator(".jakab-note a");
+  await expect(link).toHaveText("https://example.com/docs");
+  await expect(link).toHaveAttribute("href", "https://example.com/docs");
+
+  // Unsafe addresses are refused with a message, and nothing is added.
+  await page.keyboard.press("End");
+  page.once("dialog", (dialog) => void dialog.accept("javascript:alert(1)"));
+  await page.getByRole("button", { name: /^Link/ }).click();
+  await expect(page.getByText("This address is not valid")).toBeVisible();
+  await expect(link).toHaveCount(1);
+
+  // A plain click only places the cursor; Ctrl+click opens the link in a new tab.
+  await page.evaluate(() => {
+    const opened: string[] = [];
+    (window as unknown as { opened: string[] }).opened = opened;
+    window.open = (target) => {
+      opened.push(String(target));
+      return null;
+    };
+  });
+  const openedLinks = () => page.evaluate(() => (window as unknown as { opened: string[] }).opened);
+  await link.click();
+  expect(await openedLinks()).toEqual([]);
+  await link.click({ modifiers: ["Control"] });
+  expect(await openedLinks()).toEqual(["https://example.com/docs"]);
+});

@@ -4,7 +4,9 @@
 #   UPLOAD_MAX_MB / IMPORT_MAX_MB  request size limits, the same variables the app reads
 
 {$SITE_ADDRESS:localhost} {
-	encode zstd gzip
+	# Compression would hold back the server-sent events that keep every open board up to date.
+	@compressible not path /api/events
+	encode @compressible zstd gzip
 
 	header -Server
 
@@ -35,6 +37,9 @@
 		request_body {
 			max_size {$UPLOAD_MAX_MB:50}MB
 		}
-		reverse_proxy web:3000
+		# Send events to the browser as they happen instead of buffering them.
+		reverse_proxy web:3000 {
+			flush_interval -1
+		}
 	}
 }

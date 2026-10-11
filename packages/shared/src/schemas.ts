@@ -10,6 +10,8 @@ export const statusInputSchema = z.object({
   isDone: z.boolean().default(false),
 });
 export const statusUpdateSchema = statusInputSchema.partial();
+/** Moves everything that uses a deleted status to another one (the nearest one when omitted). */
+export const statusDeleteSchema = z.object({ replaceWith: id.optional() });
 export const statusReorderSchema = z.object({ ids: z.array(id).min(1) });
 
 export const labelInputSchema = z.object({
@@ -162,3 +164,9 @@ export const workspaceUpdateSchema = z
     firstDayOfWeek: z.number().int().min(0).max(6),
   })
   .partial();
+
+/** Calendar views a person can pick as their default. */
+export const CALENDAR_VIEWS = ["timeGridDay", "timeGridWeek", "dayGridMonth", "listWeek"] as const;
+export type CalendarView = (typeof CALENDAR_VIEWS)[number];
+export const userPreferencesSchema = z.object({ calendarView: z.enum(CALENDAR_VIEWS).nullable() });
+export type UserPreferencesInput = z.infer<typeof userPreferencesSchema>;

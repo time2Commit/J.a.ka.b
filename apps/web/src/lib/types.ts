@@ -1,3 +1,4 @@
+import type { CalendarView } from "@jakab/shared";
 export type { CardDto } from "@/server/cards";
 
 export interface Status {
@@ -31,6 +32,8 @@ export interface Meta {
   statuses: Status[];
   labels: Label[];
   users: Member[];
+  /** The signed-in person's own settings. */
+  preferences: { calendarView: CalendarView | null };
 }
 export interface ProjectDto {
   id: string;
