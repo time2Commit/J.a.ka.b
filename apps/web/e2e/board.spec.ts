@@ -134,20 +134,59 @@ test("a card created in one browser shows up live in another (SSE)", async ({ pa
   await other.close();
 });
 
-test("project status and progress edited in the panel show on every card of the project", async ({
+test("the card panel saves each change on its own and only for that card", async ({
   page,
+  request,
 }) => {
-  await createCard(page, "Panel project", "06:00", "07:00");
-  await page.locator(".fc-event", { hasText: "Panel project" }).click();
+  const day = todayInRome();
+  await request.post("/api/labels", { data: { name: "Panel label", color: "#22c55e" } });
+  const first = await (
+    await request.post("/api/cards", {
+      data: {
+        projectName: "Panel project",
+        start: `${day}T13:00:00Z`,
+        end: `${day}T14:00:00Z`,
+      },
+    })
+  ).json();
+  const second = await request.post("/api/cards", {
+    data: {
+      projectId: first.card.projectId,
+      title: "Second day",
+      start: `${day}T15:00:00Z`,
+      end: `${day}T16:00:00Z`,
+    },
+  });
+  expect(second.ok()).toBe(true);
+  await page.reload();
+
+  await page.locator(".fc-event", { hasText: "Panel project" }).first().click();
   const panel = page.getByRole("dialog");
-  await panel.getByLabel("Status", { exact: true }).first().selectOption({ label: "In progress" });
+  // No save button: every change is stored as soon as it is made.
+  await expect(panel.getByRole("button", { name: "Save" })).toHaveCount(0);
+  await panel.getByLabel("Status", { exact: true }).selectOption({ label: "In progress" });
   await panel.getByLabel(/^Progress:/).fill("60");
-  await panel.getByRole("button", { name: "Save" }).first().click();
-  await expect(page.getByText("Saved")).toBeVisible();
+  await panel.getByRole("button", { name: "Panel label" }).click();
+  await panel.getByRole("button", { name: "Mario Rossi" }).click();
+  await panel.getByLabel("Short notes").fill("Typed, then closed at once");
   await page.keyboard.press("Escape");
-  const card = page.locator(".fc-event", { hasText: "Panel project" });
-  await expect(card).toContainText("In progress");
-  await expect(card).toContainText("60%");
+
+  const cards = page.locator(".fc-event", { hasText: "Panel project" });
+  await expect(cards.first()).toContainText("In progress");
+  await expect(cards.first()).toContainText("60%");
+  await expect(cards.first()).toContainText("Panel label");
+  // The other card of the same project is not touched.
+  await expect(cards.nth(1)).toContainText("To do");
+  await expect(cards.nth(1)).not.toContainText("Panel label");
+
+  // Everything survived: it was saved, not just shown.
+  await expect
+    .poll(async () => {
+      const res = await request.get(`/api/cards/${first.card.id}`);
+      const card = (await res.json()) as { shortNotes: string | null; progress: number };
+      return `${card.progress}|${card.shortNotes}`;
+    })
+    .toBe("60|Typed, then closed at once");
 });
 
 test("a project without upcoming cards can be dragged from 'To schedule' onto the calendar", async ({
@@ -179,7 +218,7 @@ test("quick search (Ctrl+K) jumps to a project's card and opens it", async ({ pa
   const palette = page.getByRole("dialog");
   await palette.getByLabel("Quick search").fill("searchable");
   await palette.getByRole("option", { name: /Searchable project/ }).click();
-  await expect(page.getByRole("dialog").getByText("Card details")).toBeVisible();
+  await expect(page.getByRole("dialog").getByText("saved as you make them")).toBeVisible();
 });
 
 test("the last day follows the start and the times until it is chosen, also late in the evening", async ({

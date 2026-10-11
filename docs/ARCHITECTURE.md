@@ -20,10 +20,10 @@ Decisions taken: multi-user full-stack web app · configurable statuses + % · r
 | **Project**          | The main entity. It has a unique name, a **project note** (collaborative document), attachments and version history.                                                  |
 | **Card**             | A _scheduled_ block on the calendar (start/end, all-day or timed). **Many cards → one project** (e.g. "Client X" Monday 9–12 and Thursday 14–18 share the same note). |
 | **Status**           | Configurable list per workspace (name, color, order, "done" flag). Shown as a badge on the card plus an optional % bar.                                               |
-| **Labels / Members** | Customizable; assigned to the project (inherited by its cards), with per-card overrides.                                                                              |
+| **Labels / Members** | Customizable; assigned to each card.                                                                                                                                  |
 | **Template**         | Default settings (status, labels, members, duration, checklist) plus initial note content.                                                                            |
 
-Design choice: status, % and labels live on the **project** and are visible on all of its cards, so progress stays consistent when work is spread over several days. A single card can override status and %.
+Design choice: status, %, labels and members belong to the **card**, so each block of work has its own state. The project (which owns the note, files and versions) remembers the values of the card edited last and a new card of that project starts from them; project lists show those values.
 
 ---
 
@@ -94,7 +94,7 @@ docker-compose.yml, .env.example
 - `Label` (id, name, color)
 - `Project` (id, name, `nameNormalized` with trigram index, statusId, progress 0–100, color, archivedAt, createdBy, `templateId?`, `clonedFromId?`)
 - `ProjectLabel`, `ProjectMember` (join tables)
-- `Card` (id, projectId, title?, start, end, allDay, statusOverrideId?, progressOverride?, short notes, createdBy) + `CardMember` / `CardLabel` for overrides
+- `Card` (id, projectId, title?, start, end, allDay, statusId, progress 0–100, short notes, createdBy) + `CardMember` / `CardLabel`
 - `NoteDocument` (projectId PK, `yState bytea`, `json jsonb` – latest readable copy for search/export, updatedAt, updatedBy)
 - `NoteVersion` (id, projectId, `yState bytea`, json, authors[], reason: `auto|manual|pre-restore`, label?, createdBy, createdAt)
 - `Attachment` (id, projectId, originalName, mime, size, sha256, storageKey, uploadedBy, createdAt)
@@ -110,11 +110,11 @@ docker-compose.yml, .env.example
 - FullCalendar with **Day / Week (timeGrid) / Month (dayGrid) / List** views and a custom shadcn toolbar.
 - **Custom card rendering** (`eventContent`), top to bottom: labels, project name, colored status badge with %, member avatars, % bar. Compact views (month, list, all-day) show labels as small bars.
 - **Default view per person**: picking a view saves it on the user (`user.calendarView`, `PATCH /api/me/preferences`), and `/api/meta` returns it, so the calendar opens on it from any device.
-- **Statuses are shared by reference**: renaming or recolouring one changes every card that uses it (the settings screen refreshes the card queries). Deleting one in use asks where its projects and card overrides move (`DELETE /api/statuses/:id` with `replaceWith`, the nearest status when omitted) and does it in one transaction.
+- **Statuses are shared by reference**: renaming or recolouring one changes every card that uses it (the settings screen refreshes the card queries). Deleting one in use asks where its projects and cards move (`DELETE /api/statuses/:id` with `replaceWith`, the nearest status when omitted) and does it in one transaction.
 - Drag & drop and resize → optimistic update (TanStack Query) + `PATCH /api/cards/:id`; "Undo" toast.
 - **"To schedule" side panel**: projects without future cards, draggable onto the calendar (FullCalendar `Draggable`).
 - Filters by member, label, status; quick search (⌘K with `cmdk`).
-- Clicking a card → **side panel (Sheet)** with card details, note preview and an "Open full note" button.
+- Clicking a card → **side panel (Sheet)** with the card's status, progress, labels, members, title and short notes, and an "Open full note" button. There is no save button: every change is stored as it is made (selections at once, typed text and the slider after a short pause or on leaving the field) and shown on the calendar immediately.
 - Live updates via SSE (`/api/events`), fed by `NOTIFY board_changed` after every write.
 
 ### 5.2 Card creation + auto-suggestion

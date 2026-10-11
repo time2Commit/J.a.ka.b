@@ -156,14 +156,8 @@ export async function previewArchive(
   const haveUser = new Set(users.map((u) => emailKey(u.email)));
   const haveProject = new Set(existing.map((p) => p.nameNormalized));
 
-  const wantedStatuses = [
-    ...(parsed.board?.statuses ?? []),
-    ...parsed.projects.flatMap((p) => [p.data.status]),
-  ].map((s) => s.name);
-  const wantedLabels = [
-    ...(parsed.board?.labels ?? []),
-    ...parsed.projects.flatMap((p) => p.data.labels),
-  ].map((l) => l.name);
+  const wantedStatuses = wantedStatusList(parsed).map((s) => s.name);
+  const wantedLabels = wantedLabelList(parsed).map((l) => l.name);
 
   return {
     kind: parsed.manifest.kind,
@@ -263,6 +257,7 @@ async function importProject(ctx: Context, { slug, data }: ParsedProject) {
         )
       : { versions: [] };
 
+    const projectStatusId = ctx.statusIds.get(data.status.name)!;
     await db.$transaction(
       async (tx) => {
         if (replacing) await tx.project.delete({ where: { id: replacing.id } });
@@ -271,7 +266,7 @@ async function importProject(ctx: Context, { slug, data }: ParsedProject) {
             id: projectId,
             name,
             nameNormalized: normalizeProjectName(name),
-            statusId: ctx.statusIds.get(data.status.name)!,
+            statusId: projectStatusId,
             progress: data.progress,
             color: data.color,
             archivedAt: data.archived ? new Date() : null,
@@ -291,17 +286,25 @@ async function importProject(ctx: Context, { slug, data }: ParsedProject) {
                 start: new Date(c.start),
                 end: new Date(c.end),
                 allDay: c.allDay,
-                statusOverrideId: c.statusOverride
-                  ? (ctx.statusIds.get(c.statusOverride) ?? null)
-                  : null,
-                progressOverride: c.progressOverride,
+                statusId:
+                  (c.statusOverride ? ctx.statusIds.get(c.statusOverride) : undefined) ??
+                  projectStatusId,
+                progress: c.progressOverride ?? data.progress,
                 shortNotes: c.shortNotes,
                 createdById: ctx.actorId,
+                // Older archives left a card's lists empty to mean "the project's".
                 members: {
-                  create: [...new Set(userIdsOf(c.members))].map((userId) => ({ userId })),
+                  create: [
+                    ...new Set(
+                      userIdsOf(c.perCard || c.members.length > 0 ? c.members : data.members),
+                    ),
+                  ].map((userId) => ({ userId })),
                 },
                 labels: {
-                  create: c.labels
+                  create: (c.perCard || c.labels.length > 0
+                    ? c.labels
+                    : data.labels.map((l) => l.name)
+                  )
                     .flatMap((l) => ctx.labelIds.get(l) ?? [])
                     .map((labelId) => ({ labelId })),
                 },
@@ -361,6 +364,30 @@ async function importProject(ctx: Context, { slug, data }: ParsedProject) {
   return { projectId, name, renamed: name !== data.name };
 }
 
+const NEUTRAL_COLOR = "#64748b";
+
+/** Every status the archive uses, cards included (a card's status may be known by name only). */
+function wantedStatusList(parsed: ParsedArchive) {
+  const known = [...(parsed.board?.statuses ?? []), ...parsed.projects.map((p) => p.data.status)];
+  const names = new Set(known.map((s) => s.name));
+  const extra = parsed.projects
+    .flatMap((p) => p.data.cards.flatMap((c) => c.statusOverride ?? []))
+    .filter((name) => !names.has(name) && names.add(name))
+    .map((name) => ({ name, color: NEUTRAL_COLOR, order: 0, isDone: false }));
+  return [...known, ...extra];
+}
+
+/** Every label the archive uses, cards included. */
+function wantedLabelList(parsed: ParsedArchive) {
+  const known = [...(parsed.board?.labels ?? []), ...parsed.projects.flatMap((p) => p.data.labels)];
+  const names = new Set(known.map((l) => l.name));
+  const extra = parsed.projects
+    .flatMap((p) => p.data.cards.flatMap((c) => c.labels))
+    .filter((name) => !names.has(name) && names.add(name))
+    .map((name) => ({ name, color: NEUTRAL_COLOR }));
+  return [...known, ...extra];
+}
+
 /** Finds or creates statuses and labels by name; returns name → id. */
 async function ensureCatalog(
   db: PrismaClient,
@@ -368,11 +395,7 @@ async function ensureCatalog(
 ): Promise<{ statusIds: Map<string, string>; labelIds: Map<string, string> }> {
   const statusIds = new Map((await db.status.findMany()).map((s) => [s.name, s.id]));
   let order = ((await db.status.aggregate({ _max: { order: true } }))._max.order ?? -1) + 1;
-  const wantedStatuses = [
-    ...(parsed.board?.statuses ?? []),
-    ...parsed.projects.map((p) => p.data.status),
-  ];
-  for (const s of wantedStatuses) {
+  for (const s of wantedStatusList(parsed)) {
     if (statusIds.has(s.name)) continue;
     const created = await db.status.create({
       data: { name: s.name, color: s.color, isDone: s.isDone, order: order++ },
@@ -381,11 +404,7 @@ async function ensureCatalog(
   }
 
   const labelIds = new Map((await db.label.findMany()).map((l) => [l.name, l.id]));
-  const wantedLabels = [
-    ...(parsed.board?.labels ?? []),
-    ...parsed.projects.flatMap((p) => p.data.labels),
-  ];
-  for (const l of wantedLabels) {
+  for (const l of wantedLabelList(parsed)) {
     if (labelIds.has(l.name)) continue;
     const created = await db.label.create({ data: { name: l.name, color: l.color } });
     labelIds.set(l.name, created.id);

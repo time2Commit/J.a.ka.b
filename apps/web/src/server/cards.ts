@@ -9,10 +9,8 @@ import { parseDefaults } from "./templates";
 import { notifyBoardChanged } from "./notify";
 
 const cardInclude = {
-  project: {
-    include: { status: true, labels: { include: { label: true } }, members: true },
-  },
-  statusOverride: true,
+  project: { select: { name: true } },
+  status: true,
   labels: { include: { label: true } },
   members: true,
 } satisfies Prisma.CardInclude;
@@ -21,11 +19,8 @@ type CardRecord = Prisma.CardGetPayload<{ include: typeof cardInclude }>;
 
 export type CardDto = ReturnType<typeof toCardDto>;
 
-/** Card + inherited project data. Status, progress, labels and members fall back to the project. */
+/** What the calendar and the card panel show: everything here belongs to the card itself. */
 export function toCardDto(card: CardRecord) {
-  const status = card.statusOverride ?? card.project.status;
-  const labels = card.labels.length > 0 ? card.labels : card.project.labels;
-  const members = card.members.length > 0 ? card.members : card.project.members;
   return {
     id: card.id,
     projectId: card.projectId,
@@ -35,12 +30,19 @@ export function toCardDto(card: CardRecord) {
     end: card.end.toISOString(),
     allDay: card.allDay,
     shortNotes: card.shortNotes,
-    status: { id: status.id, name: status.name, color: status.color, isDone: status.isDone },
-    statusOverridden: card.statusOverrideId !== null,
-    progress: card.progressOverride ?? card.project.progress,
-    progressOverridden: card.progressOverride !== null,
-    labels: labels.map(({ label }) => ({ id: label.id, name: label.name, color: label.color })),
-    memberIds: members.map((m) => m.userId),
+    status: {
+      id: card.status.id,
+      name: card.status.name,
+      color: card.status.color,
+      isDone: card.status.isDone,
+    },
+    progress: card.progress,
+    labels: card.labels.map(({ label }) => ({
+      id: label.id,
+      name: label.name,
+      color: label.color,
+    })),
+    memberIds: card.members.map((m) => m.userId),
   };
 }
 
@@ -102,11 +104,31 @@ export async function createCard(
     return await db.$transaction(async (tx) => {
       let projectId = input.projectId;
       let createdProject = false;
+      // What the new card starts with: the project's latest values, or what was chosen.
+      let start: { statusId: string; progress: number; labelIds: string[]; memberIds: string[] };
 
       if (projectId) {
-        if (!(await tx.project.findUnique({ where: { id: projectId }, select: { id: true } }))) {
-          throw notFound("Project");
-        }
+        const project = await tx.project.findUnique({
+          where: { id: projectId },
+          include: { labels: true, members: true },
+        });
+        if (!project) throw notFound("Project");
+        const chosenStatus = input.statusId
+          ? await tx.status.findUnique({ where: { id: input.statusId }, select: { id: true } })
+          : null;
+        if (input.statusId && !chosenStatus) throw notFound("Status");
+        start = {
+          statusId: chosenStatus?.id ?? project.statusId,
+          progress: project.progress,
+          labelIds: await existingIds(
+            (args) => tx.label.findMany(args),
+            input.labelIds.length > 0 ? input.labelIds : project.labels.map((l) => l.labelId),
+          ),
+          memberIds: await existingIds(
+            (args) => tx.user.findMany(args),
+            input.memberIds.length > 0 ? input.memberIds : project.members.map((m) => m.userId),
+          ),
+        };
       } else {
         const name = input.projectName!;
         const nameNormalized = normalizeProjectName(name);
@@ -162,6 +184,7 @@ export async function createCard(
         });
         projectId = project.id;
         createdProject = true;
+        start = { statusId: status.id, progress: 0, labelIds, memberIds };
         await tx.activity.create({
           data: {
             projectId,
@@ -185,6 +208,10 @@ export async function createCard(
           allDay: input.allDay,
           shortNotes: input.shortNotes ?? null,
           createdById: userId,
+          statusId: start.statusId,
+          progress: start.progress,
+          labels: { create: start.labelIds.map((labelId) => ({ labelId })) },
+          members: { create: start.memberIds.map((uid) => ({ userId: uid })) },
         },
         include: cardInclude,
       });
@@ -203,6 +230,22 @@ export async function createCard(
     }
     throw error;
   }
+}
+
+/**
+ * The project remembers the status, progress, labels and people of the card edited last: lists
+ * of projects show them, and the project's next card starts from them.
+ */
+async function rememberOnProject(tx: Prisma.TransactionClient, card: CardRecord) {
+  await tx.project.update({
+    where: { id: card.projectId },
+    data: {
+      statusId: card.statusId,
+      progress: card.progress,
+      labels: { deleteMany: {}, create: card.labels.map((l) => ({ labelId: l.labelId })) },
+      members: { deleteMany: {}, create: card.members.map((m) => ({ userId: m.userId })) },
+    },
+  });
 }
 
 export async function updateCard(
@@ -233,6 +276,9 @@ export async function updateCard(
       },
       include: cardInclude,
     });
+    if (input.statusId || input.progress !== undefined || labelIds || memberIds) {
+      await rememberOnProject(tx, card);
+    }
     await tx.activity.create({
       data: {
         projectId: card.projectId,

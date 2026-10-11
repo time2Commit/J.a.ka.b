@@ -2,7 +2,6 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createPrismaClient } from "@jakab/db";
 import { createCard, deleteCard, listCards, updateCard } from "./cards";
 import { createStatus, deleteStatus } from "./catalog";
-import { updateProject } from "./projects";
 
 const prisma = createPrismaClient();
 const run = Date.now().toString(36);
@@ -84,7 +83,7 @@ describe("cards", () => {
     ).rejects.toMatchObject({ status: 409 });
   });
 
-  it("shows project status/progress on every card and honors per-card overrides", async () => {
+  it("keeps status and progress on each card; the project remembers the last edit", async () => {
     const a = await createCard(
       prisma,
       {
@@ -100,37 +99,41 @@ describe("cards", () => {
     );
     const projectId = a.card.projectId;
     projectIds.push(projectId);
+    // A second card starts from what the project has now.
     const b = await createCard(
       prisma,
       { projectId, start, end, allDay: false, labelIds: [], memberIds: [] },
       userId,
     );
+    expect(b.card.progress).toBe(0);
+    expect(b.card.status.id).toBe(statusId);
 
-    await updateProject(prisma, projectId, { statusId: doneStatusId, progress: 60 }, userId);
+    // Editing one card leaves the other alone.
+    const edited = await updateCard(
+      prisma,
+      b.card.id,
+      { statusId: doneStatusId, progress: 60 },
+      userId,
+    );
+    expect(edited.progress).toBe(60);
+    expect(edited.status.id).toBe(doneStatusId);
     const cards = (await listCards(prisma, new Date("2026-10-01"), new Date("2026-10-10"))).filter(
       (c) => c.projectId === projectId,
     );
-    expect(cards).toHaveLength(2);
-    expect(cards.every((c) => c.status.id === doneStatusId && c.progress === 60)).toBe(true);
+    const first = cards.find((c) => c.id === a.card.id)!;
+    expect(first.progress).toBe(0);
+    expect(first.status.id).toBe(statusId);
 
-    const overridden = await updateCard(
+    // The project remembers the card edited last, and a new card starts from it.
+    const project = await prisma.project.findUniqueOrThrow({ where: { id: projectId } });
+    expect(project).toMatchObject({ statusId: doneStatusId, progress: 60 });
+    const c = await createCard(
       prisma,
-      b.card.id,
-      { statusOverrideId: statusId, progressOverride: 10 },
+      { projectId, start, end, allDay: false, labelIds: [], memberIds: [] },
       userId,
     );
-    expect(overridden.status.id).toBe(statusId);
-    expect(overridden.progress).toBe(10);
-    expect(overridden.statusOverridden && overridden.progressOverridden).toBe(true);
-
-    const cleared = await updateCard(
-      prisma,
-      b.card.id,
-      { statusOverrideId: null, progressOverride: null },
-      userId,
-    );
-    expect(cleared.status.id).toBe(doneStatusId);
-    expect(cleared.progress).toBe(60);
+    expect(c.card.progress).toBe(60);
+    expect(c.card.status.id).toBe(doneStatusId);
   });
 
   it("moves a card and only lists cards overlapping the requested range", async () => {
@@ -166,7 +169,7 @@ describe("cards", () => {
 });
 
 describe("statuses", () => {
-  async function projectWithStatus(name: string, status: string, override?: string) {
+  async function projectWithStatus(name: string, status: string) {
     const { card } = await createCard(
       prisma,
       {
@@ -181,7 +184,6 @@ describe("statuses", () => {
       userId,
     );
     projectIds.push(card.projectId);
-    if (override) await updateCard(prisma, card.id, { statusOverrideId: override }, userId);
     return card;
   }
 
@@ -192,18 +194,19 @@ describe("statuses", () => {
       isDone: false,
     });
     const card = await projectWithStatus("Moves", doomed.id);
-    const other = await projectWithStatus("Overridden", statusId, doomed.id);
+    const other = await projectWithStatus("Other card", statusId);
+    await updateCard(prisma, other.id, { statusId: doomed.id }, userId);
 
     const moved = await deleteStatus(prisma, doomed.id, doneStatusId);
 
-    expect(moved).toMatchObject({ projects: 1, cards: 1, statusId: doneStatusId });
+    expect(moved).toMatchObject({ projects: 2, cards: 2, statusId: doneStatusId });
     expect(await prisma.status.count({ where: { id: doomed.id } })).toBe(0);
     const project = await prisma.project.findUniqueOrThrow({ where: { id: card.projectId } });
     expect(project.statusId).toBe(doneStatusId);
     const overridden = await prisma.card.findUniqueOrThrow({ where: { id: other.id } });
-    expect(overridden.statusOverrideId).toBe(doneStatusId);
-    const untouched = await prisma.project.findUniqueOrThrow({ where: { id: other.projectId } });
-    expect(untouched.statusId).toBe(statusId);
+    expect(overridden.statusId).toBe(doneStatusId);
+    const first = await prisma.card.findUniqueOrThrow({ where: { id: card.id } });
+    expect(first.statusId).toBe(doneStatusId);
   });
 
   it("falls back to a neighbouring status when none is chosen", async () => {
