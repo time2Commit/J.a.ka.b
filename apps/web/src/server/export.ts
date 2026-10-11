@@ -84,7 +84,9 @@ async function loadBundle(
       note: { select: { json: true } },
     },
   });
-  if (!project) throw notFound("Project");
+  // The related rows are read after the project: one deleted meanwhile (by somebody deleting the
+  // project) shows up as a missing status, and the export treats that like a missing project.
+  if (!project || !project.status) throw notFound("Project");
 
   const emails = (userIds: string[]) => userIds.flatMap((id) => emailById.get(id) ?? []).sort();
 
@@ -127,18 +129,20 @@ async function loadBundle(
     createdAt: project.createdAt.toISOString(),
     labels: project.labels.map((l) => ({ name: l.label.name, color: l.label.color })),
     members: emails(project.members.map((m) => m.userId)),
-    cards: project.cards.map((c) => ({
-      title: c.title,
-      start: c.start.toISOString(),
-      end: c.end.toISOString(),
-      allDay: c.allDay,
-      statusOverride: c.status.name,
-      progressOverride: c.progress,
-      shortNotes: c.shortNotes,
-      members: emails(c.members.map((m) => m.userId)),
-      labels: c.labels.map((l) => l.label.name),
-      perCard: true,
-    })),
+    cards: project.cards
+      .filter((c) => c.status)
+      .map((c) => ({
+        title: c.title,
+        start: c.start.toISOString(),
+        end: c.end.toISOString(),
+        allDay: c.allDay,
+        statusOverride: c.status.name,
+        progressOverride: c.progress,
+        shortNotes: c.shortNotes,
+        members: emails(c.members.map((m) => m.userId)),
+        labels: c.labels.map((l) => l.label.name),
+        perCard: true,
+      })),
     attachments,
     note: portableNote(project.note?.json, emailById),
   };

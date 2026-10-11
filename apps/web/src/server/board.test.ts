@@ -222,6 +222,9 @@ describe("statuses", () => {
     expect(moved.statusId).not.toBe(doomed.id);
     const project = await prisma.project.findUniqueOrThrow({ where: { id: card.projectId } });
     expect(project.statusId).toBe(moved.statusId);
+    // The neighbour is whatever status is next to it, possibly one that another test file owns:
+    // do not leave a project pointing at it, or that file could not delete its status.
+    await prisma.project.delete({ where: { id: card.projectId } });
   });
 
   it("rejects a missing status and moving items onto the deleted status itself", async () => {

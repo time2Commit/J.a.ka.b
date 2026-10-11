@@ -22,7 +22,7 @@ beforeAll(async () => {
   root = await mkdtemp(path.join(tmpdir(), "jakab-project-"));
   storage = new FileSystemStorage(root);
   statusId = (
-    await prisma.status.create({ data: { name: name("Create"), color: "#123456", order: -5 } })
+    await prisma.status.create({ data: { name: name("Create"), color: "#123456", order: 95 } })
   ).id;
   creatorId = (
     await prisma.user.create({
