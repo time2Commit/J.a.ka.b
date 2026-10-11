@@ -16,7 +16,7 @@
     "@fullcalendar/interaction": "^6",
     "@fullcalendar/list": "^6",
     "@fullcalendar/luxon3": "^6",
-    "@fullcalendar/react": "^6.1.21",
+    "@fullcalendar/react": "^7.1.1",
     "@fullcalendar/timegrid": "^6",
     "@hocuspocus/provider": "^4.7.0",
     "@jakab/db": "workspace:*",
