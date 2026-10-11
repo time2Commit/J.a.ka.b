@@ -7,16 +7,21 @@ test("a template pre-fills a new project, a project can be copied, and a project
   page,
   request,
 }) => {
-  // 1. Create a template in the UI.
+  // 1. Create a template in the UI: name it, then set its defaults on its page.
   await page.goto("/templates");
-  await page.getByRole("button", { name: "New template" }).click();
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("button", { name: "New template" }).first().click();
   const dialog = page.getByRole("dialog", { name: "New template" });
-  await dialog.getByLabel("Name").fill("Weekly review");
-  await dialog.getByLabel("First card length (minutes)").fill("90");
-  await dialog.getByRole("textbox", { name: "Checklist" }).fill("Collect updates\nPlan next week");
-  await dialog.getByTestId("template-note").click();
-  await dialog.getByTestId("template-note").pressSequentially("Agenda from the template");
-  await dialog.getByRole("button", { name: "Save" }).click();
+  await dialog.getByLabel("Template name").fill("Weekly review");
+  await dialog.getByRole("button", { name: "Create template" }).click();
+  await expect(page).toHaveURL(/\/templates\/[^/]+$/);
+  await page.getByLabel("First card length (minutes)").fill("90");
+  await page.getByRole("textbox", { name: "Checklist" }).fill("Collect updates\nPlan next week");
+  await page.getByTestId("template-note").click();
+  await page.getByTestId("template-note").pressSequentially("Agenda from the template");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByText("Template saved")).toBeVisible();
+  await page.goto("/templates");
   const list = page.getByRole("list", { name: "Templates" });
   await expect(list).toContainText("Weekly review");
   await expect(list).toContainText("90 min");

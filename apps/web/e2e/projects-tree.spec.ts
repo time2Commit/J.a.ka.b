@@ -171,3 +171,104 @@ test("the header search also finds what is written inside a note, with an excerp
   await hit.click();
   await expect(page).toHaveURL(new RegExp(`${url}$`));
 });
+
+test("a project can be created on its own, and the right-click menus manage folders and projects", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/projects");
+  await page.waitForLoadState("networkidle");
+
+  // "New project" (no card needed): the note opens, and the project waits under "To schedule".
+  await page.getByRole("button", { name: "New project" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "New project" });
+  await dialog.getByLabel("Project name").fill("Standalone idea");
+  await dialog.getByRole("button", { name: "Create project" }).click();
+  await expect(page).toHaveURL(/\/projects\/[^/]+$/);
+  await expect(page.getByRole("heading", { name: "Standalone idea" })).toBeVisible();
+  const unscheduled = (await (await request.get("/api/projects/unscheduled")).json()) as {
+    name: string;
+  }[];
+  expect(unscheduled.map((p) => p.name)).toContain("Standalone idea");
+
+  // Right-click on the empty space: a new folder at the top level.
+  await page.getByText("Uncategorized", { exact: true }).click({ button: "right" });
+  await page.getByRole("menuitem", { name: "New folder" }).click();
+  await page.getByRole("dialog").getByLabel("Folder name").fill("Context top");
+  await page.getByRole("dialog").getByRole("button", { name: "Add" }).click();
+  await expect(tree(page).getByRole("button", { name: /^Context top/ })).toBeVisible();
+
+  // Right-click on a folder: a subfolder, then a project inside it.
+  await tree(page)
+    .getByRole("button", { name: /^Context top/ })
+    .click({ button: "right" });
+  await page.getByRole("menuitem", { name: "New subfolder" }).click();
+  await page.getByRole("dialog").getByLabel("Folder name").fill("Context sub");
+  await page.getByRole("dialog").getByRole("button", { name: "Add" }).click();
+  await expect(tree(page).getByRole("button", { name: /^Context sub/ })).toBeVisible();
+
+  await tree(page)
+    .getByRole("button", { name: /^Context sub/ })
+    .click({ button: "right" });
+  await page.getByRole("menuitem", { name: "New project here" }).click();
+  const inFolder = page.getByRole("dialog", { name: "New project" });
+  await expect(inFolder.getByLabel("Folder")).toHaveText(/Context sub/);
+  await inFolder.getByLabel("Project name").fill("Filed project");
+  await inFolder.getByRole("button", { name: "Create project" }).click();
+  await expect(page).toHaveURL(/\/projects\/[^/]+$/);
+  await expect(tree(page).getByRole("link", { name: /Filed project/ })).toBeVisible();
+
+  // Right-click on a project: delete it (with a confirmation).
+  page.once("dialog", (confirmation) => void confirmation.accept());
+  await tree(page)
+    .getByRole("link", { name: /Filed project/ })
+    .click({ button: "right" });
+  await page.getByRole("menuitem", { name: "Delete project" }).click();
+  await expect(page.getByText("Project deleted")).toBeVisible();
+  await expect(tree(page).getByRole("link", { name: /Filed project/ })).toHaveCount(0);
+  const left = (await (await request.get("/api/projects")).json()) as { name: string }[];
+  expect(left.map((p) => p.name)).not.toContain("Filed project");
+  await expect(page).toHaveURL(/\/projects$/);
+});
+
+test("templates have their own tree and the header search finds them", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/templates");
+  await page.waitForLoadState("networkidle");
+  const templateTree = page.getByRole("tree", { name: "Templates and folders" });
+
+  // A folder, then a template created inside it from the folder's right-click menu.
+  await page.getByRole("button", { name: "New folder" }).click();
+  await page.getByRole("dialog").getByLabel("Folder name").fill("Meetings");
+  await page.getByRole("dialog").getByRole("button", { name: "Add" }).click();
+  await templateTree.getByRole("button", { name: /^Meetings/ }).click({ button: "right" });
+  await page.getByRole("menuitem", { name: "New template here" }).click();
+  const dialog = page.getByRole("dialog", { name: "New template" });
+  await expect(dialog.getByLabel("Folder")).toHaveText(/Meetings/);
+  await dialog.getByLabel("Template name").fill("Standup notes");
+  await dialog.getByRole("button", { name: "Create template" }).click();
+  await expect(page).toHaveURL(/\/templates\/[^/]+$/);
+  await expect(templateTree.getByRole("link", { name: /Standup notes/ })).toBeVisible();
+
+  // The folders of templates and of projects are separate.
+  const projectFolders = (await (await request.get("/api/folders?kind=project")).json()) as {
+    name: string;
+  }[];
+  expect(projectFolders.map((f) => f.name)).not.toContain("Meetings");
+
+  // The header search finds the template and shows its folder.
+  await page.getByRole("combobox", { name: "Find projects and notes" }).fill("standup");
+  const hit = page.getByRole("option", { name: /Standup notes/ });
+  await expect(hit).toContainText("Meetings");
+  await hit.click();
+  await expect(page).toHaveURL(/\/templates\/[^/]+$/);
+
+  // Delete it from its menu.
+  page.once("dialog", (confirmation) => void confirmation.accept());
+  await templateTree.getByRole("link", { name: /Standup notes/ }).click({ button: "right" });
+  await page.getByRole("menuitem", { name: "Delete template" }).click();
+  await expect(page.getByText("Template deleted")).toBeVisible();
+  await expect(templateTree.getByRole("link", { name: /Standup notes/ })).toHaveCount(0);
+});

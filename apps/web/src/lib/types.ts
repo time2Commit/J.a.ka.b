@@ -79,6 +79,8 @@ export interface TemplateItem {
   name: string;
   defaults: TemplateDefaults;
   hasNote: boolean;
+  /** The folder of the template tree it sits in (null = uncategorized). */
+  folderId: string | null;
   updatedAt: string;
 }
 export interface TemplateFull extends TemplateItem {
@@ -94,5 +96,12 @@ export interface SearchResults {
     folderId: string | null;
     statusId: string;
     snippet: { before: string; match: string; after: string };
+  }[];
+  /** Templates whose name or text contains the words; `snippet` is set for a match in the text. */
+  templates: {
+    id: string;
+    name: string;
+    folderId: string | null;
+    snippet: { before: string; match: string; after: string } | null;
   }[];
 }

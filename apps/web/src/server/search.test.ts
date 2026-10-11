@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createPrismaClient } from "@jakab/db";
-import { reindexNotes, searchEverything, searchTerms, snippetOf } from "./search";
+import { reindexNotes, searchEverything, searchTemplates, searchTerms, snippetOf } from "./search";
+import { createTemplate } from "./templates";
 
 const prisma = createPrismaClient();
 const run = Date.now().toString(36);
@@ -141,5 +142,45 @@ describe("reindexNotes", () => {
     await reindexNotes(prisma);
     const row = await prisma.noteDocument.findUniqueOrThrow({ where: { projectId: p.id } });
     expect(row.searchText).toBe("");
+  });
+});
+
+describe("searching templates", () => {
+  const word = (n: string) => `${n}${run}`;
+  afterAll(async () => {
+    await prisma.template.deleteMany({ where: { name: { contains: run } } });
+  });
+
+  it("finds a template by name first, then by words in its note or checklist", async () => {
+    const byName = await createTemplate(prisma, { name: `Zeta ${word("kickoff")}` }, "u");
+    const byNote = await createTemplate(
+      prisma,
+      {
+        name: `Plain ${randomUUID().slice(0, 8)}`,
+        note: note(`Remember the ${word("kickoff")} agenda`) as { type: "doc" },
+      },
+      "u",
+    );
+    const byList = await createTemplate(
+      prisma,
+      {
+        name: `List ${randomUUID().slice(0, 8)}`,
+        defaults: { checklist: [`Send ${word("kickoff")} invites`] },
+      },
+      "u",
+    );
+    const hits = await searchTemplates(prisma, searchTerms(word("KICKOFF")));
+    const ids = hits.map((h) => h.id);
+    expect(ids.indexOf(byName.id)).toBe(0);
+    expect(ids).toEqual(expect.arrayContaining([byNote.id, byList.id]));
+    expect(hits.find((h) => h.id === byName.id)?.snippet).toBeNull();
+    expect(hits.find((h) => h.id === byNote.id)?.snippet?.match.toLowerCase()).toBe(
+      word("kickoff"),
+    );
+    // The header search returns them next to the projects.
+    expect((await searchEverything(prisma, word("kickoff"))).templates.map((t) => t.id)).toContain(
+      byName.id,
+    );
+    expect(await searchTemplates(prisma, [])).toEqual([]);
   });
 });

@@ -265,7 +265,20 @@
       },
       "empty": "No projects yet. Create a card to start one.",
       "pickOne": "Choose a project in the tree to open its note, or create folders to keep them in order.",
-      "recent": "Recently modified"
+      "recent": "Recently modified",
+      "newItem": "New project",
+      "newItemHere": "New project here",
+      "deleteItem": "Delete project",
+      "deleteItemConfirm": "Delete the project “{name}”? Its note, versions, files and cards are deleted too. This cannot be undone: export it first if you may need it.",
+      "itemDeleted": "Project deleted",
+      "deleteForbidden": "Only an administrator or the person who created the project can delete it.",
+      "nameTaken": "A project with this name already exists.",
+      "newItemHelp": "A project with its note, without scheduling anything yet: it appears under “To schedule”.",
+      "itemName": "Project name",
+      "folder": "Folder",
+      "startFrom": "Start from a template",
+      "noTemplate": "Empty note",
+      "create": "Create project"
     },
     "allProjects": "All projects"
   },
@@ -391,13 +404,54 @@
     "note": "Initial note",
     "noteHelp": "Files cannot be part of a template.",
     "saved": "Template saved",
-    "nameTaken": "A template with this name already exists"
+    "nameTaken": "A template with this name already exists",
+    "tree": {
+      "label": "Templates and folders",
+      "newFolder": "New folder",
+      "newSubfolder": "New subfolder",
+      "rename": "Rename",
+      "renameFolder": "Rename folder",
+      "folderName": "Folder name",
+      "moveTo": "Move to…",
+      "moveTitle": "Move “{name}”",
+      "moveHelp": "Choose the folder to put it in, or the top level.",
+      "move": "Move",
+      "topLevel": "Top level (uncategorized)",
+      "deleteFolder": "Delete folder",
+      "deleteConfirm": "Delete the folder “{name}”? Its templates and subfolders are not deleted: they move up one level.",
+      "uncategorized": "Uncategorized",
+      "emptyFolder": "Empty folder",
+      "expand": "Open {name}",
+      "collapse": "Close {name}",
+      "actionsFor": "Actions for {name}",
+      "sortBy": "Order by",
+      "sort": {
+        "name": "Name (A–Z)",
+        "modified": "Last modified"
+      },
+      "empty": "No templates yet.",
+      "pickOne": "Choose a template in the tree to edit it, or create folders to keep them in order.",
+      "recent": "Recently modified",
+      "newItem": "New template",
+      "newItemHere": "New template here",
+      "deleteItem": "Delete template",
+      "deleteItemConfirm": "Delete the template “{name}”? Projects made from it are not affected.",
+      "itemDeleted": "Template deleted",
+      "nameTaken": "A template with this name already exists.",
+      "newItemHelp": "You will set its defaults and initial note on the next page.",
+      "itemName": "Template name",
+      "folder": "Folder",
+      "create": "Create template"
+    },
+    "allTemplates": "All templates",
+    "notFound": "Template not found"
   },
   "Search": {
     "label": "Find projects and notes",
     "placeholder": "Find projects and notes…",
     "empty": "Nothing found",
     "projects": "Projects",
-    "notes": "In the notes"
+    "notes": "In the notes",
+    "templates": "Templates"
   }
 }

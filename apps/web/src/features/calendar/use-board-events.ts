@@ -12,6 +12,7 @@ export function useBoardEvents() {
       void queryClient.invalidateQueries({ queryKey: ["cards"] });
       void queryClient.invalidateQueries({ queryKey: ["meta"] });
       void queryClient.invalidateQueries({ queryKey: ["projects"] });
+      void queryClient.invalidateQueries({ queryKey: ["templates"] });
     });
     return () => source.close();
   }, [queryClient]);

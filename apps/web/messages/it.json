@@ -265,7 +265,20 @@
       },
       "empty": "Ancora nessun progetto. Crea una card per iniziarne uno.",
       "pickOne": "Scegli un progetto nell’albero per aprire la sua nota, oppure crea delle cartelle per tenerli in ordine.",
-      "recent": "Modificati di recente"
+      "recent": "Modificati di recente",
+      "newItem": "Nuovo progetto",
+      "newItemHere": "Nuovo progetto qui",
+      "deleteItem": "Elimina progetto",
+      "deleteItemConfirm": "Eliminare il progetto “{name}”? Vengono eliminati anche la nota, le versioni, i file e le card. L’operazione non si può annullare: esportalo prima se potrebbe servirti.",
+      "itemDeleted": "Progetto eliminato",
+      "deleteForbidden": "Solo un amministratore o chi ha creato il progetto può eliminarlo.",
+      "nameTaken": "Esiste già un progetto con questo nome.",
+      "newItemHelp": "Un progetto con la sua nota, senza ancora nulla in calendario: compare sotto “Da pianificare”.",
+      "itemName": "Nome del progetto",
+      "folder": "Cartella",
+      "startFrom": "Parti da un template",
+      "noTemplate": "Nota vuota",
+      "create": "Crea progetto"
     },
     "allProjects": "Tutti i progetti"
   },
@@ -391,13 +404,54 @@
     "note": "Nota iniziale",
     "noteHelp": "I file non possono far parte di un template.",
     "saved": "Template salvato",
-    "nameTaken": "Esiste già un template con questo nome"
+    "nameTaken": "Esiste già un template con questo nome",
+    "tree": {
+      "label": "Template e cartelle",
+      "newFolder": "Nuova cartella",
+      "newSubfolder": "Nuova sottocartella",
+      "rename": "Rinomina",
+      "renameFolder": "Rinomina cartella",
+      "folderName": "Nome della cartella",
+      "moveTo": "Sposta in…",
+      "moveTitle": "Sposta “{name}”",
+      "moveHelp": "Scegli la cartella in cui metterlo, oppure il livello principale.",
+      "move": "Sposta",
+      "topLevel": "Livello principale (non categorizzati)",
+      "deleteFolder": "Elimina cartella",
+      "deleteConfirm": "Eliminare la cartella “{name}”? I suoi template e sottocartelle non vengono eliminati: salgono di un livello.",
+      "uncategorized": "Non categorizzati",
+      "emptyFolder": "Cartella vuota",
+      "expand": "Apri {name}",
+      "collapse": "Chiudi {name}",
+      "actionsFor": "Azioni per {name}",
+      "sortBy": "Ordina per",
+      "sort": {
+        "name": "Nome (A–Z)",
+        "modified": "Ultima modifica"
+      },
+      "empty": "Ancora nessun template.",
+      "pickOne": "Scegli un template nell’albero per modificarlo, oppure crea delle cartelle per tenerli in ordine.",
+      "recent": "Modificati di recente",
+      "newItem": "Nuovo template",
+      "newItemHere": "Nuovo template qui",
+      "deleteItem": "Elimina template",
+      "deleteItemConfirm": "Eliminare il template “{name}”? I progetti creati da esso non cambiano.",
+      "itemDeleted": "Template eliminato",
+      "nameTaken": "Esiste già un template con questo nome.",
+      "newItemHelp": "Nella pagina successiva imposterai i valori predefiniti e la nota iniziale.",
+      "itemName": "Nome del template",
+      "folder": "Cartella",
+      "create": "Crea template"
+    },
+    "allTemplates": "Tutti i template",
+    "notFound": "Template non trovato"
   },
   "Search": {
     "label": "Trova progetti e note",
     "placeholder": "Trova progetti e note…",
     "empty": "Nessun risultato",
     "projects": "Progetti",
-    "notes": "Nelle note"
+    "notes": "Nelle note",
+    "templates": "Template"
   }
 }

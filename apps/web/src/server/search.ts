@@ -1,6 +1,7 @@
 import { Prisma, type PrismaClient } from "@jakab/db";
 import { foldForSearch, jsonToPlainText } from "@jakab/editor/plain-text";
 import { escapeLike, suggestProjects, type ProjectSuggestion } from "./suggest";
+import { parseDefaults } from "./templates";
 
 /** Notes are searched from this many characters of the query. */
 export const MIN_NOTE_QUERY = 2;
@@ -18,11 +19,56 @@ export interface NoteHit {
   snippet: { before: string; match: string; after: string };
 }
 
+export interface TemplateHit {
+  id: string;
+  name: string;
+  folderId: string | null;
+  /** Set when the words were found in the template's text rather than in its name. */
+  snippet: NoteHit["snippet"] | null;
+}
+
 export interface SearchResults {
   /** Projects whose name matches. */
   projects: ProjectSuggestion[];
   /** Other projects whose note contains the words. */
   notes: NoteHit[];
+  /** Templates whose name or text contains the words. */
+  templates: TemplateHit[];
+}
+
+export const TEMPLATE_HIT_LIMIT = 6;
+
+/**
+ * Templates are few, so they are matched here instead of in the database: every word must be in
+ * the name, the checklist or the note text. Name matches come first.
+ */
+export async function searchTemplates(db: PrismaClient, terms: string[]): Promise<TemplateHit[]> {
+  if (terms.length === 0) return [];
+  const templates = await db.template.findMany({
+    select: { id: true, name: true, folderId: true, defaults: true, noteJson: true },
+    orderBy: { name: "asc" },
+  });
+  const hits: (TemplateHit & { byName: boolean })[] = [];
+  for (const t of templates) {
+    const foldedName = foldForSearch(t.name);
+    const byName = terms.every((term) => foldedName.includes(term));
+    const checklist = (parseDefaults(t.defaults).checklist ?? []).join("\n");
+    const text = [jsonToPlainText(t.noteJson), checklist].filter(Boolean).join("\n");
+    const folded = foldForSearch(text);
+    const inText = terms.every((term) => foldedName.includes(term) || folded.includes(term));
+    if (!byName && !inText) continue;
+    hits.push({
+      id: t.id,
+      name: t.name,
+      folderId: t.folderId,
+      snippet: byName ? null : snippetOf(text, folded, terms),
+      byName,
+    });
+  }
+  hits.sort((a, b) => Number(b.byName) - Number(a.byName));
+  return hits
+    .slice(0, TEMPLATE_HIT_LIMIT)
+    .map(({ id, name, folderId, snippet }) => ({ id, name, folderId, snippet }));
 }
 
 /** Brings the searchable text of every note that changed since it was last read up to date. */
@@ -84,7 +130,8 @@ export async function searchEverything(db: PrismaClient, query: string): Promise
   const q = query.trim().slice(0, 120);
   const projects = await suggestProjects(db, q);
   const terms = searchTerms(q);
-  if (q.length < MIN_NOTE_QUERY || terms.length === 0) return { projects, notes: [] };
+  const templates = await searchTemplates(db, terms);
+  if (q.length < MIN_NOTE_QUERY || terms.length === 0) return { projects, notes: [], templates };
 
   await reindexNotes(db);
   const conditions = terms.map((t) => Prisma.sql`nd."searchFolded" LIKE ${`%${escapeLike(t)}%`}`);
@@ -114,6 +161,7 @@ export async function searchEverything(db: PrismaClient, query: string): Promise
 
   return {
     projects,
+    templates,
     notes: rows.map(({ text, folded, ...project }) => ({
       ...project,
       snippet: snippetOf(text, folded, terms),

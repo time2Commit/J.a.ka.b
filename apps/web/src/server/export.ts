@@ -279,6 +279,7 @@ export async function exportBoard(
   ]);
   const emailById = new Map(users.map((u) => [u.id, u.email]));
   const folderPaths = await folderPathMap(db);
+  const templateFolderPaths = await folderPathMap(db, "template");
 
   // A project deleted while the export runs is simply left out.
   const bundles: ProjectBundle[] = [];
@@ -309,6 +310,9 @@ export async function exportBoard(
     })),
     labels: labels.map((l) => ({ name: l.name, color: l.color })),
     folders: [...folderPaths.values()].sort((a, b) => a.join("/").localeCompare(b.join("/"))),
+    templateFolders: [...templateFolderPaths.values()].sort((a, b) =>
+      a.join("/").localeCompare(b.join("/")),
+    ),
     templates: templates.map((t) => {
       const defaults = parseDefaults(t.defaults);
       return {
@@ -320,6 +324,7 @@ export async function exportBoard(
           durationMin: defaults.durationMin,
           checklist: defaults.checklist,
         },
+        folder: t.folderId ? (templateFolderPaths.get(t.folderId) ?? []) : [],
         note: portableNote(t.noteJson, emailById),
       };
     }),

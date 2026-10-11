@@ -6,6 +6,7 @@ import path from "node:path";
 import { Readable } from "node:stream";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createCard } from "./cards";
+import { createFolder } from "./folders";
 import { collectAttachmentIds } from "./orphans";
 import { FileSystemStorage } from "./storage";
 import {
@@ -310,5 +311,39 @@ describe("cloning a project", () => {
       ),
     ).rejects.toMatchObject({ status: 409 });
     expect((await readdir(root, { recursive: true })).length).toBe(before);
+  });
+});
+
+describe("template folders", () => {
+  it("puts a template in a folder of the template tree, refuses any other, and lists the folder", async () => {
+    const folder = await createFolder(prisma, {
+      kind: "template",
+      name: `TF ${run}`,
+      parentId: null,
+    });
+    const projectFolder = await createFolder(prisma, { name: `PF ${run}`, parentId: null });
+    try {
+      const made = await createTemplate(
+        prisma,
+        { name: `In folder ${run}`, folderId: folder.id },
+        userId,
+      );
+      createdTemplates.add(made.id);
+      expect(made.folderId).toBe(folder.id);
+      expect((await listTemplates(prisma)).find((t) => t.id === made.id)?.folderId).toBe(folder.id);
+
+      await expect(
+        updateTemplate(prisma, made.id, { folderId: projectFolder.id }),
+      ).rejects.toMatchObject({ status: 404 });
+      expect((await updateTemplate(prisma, made.id, { folderId: null })).folderId).toBeNull();
+      await expect(
+        createTemplate(prisma, { name: `Wrong ${run}`, folderId: projectFolder.id }, userId),
+      ).rejects.toMatchObject({ status: 404 });
+    } finally {
+      await prisma.template.deleteMany({ where: { name: { contains: run } } });
+      await prisma.projectFolder.deleteMany({
+        where: { id: { in: [folder.id, projectFolder.id] } },
+      });
+    }
   });
 });

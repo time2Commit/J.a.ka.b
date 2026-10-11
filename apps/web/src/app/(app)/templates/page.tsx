@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { TemplatesPage } from "@/features/templates/templates-page";
+import { TemplatesHome } from "@/features/templates/templates-home";
 import { requireSession } from "@/lib/session";
 
 export async function generateMetadata() {
@@ -9,5 +9,5 @@ export async function generateMetadata() {
 
 export default async function Templates() {
   await requireSession();
-  return <TemplatesPage />;
+  return <TemplatesHome />;
 }

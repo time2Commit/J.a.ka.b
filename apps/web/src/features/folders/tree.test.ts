@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { Folder, ProjectTreeItem } from "@/lib/types";
-import { buildTree, folderAndDescendants, folderPathNames, flattenFolders } from "./tree";
+import type { Folder } from "@/lib/types";
+import {
+  buildTree,
+  type TreeItem,
+  folderAndDescendants,
+  folderPathNames,
+  flattenFolders,
+} from "./tree";
 
 const folder = (id: string, name: string, parentId: string | null = null): Folder => ({
   id,
@@ -12,14 +18,11 @@ const project = (
   name: string,
   folderId: string | null,
   lastModified: string,
-): ProjectTreeItem => ({
+): TreeItem => ({
   id,
   name,
   folderId,
   lastModified,
-  statusId: "s",
-  progress: 0,
-  lastCardEnd: null,
 });
 
 const folders = [folder("f-b", "Beta"), folder("f-a", "Alpha"), folder("f-a1", "Sub", "f-a")];
@@ -38,7 +41,7 @@ describe("buildTree", () => {
     expect(tree.folders.map((f) => f.folder.name)).toEqual(["Alpha", "Beta"]);
     const alpha = tree.folders[0]!;
     expect(alpha.children.map((c) => c.folder.name)).toEqual(["Sub"]);
-    expect(alpha.projects.map((p) => p.name)).toEqual(["Apple", "zebra"]);
+    expect(alpha.items.map((p) => p.name)).toEqual(["Apple", "zebra"]);
     expect(alpha.count).toBe(3);
     expect(tree.folders[1]!.count).toBe(0);
     expect(tree.uncategorized.map((p) => p.name)).toEqual(["item 2", "item 10", "loose"]);
@@ -47,7 +50,7 @@ describe("buildTree", () => {
   it("orders by the latest change when asked, folders by their newest content", () => {
     const tree = buildTree(folders, projects, "modified");
     expect(tree.folders.map((f) => f.folder.name)).toEqual(["Alpha", "Beta"]);
-    expect(tree.folders[0]!.projects.map((p) => p.name)).toEqual(["zebra", "Apple"]);
+    expect(tree.folders[0]!.items.map((p) => p.name)).toEqual(["zebra", "Apple"]);
     expect(tree.uncategorized.map((p) => p.name)).toEqual(["item 10", "item 2", "loose"]);
     expect(tree.folders[0]!.modified).toBe(Date.parse("2026-02-01T00:00:00Z"));
   });

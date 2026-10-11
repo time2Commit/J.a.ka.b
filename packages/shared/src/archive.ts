@@ -41,6 +41,9 @@ export const archiveManifestSchema = z.object({
   projects: z.array(z.object({ slug: slugSchema, name: z.string().min(1) })),
 });
 
+/** Names of the folders from the top of the tree down to the one that holds something. */
+const folderPath = z.array(z.string().min(1).max(80)).max(8);
+
 export const archiveTemplateSchema = z.object({
   name: z.string().min(1).max(80),
   defaults: z.object({
@@ -55,11 +58,10 @@ export const archiveTemplateSchema = z.object({
       .max(7 * 24 * 60),
     checklist: z.array(z.string().max(200)).max(50),
   }),
+  /** Where the template sits in the template tree; empty = uncategorized. */
+  folder: folderPath.default([]),
   note: noteJson.nullable(),
 });
-
-/** Names of the folders from the top of the tree down to the one that holds something. */
-const folderPath = z.array(z.string().min(1).max(80)).max(8);
 
 export const archiveBoardSchema = z.object({
   workspace: z.object({
@@ -74,6 +76,8 @@ export const archiveBoardSchema = z.object({
   templates: z.array(archiveTemplateSchema).default([]),
   /** Every folder of the project tree, empty ones included. */
   folders: z.array(folderPath).default([]),
+  /** Every folder of the template tree, empty ones included. */
+  templateFolders: z.array(folderPath).default([]),
   /** People, never credentials: accounts are re-created by an admin on the new instance. */
   users: z.array(
     z.object({

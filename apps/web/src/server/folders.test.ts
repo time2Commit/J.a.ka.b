@@ -47,6 +47,57 @@ async function project(label: string, folderId: string | null = null) {
   return p;
 }
 
+describe("folders of the template tree", () => {
+  it("are a separate tree: own list, no mixing with projects, templates move up on delete", async () => {
+    const tplFolder = await createFolder(prisma, {
+      kind: "template",
+      name: name("Tpl"),
+      parentId: null,
+    });
+    const projectFolder = await createFolder(prisma, { name: name("Proj"), parentId: null });
+    // The same name may exist in both trees.
+    await createFolder(prisma, { kind: "template", name: name("Proj"), parentId: null });
+
+    expect((await listFolders(prisma, "template")).map((f) => f.id)).toContain(tplFolder.id);
+    expect((await listFolders(prisma, "template")).map((f) => f.id)).not.toContain(
+      projectFolder.id,
+    );
+    expect((await listFolders(prisma)).map((f) => f.id)).not.toContain(tplFolder.id);
+
+    // A folder cannot be put inside a folder of the other tree, in either direction.
+    await expect(
+      createFolder(prisma, { kind: "template", name: name("Bad"), parentId: projectFolder.id }),
+    ).rejects.toMatchObject({ status: 409 });
+    await expect(
+      updateFolder(prisma, projectFolder.id, { parentId: tplFolder.id }),
+    ).rejects.toMatchObject({
+      status: 409,
+    });
+
+    const outer = await createFolder(prisma, {
+      kind: "template",
+      name: name("Outer"),
+      parentId: null,
+    });
+    const inner = await createFolder(prisma, {
+      kind: "template",
+      name: name("Inner"),
+      parentId: outer.id,
+    });
+    const template = await prisma.template.create({
+      data: { name: name("Tpl item"), defaults: {}, createdBy: "u", folderId: inner.id },
+    });
+    await deleteFolder(prisma, inner.id);
+    expect((await prisma.template.findUniqueOrThrow({ where: { id: template.id } })).folderId).toBe(
+      outer.id,
+    );
+    expect(await ensureFolderPath(prisma, [name("Path")], "template")).toBe(
+      await ensureFolderPath(prisma, [name("path")], "template"),
+    );
+    expect((await folderPathMap(prisma, "template")).size).toBeGreaterThan(0);
+  });
+});
+
 describe("folders", () => {
   it("creates nested folders and refuses a duplicate name next to it", async () => {
     const top = await createFolder(prisma, { name: name("Clients"), parentId: null });

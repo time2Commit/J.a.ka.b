@@ -6,13 +6,6 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -20,55 +13,24 @@ import { api, ApiError } from "@/lib/api";
 import type { Meta, TemplateFull } from "@/lib/types";
 import { TemplateNoteEditor } from "./template-note-editor";
 
-const EMPTY: TemplateFull = {
-  id: "",
-  name: "",
-  defaults: { statusId: null, labelIds: [], memberIds: [], durationMin: 60, checklist: [] },
-  hasNote: false,
-  updatedAt: "",
-  note: null,
-};
-
-export const templatesKey = ["templates"] as const;
-
-/** Create or edit a template: defaults for new projects plus their initial note. */
-export function TemplateDialog({
-  templateId,
-  open,
-  onOpenChange,
-}: {
-  /** Null to create a new template. */
-  templateId: string | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const existing = useQuery({
-    queryKey: [...templatesKey, templateId],
+/** The page of one template: defaults for new projects plus their initial note. */
+export function TemplateEditor({ templateId }: { templateId: string }) {
+  const t = useTranslations("Templates");
+  const template = useQuery({
+    queryKey: ["templates", templateId],
     queryFn: () => api<TemplateFull>(`/api/templates/${templateId}`),
-    enabled: open && templateId !== null,
   });
-  const ready = templateId === null || existing.data;
+  if (template.isError) {
+    return <p className="text-muted-foreground">{t("notFound")}</p>;
+  }
+  if (!template.data) return <p className="text-muted-foreground">…</p>;
+  // Remounted per template (and after each save) so the form starts from the stored values.
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        {ready ? (
-          // Remounted per template so the form starts from its values.
-          <TemplateForm
-            key={templateId ?? "new"}
-            template={existing.data ?? EMPTY}
-            onDone={() => onOpenChange(false)}
-          />
-        ) : (
-          <DialogHeader>
-            <DialogTitle>…</DialogTitle>
-          </DialogHeader>
-        )}
-      </DialogContent>
-    </Dialog>
+    <TemplateForm key={`${template.data.id}-${template.data.updatedAt}`} template={template.data} />
   );
 }
 
-function TemplateForm({ template, onDone }: { template: TemplateFull; onDone: () => void }) {
+function TemplateForm({ template }: { template: TemplateFull }) {
   const t = useTranslations("Templates");
   const common = useTranslations("Common");
   const queryClient = useQueryClient();
@@ -77,7 +39,6 @@ function TemplateForm({ template, onDone }: { template: TemplateFull; onDone: ()
   const [defaults, setDefaults] = useState(template.defaults);
   const [checklist, setChecklist] = useState(template.defaults.checklist.join("\n"));
   const [note, setNote] = useState<JSONContent | null>(template.note as JSONContent | null);
-  const isNew = template.id === "";
 
   const save = useMutation({
     mutationFn: () => {
@@ -92,14 +53,11 @@ function TemplateForm({ template, onDone }: { template: TemplateFull; onDone: ()
         },
         note,
       };
-      return isNew
-        ? api("/api/templates", { method: "POST", json: body })
-        : api(`/api/templates/${template.id}`, { method: "PATCH", json: body });
+      return api(`/api/templates/${template.id}`, { method: "PATCH", json: body });
     },
     onSuccess: () => {
       toast.success(t("saved"));
-      void queryClient.invalidateQueries({ queryKey: templatesKey });
-      onDone();
+      void queryClient.invalidateQueries({ queryKey: ["templates"] });
     },
     onError: (error) =>
       toast.error(
@@ -114,12 +72,10 @@ function TemplateForm({ template, onDone }: { template: TemplateFull; onDone: ()
     }));
 
   return (
-    <>
-      <DialogHeader>
-        <DialogTitle>{isNew ? t("newTitle") : t("editTitle")}</DialogTitle>
-      </DialogHeader>
+    <div className="flex flex-col gap-4">
+      <h2 className="text-xl font-semibold tracking-tight">{template.name}</h2>
       <form
-        className="flex flex-col gap-4"
+        className="mx-auto flex max-w-3xl flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           save.mutate();
@@ -222,15 +178,12 @@ function TemplateForm({ template, onDone }: { template: TemplateFull; onDone: ()
           <p className="text-xs text-muted-foreground">{t("noteHelp")}</p>
         </div>
 
-        <DialogFooter>
-          <Button type="button" variant="ghost" onClick={onDone}>
-            {common("cancel")}
-          </Button>
+        <div className="flex justify-end">
           <Button type="submit" disabled={save.isPending || name.trim() === ""}>
             {common("save")}
           </Button>
-        </DialogFooter>
+        </div>
       </form>
-    </>
+    </div>
   );
 }

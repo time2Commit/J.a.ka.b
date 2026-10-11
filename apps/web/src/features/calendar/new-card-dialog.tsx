@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { api, ApiError } from "@/lib/api";
-import { templatesKey } from "@/features/templates/template-dialog";
+import { templatesKey } from "@/features/templates/keys";
 import type { ProjectListItem, Status, TemplateItem } from "@/lib/types";
 import { ProjectCombobox, type ProjectChoice } from "./project-combobox";
 import { autoEndDate, draftToRange, withDuration, type Draft } from "./time";
