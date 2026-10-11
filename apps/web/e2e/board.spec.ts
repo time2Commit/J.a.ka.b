@@ -208,3 +208,117 @@ test("the last day follows the start and the times until it is chosen, also late
   await date.fill("2026-10-11");
   await expect(lastDay).toHaveValue("2026-10-12");
 });
+
+test("a card lists its labels above the name, then the status, then the members", async ({
+  page,
+  request,
+}) => {
+  const day = todayInRome();
+  const label = await (
+    await request.post("/api/labels", { data: { name: "Urgent layout", color: "#ef4444" } })
+  ).json();
+  const users = (await (await request.get("/api/users")).json()) as { id: string; name: string }[];
+  const res = await request.post("/api/cards", {
+    data: {
+      projectName: "Layout project",
+      start: `${day}T05:00:00Z`,
+      end: `${day}T06:30:00Z`,
+      labelIds: [label.id],
+      memberIds: [users[0]!.id],
+    },
+  });
+  expect(res.ok()).toBe(true);
+  await page.reload();
+
+  const card = page.locator(".fc-event", { hasText: "Layout project" });
+  await expect(card).toBeVisible();
+  const top = async (text: string | RegExp) =>
+    (await card.getByText(text).first().boundingBox())!.y;
+  const labelY = await top("Urgent layout");
+  const nameY = await top("Layout project");
+  const statusY = await top("To do");
+  const memberY = (await card.locator(`[title='${users[0]!.name}']`).boundingBox())!.y;
+  expect(labelY).toBeLessThan(nameY);
+  expect(nameY).toBeLessThan(statusY);
+  expect(statusY).toBeLessThan(memberY);
+});
+
+test("the calendar view picked by hand is the default the next time, on any device", async ({
+  page,
+  browser,
+}) => {
+  await page.getByRole("button", { name: "Month" }).click();
+  await expect(page.getByRole("button", { name: "Month" })).toHaveAttribute("aria-pressed", "true");
+  await expect
+    .poll(async () => {
+      const meta = await page.request.get("/api/meta");
+      return ((await meta.json()) as { preferences: { calendarView: string | null } }).preferences
+        .calendarView;
+    })
+    .toBe("dayGridMonth");
+
+  // A brand new browser session of the same account opens on the month view.
+  const other = await browser.newContext({ storageState: STORAGE_STATE });
+  const otherPage = await other.newPage();
+  await otherPage.goto("/");
+  await expect(otherPage.getByRole("button", { name: "Month" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await other.close();
+
+  // Leave the shared account the way the other tests expect it.
+  await page.getByRole("button", { name: "Week" }).click();
+  await expect
+    .poll(async () => {
+      const meta = await page.request.get("/api/meta");
+      return ((await meta.json()) as { preferences: { calendarView: string | null } }).preferences
+        .calendarView;
+    })
+    .toBe("timeGridWeek");
+});
+
+test("renaming a status in use changes every card; deleting one moves its cards to another", async ({
+  page,
+  request,
+}) => {
+  const day = todayInRome();
+  const created = await (
+    await request.post("/api/statuses", { data: { name: "Temporary", color: "#8b5cf6" } })
+  ).json();
+  const res = await request.post("/api/cards", {
+    data: {
+      projectName: "Status moves",
+      start: `${day}T03:00:00Z`,
+      end: `${day}T04:00:00Z`,
+      statusId: created.id,
+    },
+  });
+  expect(res.ok()).toBe(true);
+  await page.reload();
+  const card = page.locator(".fc-event", { hasText: "Status moves" });
+  await expect(card).toContainText("Temporary");
+
+  // Rename it in Settings, then go back to the calendar: the card shows the new name.
+  await page.getByRole("link", { name: "Settings" }).click();
+  await page.waitForLoadState("networkidle");
+  const nameInput = page.locator('input[value="Temporary"]');
+  await nameInput.fill("Renamed in use");
+  await nameInput.blur();
+  await expect(page.locator('input[value="Renamed in use"]')).toBeVisible();
+  await page.getByRole("link", { name: "Calendar" }).click();
+  await expect(card).toContainText("Renamed in use");
+
+  // Delete it while in use: choose where the card goes.
+  await page.getByRole("link", { name: "Settings" }).click();
+  await page.waitForLoadState("networkidle");
+  const row = page.locator("li", { has: page.locator('input[value="Renamed in use"]') });
+  await row.getByRole("button", { name: "Delete" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Move them to").selectOption({ label: "Done" });
+  await dialog.getByRole("button", { name: "Delete status" }).click();
+  await expect(page.getByText("Status deleted")).toBeVisible();
+  await expect(page.locator('input[value="Renamed in use"]')).toHaveCount(0);
+  await page.getByRole("link", { name: "Calendar" }).click();
+  await expect(card).toContainText("Done");
+});

@@ -9,6 +9,7 @@ import listPlugin from "@fullcalendar/list";
 import luxon3Plugin from "@fullcalendar/luxon3";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import { CALENDAR_VIEWS, type CalendarView } from "@jakab/shared";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -30,8 +31,8 @@ import { useBoardEvents } from "./use-board-events";
 const PLUGINS = [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin, luxon3Plugin];
 const LOCALES = [itLocale];
 
-const VIEWS = ["timeGridDay", "timeGridWeek", "dayGridMonth", "listWeek"] as const;
-type View = (typeof VIEWS)[number];
+const VIEWS = CALENDAR_VIEWS;
+type View = CalendarView;
 const VIEW_LABEL: Record<View, "day" | "week" | "month" | "list"> = {
   timeGridDay: "day",
   timeGridWeek: "week",
@@ -127,6 +128,18 @@ export function Board() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
+
+  const saveView = useMutation({
+    mutationFn: (calendarView: View) =>
+      api("/api/me/preferences", { method: "PATCH", json: { calendarView } }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["meta"] }),
+  });
+
+  /** A view picked by hand becomes the person's default, on every device. */
+  function pickView(next: View) {
+    api_()?.changeView(next);
+    saveView.mutate(next);
+  }
 
   const schedule = useMutation({
     mutationFn: (body: { projectId: string; start: string; end: string; allDay: boolean }) =>
@@ -240,7 +253,7 @@ export function Board() {
                 key={v}
                 type="button"
                 aria-pressed={view === v}
-                onClick={() => api_()?.changeView(v)}
+                onClick={() => pickView(v)}
                 className={cn(
                   "px-3 py-1.5 text-sm first:rounded-l-md last:rounded-r-md focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
                   view === v ? "bg-accent font-medium" : "text-muted-foreground hover:bg-accent/50",
@@ -270,9 +283,10 @@ export function Board() {
             ref={calendarRef}
             plugins={PLUGINS}
             initialView={
-              typeof window !== "undefined" && window.innerWidth < 768
+              m.preferences.calendarView ??
+              (typeof window !== "undefined" && window.innerWidth < 768
                 ? "timeGridDay"
-                : "timeGridWeek"
+                : "timeGridWeek")
             }
             headerToolbar={false}
             height="auto"

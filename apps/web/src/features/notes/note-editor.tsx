@@ -270,6 +270,13 @@ function NoteEditorView({
       ],
       editorProps: {
         attributes: { class: "jakab-note focus:outline-none", "aria-label": t("placeholder") },
+        // A plain click places the cursor; Ctrl/Cmd + click (or any click while read-only) opens the link.
+        handleClick: (view, _pos, event) => {
+          const anchor = (event.target as HTMLElement | null)?.closest("a[href]");
+          if (!anchor || !(event.ctrlKey || event.metaKey || !view.editable)) return false;
+          window.open(anchor.getAttribute("href") ?? "", "_blank", "noopener,noreferrer");
+          return true;
+        },
       },
     },
     [doc, provider],

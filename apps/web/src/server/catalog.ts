@@ -28,17 +28,35 @@ export async function reorderStatuses(db: PrismaClient, ids: string[]) {
   await notifyBoardChanged(db, "status");
 }
 
-/** A status in use cannot be deleted; at least one status must always exist. */
-export async function deleteStatus(db: PrismaClient, id: string) {
-  const [total, usedByProjects, usedByCards] = await Promise.all([
-    db.status.count(),
-    db.project.count({ where: { statusId: id } }),
-    db.card.count({ where: { statusOverrideId: id } }),
-  ]);
-  if (total <= 1) throw conflict("At least one status is required");
-  if (usedByProjects + usedByCards > 0) throw conflict("Status is in use");
-  await db.status.delete({ where: { id } });
-  await notifyBoardChanged(db, "status", id);
+/**
+ * Deletes a status. Projects and cards that use it move to `replaceWith`, or to the nearest
+ * remaining status (the previous one, else the next) when none is given. At least one status
+ * must always exist.
+ */
+export async function deleteStatus(db: PrismaClient, id: string, replaceWith?: string) {
+  const moved = await db.$transaction(async (tx) => {
+    const all = await tx.status.findMany({ orderBy: { order: "asc" } });
+    const index = all.findIndex((s) => s.id === id);
+    if (index < 0) throw notFound("Status");
+    if (all.length <= 1) throw conflict("At least one status is required");
+    if (replaceWith === id) throw conflict("Pick a different status to move items to");
+    const replacement = replaceWith
+      ? all.find((s) => s.id === replaceWith)
+      : (all[index - 1] ?? all[index + 1]);
+    if (!replacement) throw notFound("Status");
+
+    const [projects, cards] = await Promise.all([
+      tx.project.updateMany({ where: { statusId: id }, data: { statusId: replacement.id } }),
+      tx.card.updateMany({
+        where: { statusOverrideId: id },
+        data: { statusOverrideId: replacement.id },
+      }),
+    ]);
+    await tx.status.delete({ where: { id } });
+    await notifyBoardChanged(tx, "status", id);
+    return { projects: projects.count, cards: cards.count, statusId: replacement.id };
+  });
+  return moved;
 }
 
 export const listLabels = (db: PrismaClient) => db.label.findMany({ orderBy: { name: "asc" } });

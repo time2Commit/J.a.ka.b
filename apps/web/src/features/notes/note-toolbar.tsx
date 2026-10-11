@@ -25,9 +25,10 @@ import {
   Strikethrough,
   Table as TableIcon,
 } from "lucide-react";
-import { TEXT_COLORS } from "@jakab/editor";
+import { normalizeLinkUrl, TEXT_COLORS } from "@jakab/editor";
 import { useTranslations } from "next-intl";
 import { useRef } from "react";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -115,10 +116,25 @@ export function NoteToolbar({
 
   function toggleLink() {
     const previous = editor.getAttributes("link").href as string | undefined;
-    const href = window.prompt(t("linkPrompt"), previous ?? "https://");
-    if (href === null) return;
-    if (href.trim() === "") chain().extendMarkRange("link").unsetLink().run();
-    else chain().extendMarkRange("link").setLink({ href: href.trim() }).run();
+    const answer = window.prompt(t("linkPrompt"), previous ?? "https://");
+    if (answer === null) return;
+    if (answer.trim() === "") {
+      chain().extendMarkRange("link").unsetLink().run();
+      return;
+    }
+    const href = normalizeLinkUrl(answer);
+    if (!href) {
+      toast.error(t("linkInvalid"));
+      return;
+    }
+    if (editor.state.selection.empty && !editor.isActive("link")) {
+      // Nothing selected: the address itself becomes the visible, linked text.
+      chain()
+        .insertContent({ type: "text", text: href, marks: [{ type: "link", attrs: { href } }] })
+        .run();
+    } else {
+      chain().extendMarkRange("link").setLink({ href }).run();
+    }
   }
 
   return (
@@ -210,7 +226,7 @@ export function NoteToolbar({
         >
           <Highlighter />
         </ToolButton>
-        <ToolButton label={t("link")} active={s.link} onClick={toggleLink}>
+        <ToolButton label={`${t("link")} (${t("linkHint")})`} active={s.link} onClick={toggleLink}>
           <LinkIcon />
         </ToolButton>
         <Separator />

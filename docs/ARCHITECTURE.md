@@ -108,7 +108,9 @@ docker-compose.yml, .env.example
 ### 5.1 Calendar board
 
 - FullCalendar with **Day / Week (timeGrid) / Month (dayGrid) / List** views and a custom shadcn toolbar.
-- **Custom card rendering** (`eventContent`): project name, colored status badge, % bar, label dots, member avatars, note/attachment icon.
+- **Custom card rendering** (`eventContent`), top to bottom: labels, project name, colored status badge with %, member avatars, % bar. Compact views (month, list, all-day) show labels as small bars.
+- **Default view per person**: picking a view saves it on the user (`user.calendarView`, `PATCH /api/me/preferences`), and `/api/meta` returns it, so the calendar opens on it from any device.
+- **Statuses are shared by reference**: renaming or recolouring one changes every card that uses it (the settings screen refreshes the card queries). Deleting one in use asks where its projects and card overrides move (`DELETE /api/statuses/:id` with `replaceWith`, the nearest status when omitted) and does it in one transaction.
 - Drag & drop and resize → optimistic update (TanStack Query) + `PATCH /api/cards/:id`; "Undo" toast.
 - **"To schedule" side panel**: projects without future cards, draggable onto the calendar (FullCalendar `Draggable`).
 - Filters by member, label, status; quick search (⌘K with `cmdk`).
@@ -123,7 +125,7 @@ docker-compose.yml, .env.example
 
 ### 5.3 Project note
 
-- `/projects/[id]` page with a full-width Tiptap editor: headings, lists, checklists, tables, highlight, colors, code, links, @member mentions, "/" slash commands.
+- `/projects/[id]` page with a full-width Tiptap editor: headings, lists, checklists, tables, highlight, colors, code, links (an address without a scheme gets `https://`, nothing selected inserts the address as text, Ctrl/Cmd+click opens it), @member mentions, "/" slash commands.
 - **Collaboration**: `HocuspocusProvider` (document `project:<id>`), colored cursors with each user's name, presence (avatars of who is in the note).
 - **Who changed what**:
   1. `BlockAttribution` extension (in `packages/editor`): an `appendTransaction` writes `lastEditedBy` / `lastEditedAt` on changed blocks → hovering the margin shows "Edited by Mario · 10:42";

@@ -166,7 +166,63 @@ describe("cards", () => {
 });
 
 describe("statuses", () => {
-  it("refuses to delete a status that is in use", async () => {
-    await expect(deleteStatus(prisma, statusId)).rejects.toMatchObject({ status: 409 });
+  async function projectWithStatus(name: string, status: string, override?: string) {
+    const { card } = await createCard(
+      prisma,
+      {
+        projectName: `${name} ${run}`,
+        start,
+        end,
+        allDay: false,
+        labelIds: [],
+        memberIds: [],
+        statusId: status,
+      },
+      userId,
+    );
+    projectIds.push(card.projectId);
+    if (override) await updateCard(prisma, card.id, { statusOverrideId: override }, userId);
+    return card;
+  }
+
+  it("moves projects and card overrides to the chosen status when one in use is deleted", async () => {
+    const doomed = await createStatus(prisma, {
+      name: `Doomed ${run}`,
+      color: "#333333",
+      isDone: false,
+    });
+    const card = await projectWithStatus("Moves", doomed.id);
+    const other = await projectWithStatus("Overridden", statusId, doomed.id);
+
+    const moved = await deleteStatus(prisma, doomed.id, doneStatusId);
+
+    expect(moved).toMatchObject({ projects: 1, cards: 1, statusId: doneStatusId });
+    expect(await prisma.status.count({ where: { id: doomed.id } })).toBe(0);
+    const project = await prisma.project.findUniqueOrThrow({ where: { id: card.projectId } });
+    expect(project.statusId).toBe(doneStatusId);
+    const overridden = await prisma.card.findUniqueOrThrow({ where: { id: other.id } });
+    expect(overridden.statusOverrideId).toBe(doneStatusId);
+    const untouched = await prisma.project.findUniqueOrThrow({ where: { id: other.projectId } });
+    expect(untouched.statusId).toBe(statusId);
+  });
+
+  it("falls back to a neighbouring status when none is chosen", async () => {
+    const doomed = await createStatus(prisma, {
+      name: `Fallback ${run}`,
+      color: "#444444",
+      isDone: false,
+    });
+    const card = await projectWithStatus("Falls back", doomed.id);
+
+    const moved = await deleteStatus(prisma, doomed.id);
+
+    expect(moved.statusId).not.toBe(doomed.id);
+    const project = await prisma.project.findUniqueOrThrow({ where: { id: card.projectId } });
+    expect(project.statusId).toBe(moved.statusId);
+  });
+
+  it("rejects a missing status and moving items onto the deleted status itself", async () => {
+    await expect(deleteStatus(prisma, "missing")).rejects.toMatchObject({ status: 404 });
+    await expect(deleteStatus(prisma, statusId, statusId)).rejects.toMatchObject({ status: 409 });
   });
 });

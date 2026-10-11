@@ -11,9 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { api, ApiError } from "@/lib/api";
-import type { Meta } from "@/lib/types";
+import type { Meta, Status } from "@/lib/types";
 import { BackupFilesSection } from "./backup-files-section";
 import { ImportSection } from "./import-section";
+import { StatusDeleteDialog } from "./status-delete-dialog";
 
 const PALETTE = [
   "#64748b",
@@ -33,7 +34,10 @@ function useMetaMutation<T>(fn: (input: T) => Promise<unknown>, successMessage?:
     mutationFn: fn,
     onSuccess: () => {
       if (successMessage) toast.success(successMessage);
-      void queryClient.invalidateQueries({ queryKey: ["meta"] });
+      // Statuses, labels and people are shown on the cards: refresh those too.
+      for (const key of ["meta", "cards", "projects"]) {
+        void queryClient.invalidateQueries({ queryKey: [key] });
+      }
     },
     onError: (error) =>
       toast.error(
@@ -167,7 +171,12 @@ function StatusesSection({ meta }: { meta: Meta }) {
     ({ id, ...json }: { id: string; name?: string; color?: string; isDone?: boolean }) =>
       api(`/api/statuses/${id}`, { method: "PATCH", json }),
   );
-  const remove = useMetaMutation((id: string) => api(`/api/statuses/${id}`, { method: "DELETE" }));
+  const [deleting, setDeleting] = useState<Status | null>(null);
+  const remove = useMetaMutation(
+    ({ id, replaceWith }: { id: string; replaceWith: string }) =>
+      api(`/api/statuses/${id}`, { method: "DELETE", json: { replaceWith } }),
+    t("statusDeleted"),
+  );
   const reorder = useMetaMutation((ids: string[]) =>
     api("/api/statuses/reorder", { method: "POST", json: { ids } }),
   );
@@ -236,7 +245,7 @@ function StatusesSection({ meta }: { meta: Meta }) {
                 variant="ghost"
                 size="icon"
                 aria-label={common("delete")}
-                onClick={() => remove.mutate(s.id)}
+                onClick={() => setDeleting(s)}
               >
                 <Trash2 />
               </Button>
@@ -262,6 +271,15 @@ function StatusesSection({ meta }: { meta: Meta }) {
             {common("add")}
           </Button>
         </form>
+        <StatusDeleteDialog
+          status={deleting}
+          statuses={meta.statuses}
+          pending={remove.isPending}
+          onCancel={() => setDeleting(null)}
+          onConfirm={(replaceWith) =>
+            remove.mutate({ id: deleting!.id, replaceWith }, { onSuccess: () => setDeleting(null) })
+          }
+        />
       </CardContent>
     </Card>
   );
