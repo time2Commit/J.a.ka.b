@@ -71,8 +71,8 @@ export const cardUpdateSchema = z
     end: z.coerce.date(),
     allDay: z.boolean(),
     shortNotes: z.string().max(2000).nullable(),
-    statusOverrideId: id.nullable(),
-    progressOverride: progress.nullable(),
+    statusId: id,
+    progress,
     labelIds: z.array(id),
     memberIds: z.array(id),
   })

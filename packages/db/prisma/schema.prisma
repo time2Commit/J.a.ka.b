@@ -189,9 +189,11 @@ model Card {
   start            DateTime
   end              DateTime
   allDay           Boolean  @default(false)
-  statusOverrideId String?
-  statusOverride   Status?  @relation(fields: [statusOverrideId], references: [id], onDelete: SetNull)
-  progressOverride Int?
+  // Status, progress, labels and members belong to the card. The project keeps the values of the
+  // card edited last, as the starting point for its next card.
+  statusId         String
+  status           Status   @relation(fields: [statusId], references: [id])
+  progress         Int      @default(0)
   shortNotes       String?
   createdById      String
   createdAt        DateTime @default(now())
@@ -201,6 +203,7 @@ model Card {
   labels  CardLabel[]
 
   @@index([projectId])
+  @@index([statusId])
   @@index([start, end])
   @@map("card")
 }

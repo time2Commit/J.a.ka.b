@@ -47,10 +47,7 @@ export async function deleteStatus(db: PrismaClient, id: string, replaceWith?: s
 
     const [projects, cards] = await Promise.all([
       tx.project.updateMany({ where: { statusId: id }, data: { statusId: replacement.id } }),
-      tx.card.updateMany({
-        where: { statusOverrideId: id },
-        data: { statusOverrideId: replacement.id },
-      }),
+      tx.card.updateMany({ where: { statusId: id }, data: { statusId: replacement.id } }),
     ]);
     await tx.status.delete({ where: { id } });
     await notifyBoardChanged(tx, "status", id);

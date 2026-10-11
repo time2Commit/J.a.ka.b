@@ -1,10 +1,10 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileText, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { api } from "@/lib/api";
-import type { CardDto, Meta, ProjectDto } from "@/lib/types";
+import type { CardDto, Meta } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 function Chip({
@@ -52,6 +52,16 @@ function toggle(list: string[], id: string) {
   return list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
 }
 
+/** The fields of a card that are saved on their own, as the PATCH /api/cards/:id body. */
+interface CardPatch {
+  title?: string | null;
+  shortNotes?: string | null;
+  statusId?: string;
+  progress?: number;
+  labelIds?: string[];
+  memberIds?: string[];
+}
+
 export function CardPanel({
   card,
   meta,
@@ -65,82 +75,80 @@ export function CardPanel({
   const common = useTranslations("Common");
   const queryClient = useQueryClient();
 
-  const project = useQuery({
-    queryKey: ["projects", card?.projectId],
-    queryFn: () => api<ProjectDto>(`/api/projects/${card!.projectId}`),
-    enabled: Boolean(card),
-  });
-
-  // Project-level fields
-  const [statusId, setStatusId] = useState("");
-  const [progress, setProgress] = useState(0);
-  const [labelIds, setLabelIds] = useState<string[]>([]);
-  const [memberIds, setMemberIds] = useState<string[]>([]);
-  // Card-level fields
+  // Drafts of the fields typed or dragged; everything else is read straight from the card.
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
-  const [statusOverrideId, setStatusOverrideId] = useState("");
-  const [overrideProgress, setOverrideProgress] = useState(false);
-  const [progressOverride, setProgressOverride] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
+  const cardId = card?.id;
   useEffect(() => {
     if (!card) return;
     setTitle(card.title ?? "");
     setNotes(card.shortNotes ?? "");
-    setStatusOverrideId(card.statusOverridden ? card.status.id : "");
-    setOverrideProgress(card.progressOverridden);
-    setProgressOverride(card.progress);
-  }, [card]);
+    setProgress(card.progress);
+    // Only when another card is opened: a refresh must not overwrite what is being typed.
+  }, [cardId]);
 
-  useEffect(() => {
-    if (!project.data) return;
-    setStatusId(project.data.statusId);
-    setProgress(project.data.progress);
-    setLabelIds(project.data.labelIds);
-    setMemberIds(project.data.memberIds);
-  }, [project.data]);
-
-  const refresh = () => {
-    void queryClient.invalidateQueries({ queryKey: ["cards"] });
-    void queryClient.invalidateQueries({ queryKey: ["projects"] });
-  };
-
-  const saveProject = useMutation({
-    mutationFn: () =>
-      api(`/api/projects/${card!.projectId}`, {
-        method: "PATCH",
-        json: { statusId, progress, labelIds, memberIds },
+  /** Applies the change to the cached cards right away, so the calendar follows without a wait. */
+  function applyLocally(id: string, patch: CardPatch) {
+    queryClient.setQueriesData<CardDto[]>({ queryKey: ["cards"] }, (old) =>
+      old?.map((c) => {
+        if (c.id !== id) return c;
+        const status = patch.statusId ? meta.statuses.find((s) => s.id === patch.statusId) : null;
+        return {
+          ...c,
+          ...(patch.title !== undefined && { title: patch.title }),
+          ...(patch.shortNotes !== undefined && { shortNotes: patch.shortNotes }),
+          ...(patch.progress !== undefined && { progress: patch.progress }),
+          ...(status && { status }),
+          ...(patch.labelIds && {
+            labels: meta.labels.filter((l) => patch.labelIds!.includes(l.id)),
+          }),
+          ...(patch.memberIds && { memberIds: patch.memberIds }),
+        };
       }),
-    onSuccess: () => {
-      toast.success(common("saved"));
-      refresh();
-    },
+    );
+  }
+
+  const save = useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: CardPatch }) =>
+      api(`/api/cards/${id}`, { method: "PATCH", json: patch }),
+    onMutate: ({ id, patch }) => applyLocally(id, patch),
     onError: () => toast.error(common("error")),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ["cards"] });
+      void queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
   });
 
-  const saveCard = useMutation({
-    mutationFn: () =>
-      api(`/api/cards/${card!.id}`, {
-        method: "PATCH",
-        json: {
-          title: title.trim() || null,
-          shortNotes: notes.trim() || null,
-          statusOverrideId: statusOverrideId || null,
-          progressOverride: overrideProgress ? progressOverride : null,
-        },
-      }),
-    onSuccess: () => {
-      toast.success(common("saved"));
-      refresh();
-    },
-    onError: () => toast.error(common("error")),
-  });
+  /** Saves a change now. Typed or dragged values wait until the person pauses (see `later`). */
+  function now(patch: CardPatch) {
+    if (card) save.mutate({ id: card.id, patch });
+  }
+  function later(key: string, patch: CardPatch, delay = 600) {
+    if (!card) return;
+    const id = card.id;
+    clearTimeout(timers.current.get(key));
+    // Not cleared when the panel closes: a change made just before closing is still saved.
+    timers.current.set(
+      key,
+      setTimeout(() => save.mutate({ id, patch }), delay),
+    );
+  }
+  function flush(key: string, patch: CardPatch) {
+    if (!card || !timers.current.has(key)) return;
+    clearTimeout(timers.current.get(key));
+    timers.current.delete(key);
+    save.mutate({ id: card.id, patch });
+  }
 
   const remove = useMutation({
     mutationFn: () => api(`/api/cards/${card!.id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success(t("cardDeleted"));
-      refresh();
+      void queryClient.invalidateQueries({ queryKey: ["cards"] });
+      void queryClient.invalidateQueries({ queryKey: ["projects"] });
       onClose();
     },
     onError: () => toast.error(common("error")),
@@ -153,17 +161,16 @@ export function CardPanel({
           <>
             <DialogHeader>
               <DialogTitle>{card.projectName}</DialogTitle>
-              <DialogDescription>{t("details")}</DialogDescription>
+              <DialogDescription>{t("autosave")}</DialogDescription>
             </DialogHeader>
 
-            <section className="flex flex-col gap-3" aria-label={t("sectionProject")}>
-              <h3 className="text-sm font-semibold">{t("sectionProject")}</h3>
+            <section className="flex flex-col gap-3" aria-label={t("sectionCard")}>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="p-status">{t("status")}</Label>
+                <Label htmlFor="c-status">{t("status")}</Label>
                 <Select
-                  id="p-status"
-                  value={statusId}
-                  onChange={(e) => setStatusId(e.target.value)}
+                  id="c-status"
+                  value={card.status.id}
+                  onChange={(e) => now({ statusId: e.target.value })}
                 >
                   {meta.statuses.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -173,17 +180,21 @@ export function CardPanel({
                 </Select>
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="p-progress">
+                <Label htmlFor="c-progress">
                   {t("progress")}: {progress}%
                 </Label>
                 <input
-                  id="p-progress"
+                  id="c-progress"
                   type="range"
                   min={0}
                   max={100}
                   step={5}
                   value={progress}
-                  onChange={(e) => setProgress(Number(e.target.value))}
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+                    setProgress(value);
+                    later("progress", { progress: value }, 400);
+                  }}
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -193,8 +204,15 @@ export function CardPanel({
                     <Chip
                       key={l.id}
                       color={l.color}
-                      active={labelIds.includes(l.id)}
-                      onClick={() => setLabelIds(toggle(labelIds, l.id))}
+                      active={card.labels.some((x) => x.id === l.id)}
+                      onClick={() =>
+                        now({
+                          labelIds: toggle(
+                            card.labels.map((x) => x.id),
+                            l.id,
+                          ),
+                        })
+                      }
                     >
                       {l.name}
                     </Chip>
@@ -208,35 +226,25 @@ export function CardPanel({
                     <Chip
                       key={u.id}
                       color={u.avatarColor}
-                      active={memberIds.includes(u.id)}
-                      onClick={() => setMemberIds(toggle(memberIds, u.id))}
+                      active={card.memberIds.includes(u.id)}
+                      onClick={() => now({ memberIds: toggle(card.memberIds, u.id) })}
                     >
                       {u.name}
                     </Chip>
                   ))}
                 </div>
               </div>
-              <Button
-                variant="secondary"
-                className="self-start"
-                disabled={!project.data || saveProject.isPending}
-                onClick={() => saveProject.mutate()}
-              >
-                {common("save")}
-              </Button>
-            </section>
-
-            <hr />
-
-            <section className="flex flex-col gap-3" aria-label={t("sectionCard")}>
-              <h3 className="text-sm font-semibold">{t("sectionCard")}</h3>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="c-title">{t("title")}</Label>
                 <Input
                   id="c-title"
                   value={title}
                   maxLength={120}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    later("title", { title: e.target.value.trim() || null });
+                  }}
+                  onBlur={() => flush("title", { title: title.trim() || null })}
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -245,69 +253,33 @@ export function CardPanel({
                   id="c-notes"
                   value={notes}
                   maxLength={2000}
-                  onChange={(e) => setNotes(e.target.value)}
+                  onChange={(e) => {
+                    setNotes(e.target.value);
+                    later("notes", { shortNotes: e.target.value.trim() || null });
+                  }}
+                  onBlur={() => flush("notes", { shortNotes: notes.trim() || null })}
                 />
               </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="c-status">{t("status")}</Label>
-                <Select
-                  id="c-status"
-                  value={statusOverrideId}
-                  onChange={(e) => setStatusOverrideId(e.target.value)}
-                >
-                  <option value="">{t("sameAsProject")}</option>
-                  {meta.statuses.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="flex items-center gap-2 text-sm font-medium">
-                  <input
-                    type="checkbox"
-                    checked={overrideProgress}
-                    onChange={(e) => setOverrideProgress(e.target.checked)}
-                  />
-                  {t("override")}: {t("progress")}
-                  {overrideProgress && ` ${progressOverride}%`}
-                </label>
-                {overrideProgress && (
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    step={5}
-                    value={progressOverride}
-                    aria-label={t("progress")}
-                    onChange={(e) => setProgressOverride(Number(e.target.value))}
-                  />
-                )}
-              </div>
-              <div className="flex items-center justify-between">
-                <Button disabled={saveCard.isPending} onClick={() => saveCard.mutate()}>
-                  {common("save")}
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="text-destructive"
-                  disabled={remove.isPending}
-                  onClick={() => {
-                    if (window.confirm(common("confirmDelete"))) remove.mutate();
-                  }}
-                >
-                  <Trash2 /> {t("deleteCard")}
-                </Button>
-              </div>
+              <Button
+                variant="ghost"
+                className="self-start text-destructive"
+                disabled={remove.isPending}
+                onClick={() => {
+                  if (window.confirm(common("confirmDelete"))) remove.mutate();
+                }}
+              >
+                <Trash2 /> {t("deleteCard")}
+              </Button>
             </section>
+
+            <hr />
 
             <Button asChild variant="outline" className="self-start">
               <Link href={`/projects/${card.projectId}`}>
                 <FileText /> {t("openNote")}
               </Link>
             </Button>
-            <p className="text-xs text-muted-foreground">{t("noteSoon")}</p>
+            <p className="text-xs text-muted-foreground">{t("noteShared")}</p>
           </>
         )}
       </DialogContent>

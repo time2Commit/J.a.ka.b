@@ -102,6 +102,7 @@ beforeAll(async () => {
       start: new Date("2026-05-04T09:00:00Z"),
       end: new Date("2026-05-04T11:30:00Z"),
       createdById: userId,
+      statusId: statusA,
     },
   });
 });

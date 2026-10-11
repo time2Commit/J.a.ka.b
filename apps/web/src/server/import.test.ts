@@ -169,7 +169,8 @@ beforeAll(async () => {
       createdById: person.id,
       members: { create: { userId: person.id } },
       labels: { create: { labelId: label.id } },
-      progressOverride: 20,
+      statusId: status.id,
+      progress: 20,
     },
   });
 });
@@ -235,7 +236,7 @@ describe("import round trip", () => {
     expect(imported.labels.map((l) => l.label.name)).toEqual([names.label]);
     expect(imported.members.map((m) => m.userId)).toEqual([created.id]);
     expect(imported.cards).toHaveLength(1);
-    expect(imported.cards[0]).toMatchObject({ title: "Kick-off", progressOverride: 20 });
+    expect(imported.cards[0]).toMatchObject({ title: "Kick-off", progress: 20 });
     expect(imported.cards[0]!.members.map((m) => m.userId)).toEqual([created.id]);
     expect(imported.cards[0]!.start.toISOString()).toBe("2026-04-06T09:00:00.000Z");
 

@@ -112,6 +112,8 @@ beforeAll(async () => {
       start: new Date("2026-03-02T09:00:00Z"),
       end: new Date("2026-03-02T10:00:00Z"),
       createdById: userId,
+      statusId,
+      progress: 40,
       members: { create: { userId } },
       labels: { create: { labelId } },
     },

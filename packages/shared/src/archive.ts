@@ -85,11 +85,17 @@ export const archiveCardSchema = z.object({
   start: isoDate,
   end: isoDate,
   allDay: z.boolean(),
+  /** The card's own status (name) and progress; null in older archives: the project's applies. */
   statusOverride: z.string().nullable(),
   progressOverride: z.number().int().min(0).max(100).nullable(),
   shortNotes: z.string().nullable(),
   members: z.array(z.string()),
   labels: z.array(z.string()),
+  /**
+   * True when `members` and `labels` are the card's own lists, even if empty. Older archives
+   * left them empty to mean "the project's".
+   */
+  perCard: z.boolean().default(false),
 });
 
 export const archiveAttachmentSchema = z.object({
