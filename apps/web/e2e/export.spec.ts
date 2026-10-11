@@ -14,7 +14,7 @@ test("a project and the whole board can be downloaded as archives, the board onl
   await editor.pressSequentially("Exported content");
 
   // The project menu offers the archive, with or without version history.
-  await page.getByRole("button", { name: "Export" }).click();
+  await page.getByRole("button", { name: "Export", exact: true }).click();
   const link = page.getByRole("menuitem", { name: "Including version history" });
   await expect(link).toHaveAttribute("href", /\/export\?versions=1$/);
   await page.keyboard.press("Escape");

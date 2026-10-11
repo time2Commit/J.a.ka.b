@@ -9,6 +9,7 @@ import {
   type ArchiveManifest,
   type ArchiveProject,
 } from "@jakab/shared";
+import { ensureFolderPath } from "./folders";
 import { randomBytes, randomUUID } from "node:crypto";
 import { badRequest, HttpError } from "./errors";
 import { mapNoteIds } from "./note-json";
@@ -270,6 +271,7 @@ async function importProject(ctx: Context, { slug, data }: ParsedProject) {
             progress: data.progress,
             color: data.color,
             archivedAt: data.archived ? new Date() : null,
+            folderId: await ensureFolderPath(tx, data.folder),
             createdById: ctx.actorId,
             createdAt: new Date(data.createdAt),
             labels: {
@@ -522,6 +524,8 @@ export async function applyArchive(
     createdUsers,
     templatesImported: await importTemplates(db, parsed, ctx, env.actorId),
   };
+  // Empty folders of a board archive come along too.
+  for (const path of parsed.board?.folders ?? []) await ensureFolderPath(db, path);
   const wanted = options.slugs ? new Set(options.slugs) : null;
   for (const project of parsed.projects) {
     if (wanted && !wanted.has(project.slug)) continue;

@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from "@jakab/db";
 import type { ProjectUpdateInput } from "@jakab/shared";
 import { notFound } from "./errors";
+import { assertFolderExists } from "./folders";
 import { notifyBoardChanged } from "./notify";
 
 const projectInclude = { labels: true, members: true } as const;
@@ -33,6 +34,7 @@ export async function updateProject(
       throw notFound("Project");
     }
     const { labelIds, memberIds, ...fields } = input;
+    if (fields.folderId !== undefined) await assertFolderExists(tx, fields.folderId);
     const project = await tx.project.update({
       where: { id },
       data: {

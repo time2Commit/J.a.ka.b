@@ -238,7 +238,36 @@
       "save": "Save template",
       "saved": "Template saved",
       "nameTaken": "A template with this name already exists"
-    }
+    },
+    "tree": {
+      "label": "Projects and folders",
+      "newFolder": "New folder",
+      "newSubfolder": "New subfolder",
+      "rename": "Rename",
+      "renameFolder": "Rename folder",
+      "folderName": "Folder name",
+      "moveTo": "Move to…",
+      "moveTitle": "Move “{name}”",
+      "moveHelp": "Choose the folder to put it in, or the top level.",
+      "move": "Move",
+      "topLevel": "Top level (uncategorized)",
+      "deleteFolder": "Delete folder",
+      "deleteConfirm": "Delete the folder “{name}”? Its projects and subfolders are not deleted: they move up one level.",
+      "uncategorized": "Uncategorized",
+      "emptyFolder": "Empty folder",
+      "expand": "Open {name}",
+      "collapse": "Close {name}",
+      "actionsFor": "Actions for {name}",
+      "sortBy": "Order by",
+      "sort": {
+        "name": "Name (A–Z)",
+        "modified": "Last modified"
+      },
+      "empty": "No projects yet. Create a card to start one.",
+      "pickOne": "Choose a project in the tree to open its note, or create folders to keep them in order.",
+      "recent": "Recently modified"
+    },
+    "allProjects": "All projects"
   },
   "Note": {
     "placeholder": "Write the project note…",
@@ -363,5 +392,10 @@
     "noteHelp": "Files cannot be part of a template.",
     "saved": "Template saved",
     "nameTaken": "A template with this name already exists"
+  },
+  "Search": {
+    "label": "Find a project",
+    "placeholder": "Find a project…",
+    "empty": "No project found"
   }
 }

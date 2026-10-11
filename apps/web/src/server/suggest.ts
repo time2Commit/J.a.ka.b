@@ -8,6 +8,8 @@ export interface ProjectSuggestion {
   name: string;
   statusId: string;
   progress: number;
+  /** Folder of the project tree it sits in (null = uncategorized). */
+  folderId: string | null;
   /** End of the last scheduled card, if any. */
   lastCardEnd: string | null;
   /** Card to jump to: the next upcoming one, else the most recent one. */
@@ -24,6 +26,7 @@ interface Row {
   name: string;
   statusId: string;
   progress: number;
+  folderId: string | null;
 }
 
 /**
@@ -41,7 +44,7 @@ export async function suggestProjects(
 
   if (q === "") {
     rows = await db.$queryRaw<Row[]>`
-      SELECT p.id, p.name, p."statusId", p.progress
+      SELECT p.id, p.name, p."statusId", p.progress, p."folderId"
       FROM project p
       LEFT JOIN card c ON c."projectId" = p.id
       WHERE p."archivedAt" IS NULL
@@ -52,7 +55,7 @@ export async function suggestProjects(
     const prefix = `${escapeLike(q)}%`;
     const contains = `%${escapeLike(q)}%`;
     rows = await db.$queryRaw<Row[]>(Prisma.sql`
-      SELECT p.id, p.name, p."statusId", p.progress
+      SELECT p.id, p.name, p."statusId", p.progress, p."folderId"
       FROM project p
       WHERE p."archivedAt" IS NULL
         AND (p."nameNormalized" LIKE ${contains} OR similarity(p."nameNormalized", ${q}) > 0.3)

@@ -92,7 +92,8 @@ docker-compose.yml, .env.example
 - `Workspace` (settings: time zone, working hours, first day of week) — a single one at first, ready for multiple teams
 - `Status` (id, name, color, order, isDone)
 - `Label` (id, name, color)
-- `Project` (id, name, `nameNormalized` with trigram index, statusId, progress 0–100, color, archivedAt, createdBy, `templateId?`, `clonedFromId?`)
+- `Project` (id, name, `nameNormalized` with trigram index, statusId, progress 0–100, color, archivedAt, `folderId?`, createdBy, `templateId?`, `clonedFromId?`)
+- `ProjectFolder` (id, name, `parentId?`): the project tree; a project without a folder is uncategorized. `User.projectSort` stores how each person orders the tree.
 - `ProjectLabel`, `ProjectMember` (join tables)
 - `Card` (id, projectId, title?, start, end, allDay, statusId, progress 0–100, short notes, createdBy) + `CardMember` / `CardLabel`
 - `NoteDocument` (projectId PK, `yState bytea`, `json jsonb` – latest readable copy for search/export, updatedAt, updatedBy)
@@ -116,6 +117,15 @@ docker-compose.yml, .env.example
 - Filters by member, label, status; quick search (⌘K with `cmdk`).
 - Clicking a card → **side panel (Sheet)** with the card's status, progress, labels, members, title and short notes, and an "Open full note" button. There is no save button: every change is stored as it is made (selections at once, typed text and the slider after a short pause or on leaving the field) and shown on the calendar immediately.
 - Live updates via SSE (`/api/events`), fed by `NOTIFY board_changed` after every write.
+
+### 5.1b Projects section: the tree
+
+- `/projects` is a two-pane page (the layout of the section): the **tree** on the left (folders, subfolders and projects) and the page on the right: an overview of the most recently modified projects, or the project's note. On narrow screens the two take turns.
+- New projects are **uncategorized** (shown under a heading once folders exist). Folders are created, renamed, moved and deleted from the tree (`/api/folders`); deleting one never deletes its content: projects and subfolders move up one level. Names are unique among siblings (case-insensitive), nesting is limited to 8 levels and a folder cannot be moved into itself or below itself.
+- Projects and folders move by **drag and drop** or with "Move to…" (the menu works on touch screens and with the keyboard). The folders open and close; what is open is remembered in the browser, and the folders holding the project being read open by themselves.
+- **Order** (per person, `PATCH /api/me/preferences`): by name (natural order) or by last modification. A project's last modification is the latest change to its note or to one of its cards; moving it between folders does not count. A folder takes the date of its newest content.
+- **Search box in the header** (every page): finds a project by name, typos included, using the same suggestions endpoint as the calendar, shows the folder it is in and opens its note.
+- Archives keep the tree: each project carries its folder path, and a board archive lists every folder, empty ones included; importing creates what is missing.
 
 ### 5.2 Card creation + auto-suggestion
 

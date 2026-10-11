@@ -71,7 +71,10 @@ test("two people edit the same note at the same time and the content persists", 
 
 test("the project list links to the note", async ({ page }) => {
   await page.goto("/projects");
-  await page.getByRole("link", { name: /Shared note/ }).click();
+  await page
+    .getByRole("tree")
+    .getByRole("link", { name: /Shared note/ })
+    .click();
   await expect(page.getByRole("heading", { name: "Shared note" })).toBeVisible();
   await expect(page.getByTestId("note-status")).toHaveAttribute("data-status", "connected");
 });

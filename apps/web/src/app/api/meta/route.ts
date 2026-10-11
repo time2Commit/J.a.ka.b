@@ -9,13 +9,16 @@ export const GET = route(async (_req, { actor }) => {
     listStatuses(prisma),
     listLabels(prisma),
     listUsers(prisma),
-    prisma.user.findUnique({ where: { id: actor.id }, select: { calendarView: true } }),
+    prisma.user.findUnique({
+      where: { id: actor.id },
+      select: { calendarView: true, projectSort: true },
+    }),
   ]);
   return {
     workspace,
     statuses,
     labels,
     users,
-    preferences: { calendarView: me?.calendarView ?? null },
+    preferences: { calendarView: me?.calendarView ?? null, projectSort: me?.projectSort ?? null },
   };
 });

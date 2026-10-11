@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@jakab/db";
 // Subpath import: the Markdown serializer does not need the whole editor (Tiptap, Yjs).
+import { folderPathMap } from "./folders";
 import { jsonToMarkdown } from "@jakab/editor/markdown";
 import {
   ARCHIVE_FORMAT,
@@ -67,6 +68,7 @@ async function loadBundle(
   projectId: string,
   emailById: Map<string, string>,
   includeVersions: boolean,
+  folderPaths?: Map<string, string[]>,
 ): Promise<ProjectBundle> {
   const project = await db.project.findUnique({
     where: { id: projectId },
@@ -119,6 +121,9 @@ async function loadBundle(
     progress: project.progress,
     color: project.color,
     archived: project.archivedAt !== null,
+    folder: project.folderId
+      ? ((folderPaths ?? (await folderPathMap(db))).get(project.folderId) ?? [])
+      : [],
     createdAt: project.createdAt.toISOString(),
     labels: project.labels.map((l) => ({ name: l.label.name, color: l.label.color })),
     members: emails(project.members.map((m) => m.userId)),
@@ -273,12 +278,15 @@ export async function exportBoard(
     db.template.findMany({ orderBy: { name: "asc" } }),
   ]);
   const emailById = new Map(users.map((u) => [u.id, u.email]));
+  const folderPaths = await folderPathMap(db);
 
   // A project deleted while the export runs is simply left out.
   const bundles: ProjectBundle[] = [];
   for (const project of projects) {
     try {
-      bundles.push(await loadBundle(db, storage, project.id, emailById, options.includeVersions));
+      bundles.push(
+        await loadBundle(db, storage, project.id, emailById, options.includeVersions, folderPaths),
+      );
     } catch (error) {
       if (!(error instanceof HttpError && error.status === 404)) throw error;
     }
@@ -300,6 +308,7 @@ export async function exportBoard(
       isDone: s.isDone,
     })),
     labels: labels.map((l) => ({ name: l.name, color: l.color })),
+    folders: [...folderPaths.values()].sort((a, b) => a.join("/").localeCompare(b.join("/"))),
     templates: templates.map((t) => {
       const defaults = parseDefaults(t.defaults);
       return {
