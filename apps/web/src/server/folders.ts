@@ -1,5 +1,10 @@
 import type { Prisma, PrismaClient } from "@jakab/db";
-import { FOLDER_MAX_DEPTH, type FolderCreateInput, type FolderUpdateInput } from "@jakab/shared";
+import {
+  FOLDER_MAX_DEPTH,
+  type FolderCreateInput,
+  type FolderKind,
+  type FolderUpdateInput,
+} from "@jakab/shared";
 import { conflict, notFound } from "./errors";
 import { notifyBoardChanged } from "./notify";
 
@@ -11,8 +16,10 @@ export interface FolderDto {
   parentId: string | null;
 }
 
-export async function listFolders(db: Db): Promise<FolderDto[]> {
+/** The folders of one tree: the projects' or the templates'. */
+export async function listFolders(db: Db, kind: FolderKind = "project"): Promise<FolderDto[]> {
   return db.projectFolder.findMany({
+    where: { kind },
     select: { id: true, name: true, parentId: true },
     orderBy: { name: "asc" },
   });
@@ -44,9 +51,15 @@ async function height(db: Db, id: string): Promise<number> {
   return 1 + Math.max(0, ...below);
 }
 
-async function assertNameFree(db: Db, name: string, parentId: string | null, exceptId?: string) {
+async function assertNameFree(
+  db: Db,
+  kind: FolderKind,
+  name: string,
+  parentId: string | null,
+  exceptId?: string,
+) {
   const siblings = await db.projectFolder.findMany({
-    where: { parentId, ...(exceptId && { id: { not: exceptId } }) },
+    where: { kind, parentId, ...(exceptId && { id: { not: exceptId } }) },
     select: { name: true },
   });
   const wanted = name.toLocaleLowerCase();
@@ -55,13 +68,27 @@ async function assertNameFree(db: Db, name: string, parentId: string | null, exc
   }
 }
 
+/** The parent must be a folder of the same tree. */
+async function assertSameKind(db: Db, kind: FolderKind, parentId: string | null) {
+  if (parentId === null) return;
+  const parent = await db.projectFolder.findUnique({
+    where: { id: parentId },
+    select: { kind: true },
+  });
+  if (!parent) throw notFound("Folder");
+  if (parent.kind !== kind) throw conflict("A folder cannot be put in another kind of folder");
+}
+
 export async function createFolder(db: PrismaClient, input: FolderCreateInput) {
+  const kind = input.kind ?? "project";
+  const parentId = input.parentId ?? null;
   return db.$transaction(async (tx) => {
-    const depth = (await ancestry(tx, input.parentId)).length;
+    await assertSameKind(tx, kind, parentId);
+    const depth = (await ancestry(tx, parentId)).length;
     if (depth >= FOLDER_MAX_DEPTH) throw conflict("Folders are nested too deeply");
-    await assertNameFree(tx, input.name, input.parentId);
+    await assertNameFree(tx, kind, input.name, parentId);
     const folder = await tx.projectFolder.create({
-      data: { name: input.name, parentId: input.parentId },
+      data: { kind, name: input.name, parentId },
       select: { id: true, name: true, parentId: true },
     });
     await notifyBoardChanged(tx, "folder", folder.id);
@@ -77,7 +104,9 @@ export async function updateFolder(db: PrismaClient, id: string, input: FolderUp
     const parentId = input.parentId === undefined ? existing.parentId : input.parentId;
     const name = input.name ?? existing.name;
 
+    const kind = existing.kind as FolderKind;
     if (parentId !== existing.parentId) {
+      await assertSameKind(tx, kind, parentId);
       const above = await ancestry(tx, parentId);
       if (above.includes(id)) throw conflict("A folder cannot be moved into itself");
       if (above.length + (await height(tx, id)) > FOLDER_MAX_DEPTH) {
@@ -85,7 +114,7 @@ export async function updateFolder(db: PrismaClient, id: string, input: FolderUp
       }
     }
     if (name !== existing.name || parentId !== existing.parentId) {
-      await assertNameFree(tx, name, parentId, id);
+      await assertNameFree(tx, kind, name, parentId, id);
     }
     const folder = await tx.projectFolder.update({
       where: { id },
@@ -114,7 +143,7 @@ export async function deleteFolder(db: PrismaClient, id: string) {
       let name = child.name;
       for (let n = 2; ; n++) {
         try {
-          await assertNameFree(tx, name, folder.parentId, child.id);
+          await assertNameFree(tx, folder.kind as FolderKind, name, folder.parentId, child.id);
           break;
         } catch {
           name = `${child.name} (${n})`;
@@ -126,17 +155,20 @@ export async function deleteFolder(db: PrismaClient, id: string) {
       });
     }
     await tx.project.updateMany({ where: { folderId: id }, data: { folderId: folder.parentId } });
+    await tx.template.updateMany({ where: { folderId: id }, data: { folderId: folder.parentId } });
     await tx.projectFolder.delete({ where: { id } });
     await notifyBoardChanged(tx, "folder", id);
   });
 }
 
-/** Checks that a project can be put in this folder (null = uncategorized). */
-export async function assertFolderExists(db: Db, folderId: string | null) {
+/** Checks that something can be put in this folder of the given tree (null = uncategorized). */
+export async function assertFolderExists(db: Db, folderId: string | null, kind: FolderKind) {
   if (folderId === null) return;
-  if (!(await db.projectFolder.findUnique({ where: { id: folderId }, select: { id: true } }))) {
-    throw notFound("Folder");
-  }
+  const folder = await db.projectFolder.findUnique({
+    where: { id: folderId },
+    select: { kind: true },
+  });
+  if (!folder || folder.kind !== kind) throw notFound("Folder");
 }
 
 /** Names of the folders from the top down to `folderId` ([] = uncategorized). */
@@ -153,24 +185,33 @@ export async function folderPath(db: Db, folderId: string | null): Promise<strin
 }
 
 /** Finds or creates the folders of a path; returns the id of the last one (null for []). */
-export async function ensureFolderPath(db: Db, path: string[]): Promise<string | null> {
+export async function ensureFolderPath(
+  db: Db,
+  path: string[],
+  kind: FolderKind = "project",
+): Promise<string | null> {
   let parentId: string | null = null;
   for (const name of path) {
     const siblings: { id: string; name: string }[] = await db.projectFolder.findMany({
-      where: { parentId },
+      where: { kind, parentId },
       select: { id: true, name: true },
     });
     const found = siblings.find((s) => s.name.toLocaleLowerCase() === name.toLocaleLowerCase());
     parentId = found
       ? found.id
-      : (await db.projectFolder.create({ data: { name, parentId }, select: { id: true } })).id;
+      : (await db.projectFolder.create({ data: { kind, name, parentId }, select: { id: true } }))
+          .id;
   }
   return parentId;
 }
 
 /** Folder id → names from the top of the tree down to it, for every folder. */
-export async function folderPathMap(db: Db): Promise<Map<string, string[]>> {
+export async function folderPathMap(
+  db: Db,
+  kind: FolderKind = "project",
+): Promise<Map<string, string[]>> {
   const folders = await db.projectFolder.findMany({
+    where: { kind },
     select: { id: true, name: true, parentId: true },
   });
   const byId = new Map(folders.map((f) => [f.id, f]));

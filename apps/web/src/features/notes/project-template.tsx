@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { templatesKey } from "@/features/templates/template-dialog";
 import { api, ApiError } from "@/lib/api";
 
 /** "Save as template": the project's settings and note content (without files) become a template. */
@@ -38,7 +37,7 @@ export function SaveAsTemplate({
       api(`/api/projects/${projectId}/save-as-template`, { method: "POST", json: { name } }),
     onSuccess: () => {
       toast.success(t("saved"));
-      void queryClient.invalidateQueries({ queryKey: templatesKey });
+      void queryClient.invalidateQueries({ queryKey: ["templates"] });
       setOpen(false);
     },
     onError: (error) =>

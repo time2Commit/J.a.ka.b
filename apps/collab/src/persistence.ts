@@ -25,9 +25,15 @@ export async function storeNote(
 ) {
   const yState = Buffer.from(Y.encodeStateAsUpdate(doc));
   const json = ydocToJson(doc);
-  await db.noteDocument.upsert({
-    where: { projectId },
-    create: { projectId, yState, json, updatedBy: userId },
-    update: { yState, json, updatedBy: userId },
-  });
+  try {
+    await db.noteDocument.upsert({
+      where: { projectId },
+      create: { projectId, yState, json, updatedBy: userId },
+      update: { yState, json, updatedBy: userId },
+    });
+  } catch (error) {
+    // The project was deleted while somebody still had its note open: there is nothing to keep.
+    if ((error as { code?: string }).code === "P2003") return;
+    throw error;
+  }
 }

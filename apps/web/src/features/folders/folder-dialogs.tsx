@@ -27,6 +27,7 @@ export function FolderNameDialog({
   pending,
   onClose,
   onSubmit,
+  namespace,
 }: {
   open: boolean;
   title: string;
@@ -35,8 +36,9 @@ export function FolderNameDialog({
   pending: boolean;
   onClose: () => void;
   onSubmit: (name: string) => void;
+  namespace: "Projects.tree" | "Templates.tree";
 }) {
-  const t = useTranslations("Projects.tree");
+  const t = useTranslations(namespace);
   const common = useTranslations("Common");
   const [name, setName] = useState(initial);
   useEffect(() => {
@@ -89,6 +91,7 @@ export function MoveDialog({
   pending,
   onClose,
   onPick,
+  namespace,
 }: {
   /** Null keeps the dialog closed. */
   title: string | null;
@@ -99,8 +102,10 @@ export function MoveDialog({
   pending: boolean;
   onClose: () => void;
   onPick: (folderId: string | null) => void;
+  /** Where the texts come from: "Projects.tree" or "Templates.tree". */
+  namespace: "Projects.tree" | "Templates.tree";
 }) {
-  const t = useTranslations("Projects.tree");
+  const t = useTranslations(namespace);
   const common = useTranslations("Common");
   const [chosen, setChosen] = useState<string | null>(currentId);
   useEffect(() => {

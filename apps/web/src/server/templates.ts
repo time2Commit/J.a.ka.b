@@ -6,6 +6,7 @@ import {
   type TemplateUpdateInput,
 } from "@jakab/shared";
 import { conflict, notFound } from "./errors";
+import { assertFolderExists } from "./folders";
 import { filterFileEmbeds } from "./note-json";
 
 export interface TemplateDto {
@@ -13,6 +14,8 @@ export interface TemplateDto {
   name: string;
   defaults: TemplateDefaults;
   hasNote: boolean;
+  /** The folder of the template tree it sits in (null = uncategorized). */
+  folderId: string | null;
   updatedAt: string;
 }
 
@@ -25,6 +28,7 @@ function toDto(t: {
   name: string;
   defaults: Prisma.JsonValue;
   noteJson: Prisma.JsonValue | null;
+  folderId: string | null;
   updatedAt: Date;
 }): TemplateDto {
   return {
@@ -32,6 +36,7 @@ function toDto(t: {
     name: t.name,
     defaults: parseDefaults(t.defaults),
     hasNote: t.noteJson !== null,
+    folderId: t.folderId,
     updatedAt: t.updatedAt.toISOString(),
   };
 }
@@ -50,11 +55,13 @@ const isUniqueViolation = (error: unknown) =>
   typeof error === "object" && error !== null && (error as { code?: string }).code === "P2002";
 
 export async function createTemplate(db: PrismaClient, input: TemplateInput, userId: string) {
+  await assertFolderExists(db, input.folderId ?? null, "template");
   try {
     const template = await db.template.create({
       data: {
         name: input.name,
-        defaults: input.defaults,
+        folderId: input.folderId ?? null,
+        defaults: parseDefaults(input.defaults),
         noteJson: input.note ? (filterFileEmbeds(input.note) as Prisma.InputJsonValue) : undefined,
         createdBy: userId,
       },
@@ -67,11 +74,13 @@ export async function createTemplate(db: PrismaClient, input: TemplateInput, use
 }
 
 export async function updateTemplate(db: PrismaClient, id: string, input: TemplateUpdateInput) {
+  if (input.folderId !== undefined) await assertFolderExists(db, input.folderId, "template");
   try {
     const template = await db.template.update({
       where: { id },
       data: {
         ...(input.name !== undefined && { name: input.name }),
+        ...(input.folderId !== undefined && { folderId: input.folderId }),
         ...(input.defaults !== undefined && { defaults: input.defaults }),
         ...(input.note !== undefined && {
           noteJson: input.note

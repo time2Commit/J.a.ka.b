@@ -7,14 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { Meta } from "@/lib/types";
-import { folderPathNames } from "./tree";
+import { useFolders } from "@/features/folders/folder-tree";
+import { folderPathNames } from "@/features/folders/tree";
 import { useProjectTreeData } from "./projects-tree";
 
 /** The overview next to the tree: the projects touched most recently. */
 export function ProjectsHome() {
   const t = useTranslations("Projects");
   const format = useFormatter();
-  const { projects, folders } = useProjectTreeData();
+  const projects = useProjectTreeData();
+  const folders = useFolders("project");
   const meta = useQuery({ queryKey: ["meta"], queryFn: () => api<Meta>("/api/meta") });
   const recent = [...(projects.data ?? [])]
     .sort((a, b) => Date.parse(b.lastModified) - Date.parse(a.lastModified))

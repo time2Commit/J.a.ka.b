@@ -1,11 +1,11 @@
 import type { Prisma, PrismaClient } from "@jakab/db";
-import { normalizeProjectName, type CardCreateInput, type CardUpdateInput } from "@jakab/shared";
+import type { CardCreateInput, CardUpdateInput } from "@jakab/shared";
 import { randomUUID } from "node:crypto";
 import { prepareClone, type PreparedClone } from "./clone";
 import { conflict, notFound } from "./errors";
-import { noteFromTemplate } from "./note-json";
+import { existingIds } from "./ids";
+import { insertProject } from "./projects";
 import type { StorageDriver } from "./storage";
-import { parseDefaults } from "./templates";
 import { notifyBoardChanged } from "./notify";
 
 const cardInclude = {
@@ -62,21 +62,6 @@ export async function getCard(db: PrismaClient, id: string) {
   return toCardDto(card);
 }
 
-/** Ids that still exist, in the given order (templates and clones may point at deleted entries). */
-async function existingIds(
-  list: (args: {
-    where: { id: { in: string[] } };
-    select: { id: true };
-  }) => Promise<{ id: string }[]>,
-  ids: string[],
-) {
-  if (ids.length === 0) return [];
-  const found = new Set(
-    (await list({ where: { id: { in: ids } }, select: { id: true } })).map((r) => r.id),
-  );
-  return ids.filter((id) => found.has(id));
-}
-
 /**
  * Creates the card and, when needed, its project and note, in a single transaction. A new project
  * can start empty, from a template, or as a copy of another project (`storage` is needed to
@@ -130,73 +115,29 @@ export async function createCard(
           ),
         };
       } else {
-        const name = input.projectName!;
-        const nameNormalized = normalizeProjectName(name);
-        if (await tx.project.findUnique({ where: { nameNormalized }, select: { id: true } })) {
-          throw conflict("A project with this name already exists: link it instead");
-        }
-
-        const template = input.templateId
-          ? await tx.template.findUnique({ where: { id: input.templateId } })
-          : null;
-        if (input.templateId && !template) throw notFound("Template");
-        const defaults = template ? parseDefaults(template.defaults) : null;
-
-        // Explicit choices win; otherwise the template (or the copied project) fills in.
-        const wantedStatus = input.statusId ?? defaults?.statusId ?? null;
-        const status =
-          (wantedStatus ? await tx.status.findUnique({ where: { id: wantedStatus } }) : null) ??
-          (input.statusId ? null : await tx.status.findFirst({ orderBy: { order: "asc" } }));
-        if (!status) throw notFound("Status");
-
-        const labelIds = await existingIds(
-          (args) => tx.label.findMany(args),
-          input.labelIds.length > 0
-            ? input.labelIds
-            : (defaults?.labelIds ?? clone?.labelIds ?? []),
-        );
-        const memberIds = await existingIds(
-          (args) => tx.user.findMany(args),
-          input.memberIds.length > 0
-            ? input.memberIds
-            : (defaults?.memberIds ?? clone?.memberIds ?? []),
-        );
-        const note = template
-          ? noteFromTemplate(template.noteJson as object | null, defaults!.checklist)
-          : (clone?.note ?? null);
-
-        const project = await tx.project.create({
-          data: {
+        const made = await insertProject(
+          tx,
+          {
             id: newProjectId,
-            name,
-            nameNormalized,
-            statusId: status.id,
-            color: clone?.color ?? null,
-            createdById: userId,
-            templateId: template?.id ?? null,
-            clonedFromId: input.cloneFromProjectId ?? null,
-            labels: { create: labelIds.map((labelId) => ({ labelId })) },
-            members: { create: memberIds.map((id) => ({ userId: id })) },
-            note: { create: note ? { json: note as Prisma.InputJsonValue } : {} },
-            ...(clone &&
-              clone.attachments.length > 0 && { attachments: { create: clone.attachments } }),
+            name: input.projectName!,
+            statusId: input.statusId,
+            labelIds: input.labelIds,
+            memberIds: input.memberIds,
+            templateId: input.templateId,
+            cloneFromProjectId: input.cloneFromProjectId,
+            folderId: null,
           },
-        });
-        projectId = project.id;
+          userId,
+          clone,
+        );
+        projectId = made.projectId;
         createdProject = true;
-        start = { statusId: status.id, progress: 0, labelIds, memberIds };
-        await tx.activity.create({
-          data: {
-            projectId,
-            userId,
-            type: "project.created",
-            payload: {
-              name,
-              ...(template && { templateId: template.id }),
-              ...(input.cloneFromProjectId && { clonedFrom: input.cloneFromProjectId }),
-            },
-          },
-        });
+        start = {
+          statusId: made.statusId,
+          progress: 0,
+          labelIds: made.labelIds,
+          memberIds: made.memberIds,
+        };
       }
 
       const card = await tx.card.create({

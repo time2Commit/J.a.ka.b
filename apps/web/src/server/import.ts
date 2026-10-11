@@ -475,6 +475,7 @@ async function importTemplates(
               mention: (id) => ctx.userIds.get(emailKey(id)) ?? id,
             }) as Prisma.InputJsonValue)
           : undefined,
+        folderId: await ensureFolderPath(db, t.folder, "template"),
         createdBy: actorId,
       },
     });
@@ -526,6 +527,9 @@ export async function applyArchive(
   };
   // Empty folders of a board archive come along too.
   for (const path of parsed.board?.folders ?? []) await ensureFolderPath(db, path);
+  for (const path of parsed.board?.templateFolders ?? []) {
+    await ensureFolderPath(db, path, "template");
+  }
   const wanted = options.slugs ? new Set(options.slugs) : null;
   for (const project of parsed.projects) {
     if (wanted && !wanted.has(project.slug)) continue;

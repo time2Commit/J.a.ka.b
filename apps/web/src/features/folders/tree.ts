@@ -1,11 +1,22 @@
 import type { ProjectSort } from "@jakab/shared";
-import type { Folder, ProjectTreeItem } from "@/lib/types";
+import type { Folder } from "@/lib/types";
+
+/** Whatever a tree holds: a project or a template. */
+export interface TreeItem {
+  id: string;
+  name: string;
+  folderId: string | null;
+  /** Latest change (ISO date), for ordering. */
+  lastModified: string;
+  /** A small coloured dot after the name (the status of a project), with its tooltip. */
+  dot?: { color: string; title: string } | null;
+}
 
 export interface FolderNode {
   folder: Folder;
   children: FolderNode[];
-  projects: ProjectTreeItem[];
-  /** Projects in this folder and all of its subfolders. */
+  items: TreeItem[];
+  /** Items in this folder and all of its subfolders. */
   count: number;
   /** Most recent change inside this folder (ms since epoch; 0 when it is empty). */
   modified: number;
@@ -13,22 +24,18 @@ export interface FolderNode {
 
 export interface ProjectTree {
   folders: FolderNode[];
-  /** Projects that are in no folder. */
-  uncategorized: ProjectTreeItem[];
+  /** Items that are in no folder. */
+  uncategorized: TreeItem[];
 }
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
 /** Builds the tree and orders every level: by name, or the most recently changed first. */
-export function buildTree(
-  folders: Folder[],
-  projects: ProjectTreeItem[],
-  sort: ProjectSort,
-): ProjectTree {
+export function buildTree(folders: Folder[], items: TreeItem[], sort: ProjectSort): ProjectTree {
   const nodes = new Map<string, FolderNode>(
     folders.map((folder) => [
       folder.id,
-      { folder, children: [], projects: [], count: 0, modified: 0 },
+      { folder, children: [], items: [], count: 0, modified: 0 },
     ]),
   );
   const top: FolderNode[] = [];
@@ -37,14 +44,14 @@ export function buildTree(
     // A folder whose parent is missing is shown at the top rather than lost.
     (parent ?? { children: top }).children.push(node);
   }
-  const uncategorized: ProjectTreeItem[] = [];
-  for (const project of projects) {
-    const node = project.folderId ? nodes.get(project.folderId) : undefined;
-    (node ? node.projects : uncategorized).push(project);
+  const uncategorized: TreeItem[] = [];
+  for (const item of items) {
+    const node = item.folderId ? nodes.get(item.folderId) : undefined;
+    (node ? node.items : uncategorized).push(item);
   }
 
-  const time = (p: ProjectTreeItem) => Date.parse(p.lastModified) || 0;
-  const byProject = (a: ProjectTreeItem, b: ProjectTreeItem) =>
+  const time = (p: TreeItem) => Date.parse(p.lastModified) || 0;
+  const byItem = (a: TreeItem, b: TreeItem) =>
     sort === "modified"
       ? time(b) - time(a) || collator.compare(a.name, b.name)
       : collator.compare(a.name, b.name);
@@ -57,19 +64,15 @@ export function buildTree(
     seen.add(node.folder.id);
     node.children = node.children.filter((c) => !seen.has(c.folder.id));
     for (const child of node.children) finish(child, seen);
-    node.count = node.projects.length + node.children.reduce((n, c) => n + c.count, 0);
-    node.modified = Math.max(
-      0,
-      ...node.projects.map(time),
-      ...node.children.map((c) => c.modified),
-    );
-    node.projects.sort(byProject);
+    node.count = node.items.length + node.children.reduce((n, c) => n + c.count, 0);
+    node.modified = Math.max(0, ...node.items.map(time), ...node.children.map((c) => c.modified));
+    node.items.sort(byItem);
     node.children.sort(byFolder);
   };
   const seen = new Set<string>();
   for (const node of top) finish(node, seen);
   top.sort(byFolder);
-  uncategorized.sort(byProject);
+  uncategorized.sort(byItem);
   return { folders: top, uncategorized };
 }
 

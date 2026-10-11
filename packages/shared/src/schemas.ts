@@ -93,9 +93,21 @@ export const projectUpdateSchema = z
 
 /** A folder of the project tree. */
 export const FOLDER_MAX_DEPTH = 8;
+/** The two trees: the projects' and the templates'. */
+export const FOLDER_KINDS = ["project", "template"] as const;
+export type FolderKind = (typeof FOLDER_KINDS)[number];
 export const folderCreateSchema = z.object({
+  kind: z.enum(FOLDER_KINDS).default("project"),
   name: z.string().trim().min(1).max(80),
   parentId: id.nullable().default(null),
+});
+export const folderKindQuerySchema = z.object({ kind: z.enum(FOLDER_KINDS).default("project") });
+
+/** A project made on its own, without a card: optionally from a template, in a folder. */
+export const projectCreateSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  folderId: id.nullable().default(null),
+  templateId: id.nullable().default(null),
 });
 export const folderUpdateSchema = z
   .object({
@@ -103,7 +115,9 @@ export const folderUpdateSchema = z
     parentId: id.nullable(),
   })
   .partial();
-export type FolderCreateInput = z.infer<typeof folderCreateSchema>;
+export type ProjectCreateInput = z.infer<typeof projectCreateSchema>;
+/** What a caller may pass: the kind defaults to projects, the parent to the top level. */
+export type FolderCreateInput = z.input<typeof folderCreateSchema>;
 export type FolderUpdateInput = z.infer<typeof folderUpdateSchema>;
 
 /** Body of "save a version": the label is optional. */
@@ -139,6 +153,8 @@ export const templateInputSchema = z.object({
   }),
   /** Initial note content as editor JSON. */
   note: noteDoc.nullable().default(null),
+  /** The folder of the template tree it sits in; null = uncategorized. */
+  folderId: id.nullable().default(null),
 });
 export const templateUpdateSchema = templateInputSchema.partial();
 
@@ -155,7 +171,7 @@ export type UserCreateInput = z.infer<typeof userCreateSchema>;
 export type CardCreateInput = z.infer<typeof cardCreateSchema>;
 export type CardUpdateInput = z.infer<typeof cardUpdateSchema>;
 export type TemplateDefaults = z.infer<typeof templateDefaultsSchema>;
-export type TemplateInput = z.infer<typeof templateInputSchema>;
+export type TemplateInput = z.input<typeof templateInputSchema>;
 export type TemplateUpdateInput = z.infer<typeof templateUpdateSchema>;
 export type VersionCreateInput = z.infer<typeof versionCreateSchema>;
 export type ProjectUpdateInput = z.infer<typeof projectUpdateSchema>;

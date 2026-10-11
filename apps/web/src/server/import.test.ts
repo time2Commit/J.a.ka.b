@@ -23,6 +23,8 @@ const names = {
   folder: `Fo ${run}`,
   subfolder: `Sub ${run}`,
   emptyFolder: `Empty ${run}`,
+  templateFolder: `TplFo ${run}`,
+  emptyTemplateFolder: `TplEmpty ${run}`,
 };
 
 let root: string;
@@ -83,6 +85,8 @@ beforeAll(async () => {
   });
   const folderId = await ensureFolderPath(prisma, [names.folder, names.subfolder]);
   await ensureFolderPath(prisma, [names.folder, names.emptyFolder]);
+  const templateFolderId = await ensureFolderPath(prisma, [names.templateFolder], "template");
+  await ensureFolderPath(prisma, [names.templateFolder, names.emptyTemplateFolder], "template");
   const project = await prisma.project.create({
     data: {
       name: names.project,
@@ -100,6 +104,7 @@ beforeAll(async () => {
   await prisma.template.create({
     data: {
       name: names.template,
+      folderId: templateFolderId,
       createdBy: person.id,
       defaults: {
         statusId: status.id,
@@ -280,6 +285,11 @@ describe("import round trip", () => {
       checklist: ["Step one"],
     });
     expect(JSON.stringify(template.noteJson)).toContain(`"id":"${created.id}"`);
+    // The template tree comes back too, empty folders included.
+    expect(await folderPath(prisma, template.folderId)).toEqual([names.templateFolder]);
+    expect(await prisma.projectFolder.count({ where: { name: names.emptyTemplateFolder } })).toBe(
+      1,
+    );
     zip.close();
   });
 

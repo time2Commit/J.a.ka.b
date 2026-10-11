@@ -166,16 +166,19 @@ model Project {
   @@map("project")
 }
 
-/// A folder of the project tree. Projects without a folder are "uncategorized".
+/// A folder of a tree: of projects (`kind` "project") or of templates ("template"). Items without
+/// a folder are "uncategorized". A folder and its parent are always of the same kind.
 model ProjectFolder {
   id        String          @id @default(cuid())
+  kind      String          @default("project")
   name      String
   parentId  String?
   parent    ProjectFolder?  @relation("FolderTree", fields: [parentId], references: [id], onDelete: SetNull)
   children  ProjectFolder[] @relation("FolderTree")
   createdAt DateTime        @default(now())
 
-  projects Project[]
+  projects  Project[]
+  templates Template[]
 
   @@index([parentId])
   @@map("project_folder")
@@ -300,12 +303,15 @@ model Template {
   name      String   @unique
   defaults  Json
   noteJson  Json?
+  folderId  String?
+  folder    ProjectFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
   createdBy String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   projects Project[]
 
+  @@index([folderId])
   @@map("template")
 }
 
