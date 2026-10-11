@@ -58,6 +58,9 @@ export const archiveTemplateSchema = z.object({
   note: noteJson.nullable(),
 });
 
+/** Names of the folders from the top of the tree down to the one that holds something. */
+const folderPath = z.array(z.string().min(1).max(80)).max(8);
+
 export const archiveBoardSchema = z.object({
   workspace: z.object({
     name: z.string(),
@@ -69,6 +72,8 @@ export const archiveBoardSchema = z.object({
   statuses: z.array(archiveStatusSchema),
   labels: z.array(archiveLabelSchema),
   templates: z.array(archiveTemplateSchema).default([]),
+  /** Every folder of the project tree, empty ones included. */
+  folders: z.array(folderPath).default([]),
   /** People, never credentials: accounts are re-created by an admin on the new instance. */
   users: z.array(
     z.object({
@@ -114,6 +119,8 @@ export const archiveProjectSchema = z.object({
   progress: z.number().int().min(0).max(100),
   color: color.nullable(),
   archived: z.boolean(),
+  /** Where the project sits in the folder tree; empty = uncategorized. */
+  folder: folderPath.default([]),
   createdAt: isoDate,
   labels: z.array(archiveLabelSchema),
   /** Members by e-mail: accounts are matched on the target instance, never invented. */

@@ -30,6 +30,7 @@ model User {
   image         String?
   avatarColor   String   @default("#6366f1")
   calendarView  String? // preferred calendar view, see CALENDAR_VIEWS in @jakab/shared
+  projectSort   String? // how the project tree is ordered, see PROJECT_SORTS in @jakab/shared
   role          Role     @default(member)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -141,6 +142,8 @@ model Project {
   progress       Int       @default(0)
   color          String?
   archivedAt     DateTime?
+  folderId       String?
+  folder         ProjectFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
   createdById    String
   templateId     String?
   template       Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
@@ -159,7 +162,23 @@ model Project {
   activities  Activity[]
 
   @@index([statusId])
+  @@index([folderId])
   @@map("project")
+}
+
+/// A folder of the project tree. Projects without a folder are "uncategorized".
+model ProjectFolder {
+  id        String          @id @default(cuid())
+  name      String
+  parentId  String?
+  parent    ProjectFolder?  @relation("FolderTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children  ProjectFolder[] @relation("FolderTree")
+  createdAt DateTime        @default(now())
+
+  projects Project[]
+
+  @@index([parentId])
+  @@map("project_folder")
 }
 
 model ProjectLabel {
@@ -234,6 +253,12 @@ model NoteDocument {
   json      Json?
   updatedAt DateTime @updatedAt
   updatedBy String?
+  // Plain text of `json` for searching it, filled in when a search finds it out of date
+  // (`searchIndexedAt` differs from `updatedAt`). `searchFolded` is lower case without accents
+  // and has a trigram index (see the migration).
+  searchText      String?
+  searchFolded    String?
+  searchIndexedAt DateTime?
 
   @@map("note_document")
 }

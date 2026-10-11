@@ -28,12 +28,17 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
-      <Link
-        href="/"
-        className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" /> {t("back")}
-      </Link>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+        <Link href="/" className="flex w-fit items-center gap-1 hover:text-foreground">
+          <ArrowLeft className="size-4" /> {t("back")}
+        </Link>
+        <Link
+          href="/projects"
+          className="flex w-fit items-center gap-1 hover:text-foreground md:hidden"
+        >
+          <ArrowLeft className="size-4" /> {t("allProjects")}
+        </Link>
+      </div>
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
         <Badge color={project.status.color}>{project.status.name}</Badge>

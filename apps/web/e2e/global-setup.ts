@@ -13,6 +13,7 @@ export default async function globalSetup() {
   const prisma = createPrismaClient(url);
   await prisma.$transaction([
     prisma.project.deleteMany(),
+    prisma.projectFolder.deleteMany(),
     prisma.template.deleteMany(),
     prisma.label.deleteMany(),
     prisma.status.deleteMany(),

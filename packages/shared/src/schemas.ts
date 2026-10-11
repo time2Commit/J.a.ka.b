@@ -86,8 +86,25 @@ export const projectUpdateSchema = z
     color: hexColor.nullable(),
     labelIds: z.array(id),
     memberIds: z.array(id),
+    /** The folder of the project tree it sits in; null = uncategorized. */
+    folderId: id.nullable(),
   })
   .partial();
+
+/** A folder of the project tree. */
+export const FOLDER_MAX_DEPTH = 8;
+export const folderCreateSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  parentId: id.nullable().default(null),
+});
+export const folderUpdateSchema = z
+  .object({
+    name: z.string().trim().min(1).max(80),
+    parentId: id.nullable(),
+  })
+  .partial();
+export type FolderCreateInput = z.infer<typeof folderCreateSchema>;
+export type FolderUpdateInput = z.infer<typeof folderUpdateSchema>;
 
 /** Body of "save a version": the label is optional. */
 export const versionCreateSchema = z.object({
@@ -168,5 +185,13 @@ export const workspaceUpdateSchema = z
 /** Calendar views a person can pick as their default. */
 export const CALENDAR_VIEWS = ["timeGridDay", "timeGridWeek", "dayGridMonth", "listWeek"] as const;
 export type CalendarView = (typeof CALENDAR_VIEWS)[number];
-export const userPreferencesSchema = z.object({ calendarView: z.enum(CALENDAR_VIEWS).nullable() });
+/** How the project tree is ordered: by name, or by the most recent change. */
+export const PROJECT_SORTS = ["name", "modified"] as const;
+export type ProjectSort = (typeof PROJECT_SORTS)[number];
+export const userPreferencesSchema = z
+  .object({
+    calendarView: z.enum(CALENDAR_VIEWS).nullable(),
+    projectSort: z.enum(PROJECT_SORTS).nullable(),
+  })
+  .partial();
 export type UserPreferencesInput = z.infer<typeof userPreferencesSchema>;

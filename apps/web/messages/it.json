@@ -238,7 +238,36 @@
       "save": "Salva template",
       "saved": "Template salvato",
       "nameTaken": "Esiste già un template con questo nome"
-    }
+    },
+    "tree": {
+      "label": "Progetti e cartelle",
+      "newFolder": "Nuova cartella",
+      "newSubfolder": "Nuova sottocartella",
+      "rename": "Rinomina",
+      "renameFolder": "Rinomina cartella",
+      "folderName": "Nome della cartella",
+      "moveTo": "Sposta in…",
+      "moveTitle": "Sposta “{name}”",
+      "moveHelp": "Scegli la cartella in cui metterlo, oppure il livello principale.",
+      "move": "Sposta",
+      "topLevel": "Livello principale (non categorizzati)",
+      "deleteFolder": "Elimina cartella",
+      "deleteConfirm": "Eliminare la cartella “{name}”? I suoi progetti e sottocartelle non vengono eliminati: salgono di un livello.",
+      "uncategorized": "Non categorizzati",
+      "emptyFolder": "Cartella vuota",
+      "expand": "Apri {name}",
+      "collapse": "Chiudi {name}",
+      "actionsFor": "Azioni per {name}",
+      "sortBy": "Ordina per",
+      "sort": {
+        "name": "Nome (A–Z)",
+        "modified": "Ultima modifica"
+      },
+      "empty": "Ancora nessun progetto. Crea una card per iniziarne uno.",
+      "pickOne": "Scegli un progetto nell’albero per aprire la sua nota, oppure crea delle cartelle per tenerli in ordine.",
+      "recent": "Modificati di recente"
+    },
+    "allProjects": "Tutti i progetti"
   },
   "Note": {
     "placeholder": "Scrivi la nota del progetto…",
@@ -363,5 +392,12 @@
     "noteHelp": "I file non possono far parte di un template.",
     "saved": "Template salvato",
     "nameTaken": "Esiste già un template con questo nome"
+  },
+  "Search": {
+    "label": "Trova progetti e note",
+    "placeholder": "Trova progetti e note…",
+    "empty": "Nessun risultato",
+    "projects": "Progetti",
+    "notes": "Nelle note"
   }
 }

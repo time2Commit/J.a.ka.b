@@ -6,6 +6,7 @@ import { Readable } from "node:stream";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { exportBoard, exportProject } from "./export";
 import { applyArchive, parseArchive, previewArchive, type ImportOptions } from "./import";
+import { ensureFolderPath, folderPath } from "./folders";
 import { FileSystemStorage } from "./storage";
 import { openZipBuffer, openZipFile } from "./zip-reader";
 
@@ -19,6 +20,9 @@ const names = {
   label: `Lb ${run}`,
   email: `round.${run}@example.com`,
   template: `Tpl ${run}`,
+  folder: `Fo ${run}`,
+  subfolder: `Sub ${run}`,
+  emptyFolder: `Empty ${run}`,
 };
 
 let root: string;
@@ -52,6 +56,7 @@ async function wipeSource() {
   await prisma.status.deleteMany({ where: { name: names.status } });
   await prisma.user.deleteMany({ where: { email: names.email } });
   await prisma.template.deleteMany({ where: { name: names.template } });
+  await prisma.projectFolder.deleteMany({ where: { name: { contains: run } } });
 }
 
 beforeAll(async () => {
@@ -76,9 +81,12 @@ beforeAll(async () => {
   const person = await prisma.user.create({
     data: { id: `u-person-${run}`, name: "Anna Person", email: names.email, role: "member" },
   });
+  const folderId = await ensureFolderPath(prisma, [names.folder, names.subfolder]);
+  await ensureFolderPath(prisma, [names.folder, names.emptyFolder]);
   const project = await prisma.project.create({
     data: {
       name: names.project,
+      folderId,
       nameNormalized: names.project.toLowerCase(),
       statusId: status.id,
       progress: 55,
@@ -181,6 +189,7 @@ afterAll(async () => {
   await prisma.status.deleteMany({ where: { name: names.status } });
   await prisma.user.deleteMany({ where: { email: names.email } });
   await prisma.template.deleteMany({ where: { name: names.template } });
+  await prisma.projectFolder.deleteMany({ where: { name: { contains: run } } });
   await prisma.user.deleteMany({ where: { id: { in: [...cleanup.users] } } });
   await prisma.$disconnect();
   await rm(root, { recursive: true, force: true });
@@ -232,6 +241,9 @@ describe("import round trip", () => {
       },
     });
     expect(imported).toMatchObject({ name: names.project, progress: 55, color: "#abcdef" });
+    // The folder tree comes back, including the folder that holds nothing.
+    expect(await folderPath(prisma, imported.folderId)).toEqual([names.folder, names.subfolder]);
+    expect(await prisma.projectFolder.count({ where: { name: names.emptyFolder } })).toBe(1);
     expect(imported.status.name).toBe(names.status);
     expect(imported.labels.map((l) => l.label.name)).toEqual([names.label]);
     expect(imported.members.map((m) => m.userId)).toEqual([created.id]);
