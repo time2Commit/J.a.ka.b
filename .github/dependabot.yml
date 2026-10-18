@@ -8,6 +8,11 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # 3.0.10 loses text when two people edit the same note (two collaborative
+      # e2e tests fail). Remove once a fixed release is out.
+      - dependency-name: "@tiptap/y-tiptap"
+        versions: ["3.0.10"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
