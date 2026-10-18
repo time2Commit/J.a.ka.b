@@ -35,7 +35,7 @@
     "@tiptap/pm": "^3.32.0",
     "@tiptap/react": "^3.32.0",
     "@tiptap/suggestion": "^3.32.0",
-    "@tiptap/y-tiptap": "^3.0.10",
+    "@tiptap/y-tiptap": "3.0.9",
     "better-auth": "^1.7.10",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
