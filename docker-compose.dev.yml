@@ -1,7 +1,7 @@
 # Development stack: PostgreSQL only. Apps run on the host with `pnpm dev`.
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     restart: unless-stopped
     environment:
       POSTGRES_DB: jakab
