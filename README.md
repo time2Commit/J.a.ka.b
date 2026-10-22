@@ -152,7 +152,7 @@ docker compose logs -f web collab    # Ctrl+C to leave
 
 ### 4. First sign-in
 
-Open the address you chose in `APP_URL`. With a domain, Caddy obtains the certificate by itself on the first visit (it can take a few seconds). **Register: the first account becomes the administrator.** Then create the other accounts from **Settings → Users** (open sign-up is off by default, see `ALLOW_SIGNUP`).
+Open the address you chose in `APP_URL`. With a domain, Caddy obtains the certificate by itself on the first visit (it can take a few seconds). **Register: the first account becomes the administrator**, so do it right away (or set `BOOTSTRAP_TOKEN` in `.env` before starting: the register page then asks for it, and nobody else can claim a new public server). Then create the other accounts from **Settings → Users** (open sign-up is off by default, see `ALLOW_SIGNUP`).
 
 ### Day-to-day operation
 
@@ -181,7 +181,7 @@ Your data lives in Docker volumes (`pgdata`, `uploads`, `backups`), so it surviv
 
 ### Behind your own reverse proxy
 
-Set `SITE_ADDRESS=:80` and the `http://` / `ws://` (or `https://` / `wss://` if your proxy terminates TLS) addresses in `.env`, publish `HTTP_PORT`, and point your proxy at it. Make sure it forwards WebSocket upgrades on `/collab` and does not buffer or compress `/api/events` (server-sent events keep the boards up to date).
+Set `SITE_ADDRESS=:80` and the `http://` / `ws://` (or `https://` / `wss://` if your proxy terminates TLS) addresses in `.env`, publish `HTTP_PORT`, and point your proxy at it. Make sure it forwards WebSocket upgrades on `/collab` and does not buffer or compress `/api/events` (server-sent events keep the boards up to date). Also set `TRUSTED_PROXIES` to the address (or range) your proxy connects from, for example `TRUSTED_PROXIES=172.18.0.0/16`: without it every visitor looks like the same person to the sign-in rate limit, so a few failed attempts lock everybody out.
 
 ### Troubleshooting
 
@@ -195,17 +195,19 @@ Set `SITE_ADDRESS=:80` and the `http://` / `ws://` (or `https://` / `wss://` if 
 
 Set in `.env` (see [`.env.production.example`](.env.production.example) for all of them):
 
-| Variable                         | Meaning                                                                       |
-| -------------------------------- | ----------------------------------------------------------------------------- |
-| `POSTGRES_PASSWORD`              | database password (letters and digits only; it goes into a URL)               |
-| `AUTH_SECRET`                    | signs sessions, 32+ random characters                                         |
-| `APP_URL`, `COLLAB_PUBLIC_URL`   | public address of the site and of the notes endpoint (`wss://…/collab`)       |
-| `SITE_ADDRESS`                   | what Caddy serves: a domain name, or `:80` for plain HTTP                     |
-| `TZ`                             | server time zone (backup schedule); the calendar uses the workspace time zone |
-| `ALLOW_SIGNUP`                   | `true` lets anyone create an account (default: only the admin does)           |
-| `UPLOAD_MAX_MB`, `IMPORT_MAX_MB` | largest file in a note, largest backup archive to import                      |
-| `BACKUP_CRON`, `BACKUP_KEEP`     | nightly backup schedule (empty = off) and how many to keep                    |
-| `ORPHAN_FILE_DAYS`               | days an unreferenced file is kept                                             |
+| Variable                         | Meaning                                                                                                            |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `POSTGRES_PASSWORD`              | database password (letters and digits only; it goes into a URL)                                                    |
+| `AUTH_SECRET`                    | signs sessions, 32+ random characters                                                                              |
+| `APP_URL`, `COLLAB_PUBLIC_URL`   | public address of the site and of the notes endpoint (`wss://…/collab`)                                            |
+| `SITE_ADDRESS`                   | what Caddy serves: a domain name, or `:80` for plain HTTP                                                          |
+| `TRUSTED_PROXIES`                | addresses (separated by spaces) of your own reverse proxy in front of Caddy; empty = visitors reach Caddy directly |
+| `TZ`                             | server time zone (backup schedule); the calendar uses the workspace time zone                                      |
+| `ALLOW_SIGNUP`                   | `true` lets anyone create an account (default: only the admin does)                                                |
+| `BOOTSTRAP_TOKEN`                | if set, creating the first (admin) account requires this token                                                     |
+| `UPLOAD_MAX_MB`, `IMPORT_MAX_MB` | largest file in a note, largest backup archive to import                                                           |
+| `BACKUP_CRON`, `BACKUP_KEEP`     | nightly backup schedule (empty = off) and how many to keep                                                         |
+| `ORPHAN_FILE_DAYS`               | days an unreferenced file is kept                                                                                  |
 
 ## Backups and restore
 

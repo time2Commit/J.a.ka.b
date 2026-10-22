@@ -17,6 +17,8 @@
     "invalidCredentials": "Invalid email or password.",
     "genericError": "Something went wrong. Please try again.",
     "passwordHint": "At least 8 characters.",
+    "setupToken": "Setup token",
+    "setupTokenHint": "Set as BOOTSTRAP_TOKEN in the server's .env file.",
     "firstRunLink": "First time here? Create the admin account",
     "haveAccount": "Already have an account? Sign in"
   },
