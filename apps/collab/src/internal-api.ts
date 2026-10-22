@@ -18,6 +18,9 @@ class RequestError extends Error {
   }
 }
 
+const firstHeader = (value: string | string[] | undefined) =>
+  Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
+
 function send(res: ServerResponse, status: number, body: unknown) {
   res.writeHead(status, { "Content-Type": "application/json" });
   res.end(JSON.stringify(body));
@@ -68,6 +71,7 @@ export async function handleInternalRequest(
       documentName,
       cookie: req.headers.cookie ?? null,
       origin: null,
+      clientIp: firstHeader(req.headers["x-forwarded-for"]),
       allowedOrigin: deps.allowedOrigin,
       db: deps.db,
       getSession: deps.getSession,

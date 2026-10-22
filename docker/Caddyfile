@@ -2,6 +2,15 @@
 #   SITE_ADDRESS  a domain name gets a certificate automatically (Let's Encrypt);
 #                 ":80" serves plain HTTP (behind another proxy, or for a local trial)
 #   UPLOAD_MAX_MB / IMPORT_MAX_MB  request size limits, the same variables the app reads
+#   TRUSTED_PROXIES  address ranges (separated by spaces) of another reverse proxy in front of
+#                 this one, so that the real client address is kept for the sign-in rate limit;
+#                 leave the default when visitors reach this proxy directly
+
+{
+	servers {
+		trusted_proxies static {$TRUSTED_PROXIES:127.0.0.1/32}
+	}
+}
 
 {$SITE_ADDRESS:localhost} {
 	# Compression would hold back the server-sent events that keep every open board up to date.

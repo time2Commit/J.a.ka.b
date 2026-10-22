@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { AuthForm } from "@/components/auth-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { isSignupOpen } from "@/lib/session";
+import { isSignupOpen, needsBootstrapToken } from "@/lib/session";
 
 export default async function RegisterPage() {
   if (!(await isSignupOpen())) redirect("/login");
@@ -15,7 +15,7 @@ export default async function RegisterPage() {
         <CardDescription>{t("registerDescription")}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <AuthForm mode="register" />
+        <AuthForm mode="register" setupToken={await needsBootstrapToken()} />
         <Link
           href="/login"
           className="text-sm text-muted-foreground underline-offset-4 hover:underline"

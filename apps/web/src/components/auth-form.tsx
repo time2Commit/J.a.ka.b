@@ -8,8 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
+import { BOOTSTRAP_TOKEN_HEADER } from "@/lib/bootstrap-token";
 
-export function AuthForm({ mode }: { mode: "login" | "register" }) {
+export function AuthForm({
+  mode,
+  setupToken = false,
+}: {
+  mode: "login" | "register";
+  /** Ask for the setup token (first account of an instance that has one configured). */
+  setupToken?: boolean;
+}) {
   const t = useTranslations("Auth");
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -23,7 +31,12 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     const { error } =
       mode === "login"
         ? await authClient.signIn.email({ email, password })
-        : await authClient.signUp.email({ email, password, name: String(data.get("name")) });
+        : await authClient.signUp.email(
+            { email, password, name: String(data.get("name")) },
+            setupToken
+              ? { headers: { [BOOTSTRAP_TOKEN_HEADER]: String(data.get("setupToken") ?? "") } }
+              : undefined,
+          );
     setPending(false);
     if (error) {
       toast.error(mode === "login" ? t("invalidCredentials") : t("genericError"));
@@ -59,6 +72,13 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
         )}
       </div>
+      {mode === "register" && setupToken && (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="setupToken">{t("setupToken")}</Label>
+          <Input id="setupToken" name="setupToken" type="password" autoComplete="off" required />
+          <p className="text-xs text-muted-foreground">{t("setupTokenHint")}</p>
+        </div>
+      )}
       <Button type="submit" disabled={pending}>
         {mode === "login" ? t("signIn") : t("signUp")}
       </Button>

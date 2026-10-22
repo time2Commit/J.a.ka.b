@@ -5,14 +5,21 @@ const baseUrl = () =>
 
 /**
  * Asks the collab server to act on a live note. The user's cookie is forwarded, so the collab
- * server authorizes the call exactly as it does a WebSocket connection.
+ * server authorizes the call exactly as it does a WebSocket connection; the caller's address
+ * goes along so that session checks are rate-limited per person, not all together.
  */
-export async function collabPost<T>(path: string, cookie: string | null, body: unknown = {}) {
+export async function collabPost<T>(path: string, req: Request, body: unknown = {}) {
+  const cookie = req.headers.get("cookie");
+  const clientIp = req.headers.get("x-forwarded-for");
   let res: Response;
   try {
     res = await fetch(`${baseUrl()}${path}`, {
       method: "POST",
-      headers: { "content-type": "application/json", ...(cookie ? { cookie } : {}) },
+      headers: {
+        "content-type": "application/json",
+        ...(cookie ? { cookie } : {}),
+        ...(clientIp ? { "x-forwarded-for": clientIp } : {}),
+      },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(15_000),
     });

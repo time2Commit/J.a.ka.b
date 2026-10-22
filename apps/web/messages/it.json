@@ -17,6 +17,8 @@
     "invalidCredentials": "Email o password non valide.",
     "genericError": "Qualcosa è andato storto. Riprova.",
     "passwordHint": "Almeno 8 caratteri.",
+    "setupToken": "Token di avvio",
+    "setupTokenHint": "Il valore di BOOTSTRAP_TOKEN nel file .env del server.",
     "firstRunLink": "Prima volta qui? Crea l'account amministratore",
     "haveAccount": "Hai già un account? Accedi"
   },
