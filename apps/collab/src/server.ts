@@ -66,6 +66,7 @@ export function createCollabServer(options: {
         documentName,
         cookie: requestHeaders.get("cookie"),
         origin: requestHeaders.get("origin"),
+        clientIp: requestHeaders.get("x-forwarded-for"),
         allowedOrigin,
         db,
         getSession,

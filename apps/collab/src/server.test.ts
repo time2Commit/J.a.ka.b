@@ -13,6 +13,8 @@ const run = Date.now().toString(36);
 const ORIGIN = "http://localhost:3000";
 
 let web: HttpServer;
+/** `x-forwarded-for` of every session check the fake web app received. */
+const forwardedFor: (string | undefined)[] = [];
 let collab: ReturnType<typeof createCollabServer>;
 let statusId: string;
 let projectId: string;
@@ -24,6 +26,7 @@ const leftovers: string[] = [];
 function startFakeWeb() {
   return new Promise<HttpServer>((resolve) => {
     const server = createServer((req, res) => {
+      forwardedFor.push(req.headers["x-forwarded-for"] as string | undefined);
       const match = /s=(\w+)/.exec(req.headers.cookie ?? "");
       res.setHeader("content-type", "application/json");
       if (!match) return void res.end("null");
@@ -35,9 +38,10 @@ function startFakeWeb() {
   });
 }
 
-function connect(opts: { cookie?: string; origin?: string; name?: string }) {
+function connect(opts: { cookie?: string; origin?: string; name?: string; forwardedFor?: string }) {
   const headers: Record<string, string> = { origin: opts.origin ?? ORIGIN };
   if (opts.cookie) headers.cookie = opts.cookie;
+  if (opts.forwardedFor) headers["x-forwarded-for"] = opts.forwardedFor;
   // The browser sends cookies by itself; in Node the headers are added to the handshake.
   class WebSocketWithHeaders extends WebSocket {
     constructor(url: string, protocols?: string | string[]) {
@@ -134,6 +138,12 @@ describe("collab server", () => {
       "denied",
     );
     expect(await connect({ cookie: "s=anna", name: "other:thing" }).outcome).toBe("denied");
+  });
+
+  it("tells the web app who is connecting, so session checks are not counted all together", async () => {
+    forwardedFor.length = 0;
+    expect(await connect({ cookie: "s=anna", forwardedFor: "203.0.113.7" }).outcome).toBe("synced");
+    expect(forwardedFor).toContain("203.0.113.7");
   });
 
   it("syncs edits between two users and persists them in Postgres", async () => {

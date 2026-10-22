@@ -10,5 +10,5 @@ export const GET = route<Params>((_req, { params }) => listVersions(prisma, para
 /** Saves the live note as a manual version (taken by the collab server, which holds the live state). */
 export const POST = route<Params>(async (req, { params }) => {
   const body = await parseBody(req, versionCreateSchema);
-  return collabPost(`/internal/projects/${params.id}/versions`, req.headers.get("cookie"), body);
+  return collabPost(`/internal/projects/${encodeURIComponent(params.id)}/versions`, req, body);
 });
