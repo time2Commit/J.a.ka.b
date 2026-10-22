@@ -4,7 +4,7 @@ import path from "node:path";
 import { Readable } from "node:stream";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createPrismaClient } from "@jakab/db";
-import { sanitizeFileName, sanitizeMime, saveAttachment } from "./attachments";
+import { attachmentHeaders, sanitizeFileName, sanitizeMime, saveAttachment } from "./attachments";
 import { FileSystemStorage } from "./storage";
 
 const prisma = createPrismaClient();
@@ -84,5 +84,37 @@ describe("sanitizers", () => {
     expect(sanitizeMime("image/PNG; charset=binary")).toBe("image/png");
     expect(sanitizeMime("text/html<script>")).toBe("application/octet-stream");
     expect(sanitizeMime(null)).toBe("application/octet-stream");
+  });
+});
+
+describe("attachmentHeaders", () => {
+  const file = (mime: string) => ({ mime, originalName: "Piano é.pdf", size: 12 });
+
+  it("shows raster images and PDFs inline, sandboxed except for PDFs", () => {
+    const image = attachmentHeaders(file("image/png"), false);
+    expect(image["Content-Disposition"]).toMatch(/^inline;/);
+    expect(image["Content-Type"]).toBe("image/png");
+    expect(image["Content-Security-Policy"]).toBe("default-src 'none'; sandbox");
+
+    const pdf = attachmentHeaders(file("application/pdf"), false);
+    expect(pdf["Content-Disposition"]).toMatch(/^inline;/);
+    expect(pdf["Content-Security-Policy"]).toBe("default-src 'none'");
+    expect(pdf["Content-Disposition"]).toContain("Piano%20%C3%A9.pdf");
+  });
+
+  it("never lets a file that could run as a page be shown inline", () => {
+    for (const mime of ["text/html", "image/svg+xml", "application/xhtml+xml", "text/javascript"]) {
+      const headers = attachmentHeaders(file(mime), false);
+      expect(headers["Content-Type"]).toBe("application/octet-stream");
+      expect(headers["Content-Disposition"]).toMatch(/^attachment;/);
+      expect(headers["Content-Security-Policy"]).toBe("default-src 'none'; sandbox");
+      expect(headers["X-Content-Type-Options"]).toBe("nosniff");
+    }
+  });
+
+  it("forces a download, sandboxed, when asked", () => {
+    const headers = attachmentHeaders(file("application/pdf"), true);
+    expect(headers["Content-Disposition"]).toMatch(/^attachment;/);
+    expect(headers["Content-Security-Policy"]).toBe("default-src 'none'; sandbox");
   });
 });

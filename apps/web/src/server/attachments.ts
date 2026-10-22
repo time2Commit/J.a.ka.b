@@ -1,4 +1,6 @@
 import type { PrismaClient } from "@jakab/db";
+// Subpath import: the whole editor package (Tiptap, Yjs) is not needed on this server.
+import { fileKind } from "@jakab/editor/files";
 import { randomUUID } from "node:crypto";
 import type { Readable } from "node:stream";
 import { notFound } from "./errors";
@@ -88,4 +90,29 @@ export async function getAttachment(db: PrismaClient, id: string) {
   const attachment = await db.attachment.findUnique({ where: { id } });
   if (!attachment) throw notFound("Attachment");
   return attachment;
+}
+
+/**
+ * Headers for sending a stored file back. Raster images and PDFs are shown inline; everything
+ * else is forced to download with a generic type, so an uploaded file can never run as a page of
+ * this site. The policy is a second lock on top of that: nothing in a file may load or run,
+ * and (except for PDFs, which Chrome refuses to show inside a sandbox) it is sandboxed away from
+ * this origin.
+ */
+export function attachmentHeaders(
+  file: { mime: string; originalName: string; size: number },
+  wantsDownload: boolean,
+): Record<string, string> {
+  const kind = fileKind(file.mime);
+  const inline = !wantsDownload && kind !== "file";
+  return {
+    "Content-Type": inline ? file.mime : "application/octet-stream",
+    "Content-Length": String(file.size),
+    "Content-Disposition": `${inline ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(file.originalName)}`,
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy":
+      inline && kind === "pdf" ? "default-src 'none'" : "default-src 'none'; sandbox",
+    // Content never changes for a given id.
+    "Cache-Control": "private, max-age=31536000, immutable",
+  };
 }

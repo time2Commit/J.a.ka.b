@@ -12,6 +12,28 @@ export interface Actor {
 
 type Handler<P> = (req: Request, ctx: { actor: Actor; params: P }) => Promise<Response | unknown>;
 
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+/**
+ * Requests that change something must come from this site. Browsers always send `Origin` on such
+ * requests, so a page on another origin that makes the browser call the API with the person's
+ * cookie is refused, even if the cookie were ever sent along (the `SameSite=Lax` cookie already
+ * keeps it back from other sites). Calls without `Origin` (scripts, tests) are not browser
+ * requests and are left to the session check.
+ */
+export function assertSameOrigin(req: Request, appUrl = process.env.APP_URL) {
+  if (SAFE_METHODS.has(req.method)) return;
+  const origin = req.headers.get("origin");
+  if (origin === null) return;
+  let expected: string;
+  try {
+    expected = new URL(appUrl ?? "http://localhost:3000").origin;
+  } catch {
+    expected = "http://localhost:3000";
+  }
+  if (origin !== expected) throw new HttpError(403, "Cross-origin request refused");
+}
+
 /**
  * Wraps a route handler: authenticates, optionally requires admin and rate-limits per user, maps
  * errors to JSON responses.
@@ -22,6 +44,7 @@ export function route<P = Record<string, never>>(
 ) {
   return async (req: Request, ctx: { params: Promise<P> }) => {
     try {
+      assertSameOrigin(req);
       const session = await getSession();
       if (!session) throw new HttpError(401, "Unauthorized");
       const actor: Actor = {
