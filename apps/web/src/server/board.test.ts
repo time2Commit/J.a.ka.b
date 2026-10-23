@@ -210,6 +210,10 @@ describe("statuses", () => {
   });
 
   it("falls back to a neighbouring status when none is chosen", async () => {
+    // The neighbour is the status just before it in order. Put this file's own status above every
+    // status the other (parallel) test files use, so that it is always the neighbour and no other
+    // file's status ever has a project moved onto it.
+    await prisma.status.update({ where: { id: doneStatusId }, data: { order: 1000 } });
     const doomed = await createStatus(prisma, {
       name: `Fallback ${run}`,
       color: "#444444",
@@ -219,12 +223,9 @@ describe("statuses", () => {
 
     const moved = await deleteStatus(prisma, doomed.id);
 
-    expect(moved.statusId).not.toBe(doomed.id);
+    expect(moved.statusId).toBe(doneStatusId);
     const project = await prisma.project.findUniqueOrThrow({ where: { id: card.projectId } });
     expect(project.statusId).toBe(moved.statusId);
-    // The neighbour is whatever status is next to it, possibly one that another test file owns:
-    // do not leave a project pointing at it, or that file could not delete its status.
-    await prisma.project.delete({ where: { id: card.projectId } });
   });
 
   it("rejects a missing status and moving items onto the deleted status itself", async () => {
