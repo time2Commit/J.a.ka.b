@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
-import { api, ApiError, isNoStatusesError } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { isOnItemPage, type TreeItem } from "./tree";
 
 /**
@@ -24,8 +24,18 @@ export function useTreeCrud<Input extends object>(options: {
   alsoOnDelete?: string[];
   /** The API refuses with 403 when the person may not delete (projects only). */
   forbiddenOnDelete?: boolean;
+  /** A specific message for a failed creation, or null to fall back to the generic one. */
+  errorMessage?: (error: unknown) => string | null;
 }) {
-  const { namespace, apiPath, basePath, queryRoot, alsoOnDelete = [], forbiddenOnDelete } = options;
+  const {
+    namespace,
+    apiPath,
+    basePath,
+    queryRoot,
+    alsoOnDelete = [],
+    forbiddenOnDelete,
+    errorMessage,
+  } = options;
   const t = useTranslations(namespace);
   const common = useTranslations("Common");
   const router = useRouter();
@@ -45,9 +55,7 @@ export function useTreeCrud<Input extends object>(options: {
       toast.error(
         error instanceof ApiError && error.status === 409
           ? t("nameTaken")
-          : isNoStatusesError(error)
-            ? common("noStatuses")
-            : common("error"),
+          : (errorMessage?.(error) ?? common("error")),
       ),
   });
 

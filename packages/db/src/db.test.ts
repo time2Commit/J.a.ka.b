@@ -22,13 +22,14 @@ describe("database", () => {
     // path), so the migration runs as on a new install without touching the shared test data.
     await prisma
       .$transaction(async (tx) => {
-        await tx.$executeRaw`CREATE TEMP TABLE "status" (LIKE public."status" INCLUDING ALL)`;
+        await tx.$executeRaw`CREATE TEMP TABLE "status" (LIKE "status" INCLUDING ALL)`;
         for (let i = 0; i < 2; i++) {
           await tx.$executeRawUnsafe(sql);
-          const rows = await tx.$queryRaw<{ name: string; isDone: boolean }[]>`
-            SELECT name, "isDone" FROM pg_temp."status" ORDER BY "order"`;
+          const rows = await tx.$queryRaw<
+            { name: string; color: string; order: number; isDone: boolean }[]
+          >`SELECT name, color, "order", "isDone" FROM pg_temp."status" ORDER BY "order"`;
           counts.push(rows.length);
-          expect(rows).toEqual(DEFAULT_STATUSES.map(({ name, isDone }) => ({ name, isDone })));
+          expect(rows).toEqual(DEFAULT_STATUSES);
         }
         throw rollback;
       })

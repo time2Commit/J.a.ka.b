@@ -130,7 +130,7 @@ describe("createProject", () => {
         { name: name("NoStatus"), folderId: null, templateId: null },
         creatorId,
       ),
-    ).rejects.toMatchObject({ status: 422 });
+    ).rejects.toMatchObject({ status: 422, code: "no_statuses" });
   });
 });
 

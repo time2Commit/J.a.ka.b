@@ -61,7 +61,7 @@ export function route<P = Record<string, never>>(
     } catch (error) {
       if (error instanceof HttpError) {
         return NextResponse.json(
-          { error: error.message },
+          { error: error.message, ...(error.code && { code: error.code }) },
           {
             status: error.status,
             ...(error instanceof TooManyRequests && {

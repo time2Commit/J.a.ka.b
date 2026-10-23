@@ -2,6 +2,8 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    /** The server's machine-readable `code`, when it sends one. */
+    public code?: string,
   ) {
     super(message);
   }
@@ -9,7 +11,7 @@ export class ApiError extends Error {
 
 /** The server refused to create a card or project because no status exists yet (see `noStatuses`). */
 export const isNoStatusesError = (error: unknown) =>
-  error instanceof ApiError && error.status === 422;
+  error instanceof ApiError && error.code === "no_statuses";
 
 export async function api<T>(path: string, init?: RequestInit & { json?: unknown }): Promise<T> {
   const { json, ...rest } = init ?? {};
@@ -19,6 +21,9 @@ export async function api<T>(path: string, init?: RequestInit & { json?: unknown
     body: json !== undefined ? JSON.stringify(json) : rest.body,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(res.status, (data as { error?: string }).error ?? res.statusText);
+  if (!res.ok) {
+    const { error, code } = data as { error?: string; code?: string };
+    throw new ApiError(res.status, error ?? res.statusText, code);
+  }
   return data as T;
 }
