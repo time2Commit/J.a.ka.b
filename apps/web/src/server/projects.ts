@@ -6,7 +6,7 @@ import {
 } from "@jakab/shared";
 import { randomUUID } from "node:crypto";
 import type { PreparedClone } from "./clone";
-import { conflict, HttpError, notFound } from "./errors";
+import { conflict, HttpError, notFound, noStatuses } from "./errors";
 import { assertFolderExists } from "./folders";
 import { existingIds } from "./ids";
 import { noteFromTemplate } from "./note-json";
@@ -107,7 +107,7 @@ export async function insertProject(
   const status =
     (wantedStatus ? await tx.status.findUnique({ where: { id: wantedStatus } }) : null) ??
     (input.statusId ? null : await tx.status.findFirst({ orderBy: { order: "asc" } }));
-  if (!status) throw notFound("Status");
+  if (!status) throw input.statusId ? notFound("Status") : noStatuses();
 
   const labelIds = await existingIds(
     (args) => tx.label.findMany(args),

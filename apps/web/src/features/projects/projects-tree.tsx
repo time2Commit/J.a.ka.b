@@ -8,7 +8,7 @@ import { NewItemDialog } from "@/features/folders/new-item-dialog";
 import type { TreeItem } from "@/features/folders/tree";
 import { useTreeCrud } from "@/features/folders/use-tree-crud";
 import { templatesKey } from "@/features/templates/keys";
-import { api } from "@/lib/api";
+import { api, isNoStatusesError } from "@/lib/api";
 import type { Meta, ProjectTreeItem, TemplateItem } from "@/lib/types";
 
 /** The projects of the tree, as the overview and the tree itself read them. */
@@ -22,6 +22,7 @@ export function useProjectTreeData() {
 /** The tree of the projects: open a note, create projects and folders, move and delete them. */
 export function ProjectsTree() {
   const t = useTranslations("Projects.tree");
+  const common = useTranslations("Common");
   const projects = useProjectTreeData();
   const folders = useFolders("project");
   const meta = useQuery({ queryKey: ["meta"], queryFn: () => api<Meta>("/api/meta") });
@@ -40,6 +41,7 @@ export function ProjectsTree() {
     queryRoot: "projects",
     alsoOnDelete: ["cards"],
     forbiddenOnDelete: true,
+    errorMessage: (error) => (isNoStatusesError(error) ? common("noStatuses") : null),
   });
 
   const items: TreeItem[] = useMemo(

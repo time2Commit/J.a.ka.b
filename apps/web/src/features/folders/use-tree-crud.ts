@@ -24,8 +24,18 @@ export function useTreeCrud<Input extends object>(options: {
   alsoOnDelete?: string[];
   /** The API refuses with 403 when the person may not delete (projects only). */
   forbiddenOnDelete?: boolean;
+  /** A specific message for a failed creation, or null to fall back to the generic one. */
+  errorMessage?: (error: unknown) => string | null;
 }) {
-  const { namespace, apiPath, basePath, queryRoot, alsoOnDelete = [], forbiddenOnDelete } = options;
+  const {
+    namespace,
+    apiPath,
+    basePath,
+    queryRoot,
+    alsoOnDelete = [],
+    forbiddenOnDelete,
+    errorMessage,
+  } = options;
   const t = useTranslations(namespace);
   const common = useTranslations("Common");
   const router = useRouter();
@@ -43,7 +53,9 @@ export function useTreeCrud<Input extends object>(options: {
     },
     onError: (error) =>
       toast.error(
-        error instanceof ApiError && error.status === 409 ? t("nameTaken") : common("error"),
+        error instanceof ApiError && error.status === 409
+          ? t("nameTaken")
+          : (errorMessage?.(error) ?? common("error")),
       ),
   });
 
