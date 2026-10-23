@@ -41,14 +41,35 @@ async function ancestry(db: Db, id: string | null): Promise<string[]> {
   return chain;
 }
 
-/** Number of levels below `id` (a folder without subfolders has height 1). */
-async function height(db: Db, id: string): Promise<number> {
-  const children = await db.projectFolder.findMany({
-    where: { parentId: id },
-    select: { id: true },
+/**
+ * Number of levels of the branch that starts at `id` (a folder without subfolders is 1), from the
+ * id / parent pairs of a whole tree. A loop that should not exist is cut instead of followed.
+ */
+export function branchHeight(
+  id: string,
+  folders: { id: string; parentId: string | null }[],
+): number {
+  const children = new Map<string, string[]>();
+  for (const folder of folders) {
+    if (folder.parentId)
+      children.set(folder.parentId, [...(children.get(folder.parentId) ?? []), folder.id]);
+  }
+  const seen = new Set<string>();
+  const walk = (node: string): number => {
+    if (seen.has(node)) return 0;
+    seen.add(node);
+    return 1 + Math.max(0, ...(children.get(node) ?? []).map(walk));
+  };
+  return walk(id);
+}
+
+/** The tree is read once: asking the database about each folder in turn costs a query per folder. */
+async function height(db: Db, id: string, kind: FolderKind): Promise<number> {
+  const folders = await db.projectFolder.findMany({
+    where: { kind },
+    select: { id: true, parentId: true },
   });
-  const below = await Promise.all(children.map((c) => height(db, c.id)));
-  return 1 + Math.max(0, ...below);
+  return branchHeight(id, folders);
 }
 
 async function assertNameFree(
@@ -109,7 +130,7 @@ export async function updateFolder(db: PrismaClient, id: string, input: FolderUp
       await assertSameKind(tx, kind, parentId);
       const above = await ancestry(tx, parentId);
       if (above.includes(id)) throw conflict("A folder cannot be moved into itself");
-      if (above.length + (await height(tx, id)) > FOLDER_MAX_DEPTH) {
+      if (above.length + (await height(tx, id, kind)) > FOLDER_MAX_DEPTH) {
         throw conflict("Folders are nested too deeply");
       }
     }

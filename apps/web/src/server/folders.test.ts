@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createPrismaClient } from "@jakab/db";
 import { FOLDER_MAX_DEPTH } from "@jakab/shared";
 import {
+  branchHeight,
   createFolder,
   deleteFolder,
   ensureFolderPath,
@@ -196,5 +197,30 @@ describe("folders", () => {
     expect(await ensureFolderPath(prisma, [name("imported"), name("deep")])).toBe(id);
     expect(await ensureFolderPath(prisma, [])).toBeNull();
     expect((await folderPathMap(prisma)).get(id!)).toEqual([name("Imported"), name("Deep")]);
+  });
+});
+
+describe("branchHeight", () => {
+  const tree = [
+    { id: "a", parentId: null },
+    { id: "b", parentId: "a" },
+    { id: "c", parentId: "b" },
+    { id: "d", parentId: "a" },
+    { id: "x", parentId: null },
+  ];
+
+  it("counts the levels of a branch, the folder itself included", () => {
+    expect(branchHeight("a", tree)).toBe(3);
+    expect(branchHeight("b", tree)).toBe(2);
+    expect(branchHeight("c", tree)).toBe(1);
+    expect(branchHeight("x", tree)).toBe(1);
+  });
+
+  it("does not follow a loop forever", () => {
+    const loop = [
+      { id: "p", parentId: "q" },
+      { id: "q", parentId: "p" },
+    ];
+    expect(branchHeight("p", loop)).toBe(2);
   });
 });
