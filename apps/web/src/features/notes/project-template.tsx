@@ -5,15 +5,8 @@ import { FileStack } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
+import { DialogField, FormDialog } from "@/components/form-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, ApiError } from "@/lib/api";
@@ -51,40 +44,26 @@ export function SaveAsTemplate({
       <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)}>
         <FileStack /> {t("button")}
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("title")}</DialogTitle>
-            <DialogDescription>{t("description")}</DialogDescription>
-          </DialogHeader>
-          <form
-            className="flex flex-col gap-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              save.mutate();
-            }}
-          >
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="save-template-name">{t("name")}</Label>
-              <Input
-                id="save-template-name"
-                value={name}
-                maxLength={80}
-                onChange={(e) => setName(e.target.value)}
-                autoFocus
-              />
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-                {common("cancel")}
-              </Button>
-              <Button type="submit" disabled={save.isPending || name.trim() === ""}>
-                {t("save")}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <FormDialog
+        open={open}
+        title={t("title")}
+        description={t("description")}
+        submitLabel={t("save")}
+        submitDisabled={save.isPending || name.trim() === ""}
+        onClose={() => setOpen(false)}
+        onSubmit={() => save.mutate()}
+      >
+        <DialogField>
+          <Label htmlFor="save-template-name">{t("name")}</Label>
+          <Input
+            id="save-template-name"
+            value={name}
+            maxLength={80}
+            onChange={(e) => setName(e.target.value)}
+            autoFocus
+          />
+        </DialogField>
+      </FormDialog>
     </>
   );
 }
