@@ -5,7 +5,7 @@ import { ySyncPluginKey } from "@tiptap/y-tiptap";
 /** Block types that carry `lastEditedBy` / `lastEditedAt`. */
 export const ATTRIBUTED_BLOCKS = ["paragraph", "heading", "codeBlock", "fileEmbed"];
 
-export const blockAttributionKey = new PluginKey("blockAttribution");
+const blockAttributionKey = new PluginKey("blockAttribution");
 
 export interface AttributionUser {
   id: string;

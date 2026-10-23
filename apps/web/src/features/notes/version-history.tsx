@@ -19,7 +19,7 @@ import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { VersionPreview } from "./version-preview";
 
-export interface VersionAuthor {
+interface VersionAuthor {
   id: string;
   name: string;
   avatarColor: string;

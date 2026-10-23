@@ -1,7 +1,6 @@
 {
   "App": {
-    "name": "J.a.ka.b",
-    "tagline": "Just another kanban board"
+    "name": "J.a.ka.b"
   },
   "Auth": {
     "loginTitle": "Sign in",
@@ -96,9 +95,7 @@
     "newTitle": "New card",
     "project": "Project",
     "newProject": "New project",
-    "existingProject": "Existing project",
     "projectName": "Project name",
-    "selectProject": "Select a project",
     "title": "Card title (optional)",
     "start": "Start",
     "end": "End",
@@ -157,7 +154,6 @@
     "done": "Counts as done",
     "moveUp": "Move up",
     "moveDown": "Move down",
-    "statusInUse": "This status is in use and cannot be deleted",
     "labels": "Labels",
     "users": "Users",
     "usersHelp": "Create accounts for your team. They can change their password later.",
@@ -166,7 +162,6 @@
     "member": "Member",
     "newUser": "New user",
     "userCreated": "User created",
-    "emailInUse": "Email already in use",
     "backup": {
       "title": "Backup and export",
       "help": "Download the whole board (settings, statuses, labels, people, every project with its note, files and cards) as one archive you can import into another instance. Notes are included as Markdown too.",
@@ -377,8 +372,7 @@
       "labelPlaceholder": "e.g. Sent to the client",
       "save": "Save version",
       "saved": "Version saved",
-      "open": "Version history",
-      "saveButton": "Save version"
+      "open": "Version history"
     }
   },
   "Templates": {
@@ -393,7 +387,6 @@
     "delete": "Delete {name}",
     "confirmDelete": "Delete the template “{name}”? Projects already made from it are not affected.",
     "newTitle": "New template",
-    "editTitle": "Edit template",
     "name": "Name",
     "status": "Status of new projects",
     "firstStatus": "First status",

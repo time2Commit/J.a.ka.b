@@ -5,6 +5,7 @@ import { prepareClone, type PreparedClone } from "./clone";
 import { conflict, notFound } from "./errors";
 import { existingIds } from "./ids";
 import { insertProject } from "./projects";
+import { replaceRelations } from "./relations";
 import type { StorageDriver } from "./storage";
 import { notifyBoardChanged } from "./notify";
 
@@ -20,7 +21,7 @@ type CardRecord = Prisma.CardGetPayload<{ include: typeof cardInclude }>;
 export type CardDto = ReturnType<typeof toCardDto>;
 
 /** What the calendar and the card panel show: everything here belongs to the card itself. */
-export function toCardDto(card: CardRecord) {
+function toCardDto(card: CardRecord) {
   return {
     id: card.id,
     projectId: card.projectId,
@@ -208,12 +209,7 @@ export async function updateCard(
       where: { id },
       data: {
         ...fields,
-        ...(labelIds && {
-          labels: { deleteMany: {}, create: labelIds.map((labelId) => ({ labelId })) },
-        }),
-        ...(memberIds && {
-          members: { deleteMany: {}, create: memberIds.map((uid) => ({ userId: uid })) },
-        }),
+        ...replaceRelations({ labelIds, memberIds }),
       },
       include: cardInclude,
     });

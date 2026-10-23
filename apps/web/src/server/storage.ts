@@ -2,10 +2,11 @@ import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { mkdir, rename, rm, rmdir, stat } from "node:fs/promises";
 import path from "node:path";
-import { Transform, type Readable } from "node:stream";
+import type { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { createWriteStream } from "node:fs";
 import { HttpError } from "./errors";
+import { sizeLimiter } from "./stream-limit";
 
 /** Where attachment bytes live. Only the filesystem driver exists; S3-style drivers fit the same interface. */
 export interface StorageDriver {
@@ -32,24 +33,20 @@ export class FileSystemStorage implements StorageDriver {
     await mkdir(path.dirname(target), { recursive: true });
 
     const hash = createHash("sha256");
-    let size = 0;
-    const meter = new Transform({
-      transform(chunk: Buffer, _encoding, callback) {
-        size += chunk.length;
-        if (size > maxBytes) return callback(new HttpError(413, "File too large"));
-        hash.update(chunk);
-        callback(null, chunk);
-      },
-    });
+    const meter = sizeLimiter(
+      maxBytes,
+      () => new HttpError(413, "File too large"),
+      (chunk) => hash.update(chunk),
+    );
 
     try {
-      await pipeline(body, meter, createWriteStream(partial, { flags: "wx" }));
+      await pipeline(body, meter.stream, createWriteStream(partial, { flags: "wx" }));
       await rename(partial, target);
     } catch (error) {
       await rm(partial, { force: true });
       throw error;
     }
-    return { size, sha256: hash.digest("hex") };
+    return { size: meter.size(), sha256: hash.digest("hex") };
   }
 
   async open(key: string) {

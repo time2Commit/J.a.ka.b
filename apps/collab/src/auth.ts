@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@jakab/db";
 import { parseNoteDocumentName } from "@jakab/editor";
 
-export interface CollabUser {
+interface CollabUser {
   id: string;
   name: string;
   color: string;

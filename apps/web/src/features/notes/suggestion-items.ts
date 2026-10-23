@@ -1,5 +1,5 @@
 /** Lowercase, accents stripped: "Città" matches "citta". */
-export const fold = (value: string) =>
+const fold = (value: string) =>
   value
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")

@@ -9,21 +9,12 @@ export const ADMIN = {
 
 export const STORAGE_STATE = "e2e/.auth/admin.json";
 
-export async function signIn(page: Page) {
-  await page.goto("/login");
-  await page.waitForLoadState("networkidle"); // let React hydrate before submitting
-  await page.getByLabel("Email").fill(ADMIN.email);
-  await page.getByLabel("Password").fill(ADMIN.password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("button", { name: "New card" })).toBeVisible();
-}
-
 /** Today's date (yyyy-MM-dd) in the workspace time zone. */
 export function todayInRome() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome" }).format(new Date());
 }
 
-export const MEMBER = {
+const MEMBER = {
   name: "Anna Neri",
   email: "anna.extras@example.com",
   password: "password456",
@@ -51,7 +42,7 @@ export async function openNote(page: Page, url: string) {
   return editor;
 }
 
-export const MEMBER_STORAGE_STATE = "e2e/.auth/member.json";
+const MEMBER_STORAGE_STATE = "e2e/.auth/member.json";
 
 /**
  * A browser context signed in as the member. The first call signs in through the UI and keeps the

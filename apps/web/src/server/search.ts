@@ -4,8 +4,8 @@ import { escapeLike, suggestProjects, type ProjectSuggestion } from "./suggest";
 import { parseDefaults } from "./templates";
 
 /** Notes are searched from this many characters of the query. */
-export const MIN_NOTE_QUERY = 2;
-export const NOTE_HIT_LIMIT = 10;
+const MIN_NOTE_QUERY = 2;
+const NOTE_HIT_LIMIT = 10;
 const REINDEX_BATCH = 200;
 const SNIPPET_BEFORE = 50;
 const SNIPPET_AFTER = 90;
@@ -36,7 +36,7 @@ export interface SearchResults {
   templates: TemplateHit[];
 }
 
-export const TEMPLATE_HIT_LIMIT = 6;
+const TEMPLATE_HIT_LIMIT = 6;
 
 /**
  * Templates are few, so they are matched here instead of in the database: every word must be in

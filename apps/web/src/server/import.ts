@@ -23,7 +23,7 @@ const MAX_MANIFEST_BYTES = MB;
 const MAX_JSON_BYTES = 50 * MB;
 const MAX_VERSIONS_BYTES = 500 * MB;
 
-export type ConflictChoice = "skip" | "rename" | "replace";
+type ConflictChoice = "skip" | "rename" | "replace";
 
 export interface ImportOptions {
   /** What to do with a project whose name already exists here. */
@@ -36,7 +36,7 @@ export interface ImportOptions {
   slugs?: string[];
 }
 
-export interface ParsedProject {
+interface ParsedProject {
   slug: string;
   data: ArchiveProject;
   hasVersions: boolean;

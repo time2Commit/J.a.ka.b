@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@jakab/db";
 import { notFound } from "./errors";
 
-export interface VersionAuthor {
+interface VersionAuthor {
   id: string;
   name: string;
   avatarColor: string;

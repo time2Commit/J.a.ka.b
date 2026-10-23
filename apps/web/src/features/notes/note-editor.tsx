@@ -19,7 +19,7 @@ import { NoteToolbar } from "./note-toolbar";
 import { SaveVersionDialog } from "./save-version-dialog";
 import { VersionHistory } from "./version-history";
 
-export interface NoteUser {
+interface NoteUser {
   id: string;
   name: string;
   color: string;

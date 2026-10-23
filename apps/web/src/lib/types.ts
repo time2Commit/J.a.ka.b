@@ -8,7 +8,7 @@ export interface Status {
   order: number;
   isDone: boolean;
 }
-export interface Label {
+interface Label {
   id: string;
   name: string;
   color: string;
@@ -20,7 +20,7 @@ export interface Member {
   role: "admin" | "member";
   avatarColor: string;
 }
-export interface Workspace {
+interface Workspace {
   name: string;
   timeZone: string;
   workDayStart: string;
@@ -67,7 +67,7 @@ export interface ProjectSuggestion extends ProjectListItem {
   focusCard: { id: string; start: string } | null;
 }
 
-export interface TemplateDefaults {
+interface TemplateDefaults {
   statusId: string | null;
   labelIds: string[];
   memberIds: string[];

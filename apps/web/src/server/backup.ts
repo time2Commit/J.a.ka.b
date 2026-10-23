@@ -11,7 +11,7 @@ import type { StorageDriver } from "./storage";
 
 const execFileAsync = promisify(execFile);
 
-export type BackupKind = "archive" | "database";
+type BackupKind = "archive" | "database";
 
 export interface BackupFile {
   name: string;
@@ -107,11 +107,10 @@ export function pgEnvFromUrl(databaseUrl: string): Record<string, string> {
   };
 }
 
-export type DumpResult =
-  { ok: true } | { ok: false; reason: "missing" | "failed"; message: string };
+type DumpResult = { ok: true } | { ok: false; reason: "missing" | "failed"; message: string };
 
 /** Database dump in `pg_dump` custom format (restore with `pg_restore`). */
-export async function dumpDatabase(databaseUrl: string, target: string): Promise<DumpResult> {
+async function dumpDatabase(databaseUrl: string, target: string): Promise<DumpResult> {
   try {
     await execFileAsync("pg_dump", ["--format=custom", "--no-owner", "--file", target], {
       env: { ...process.env, ...pgEnvFromUrl(databaseUrl) },

@@ -79,7 +79,7 @@ Internal packages are named `@jakab/<name>` and export TypeScript sources direct
 - Calendar: FullCalendar (MIT plugins only: dayGrid, timeGrid, list, interaction). No premium plugins.
 - Editor: Tiptap + Yjs/Hocuspocus. Shared extensions live in `packages/editor` so web, collab and export use the same schema.
 - Data: Prisma + PostgreSQL 16 with `pg_trgm`. Validate input with zod (schemas in `packages/shared`).
-- Dates with date-fns; always store UTC, display in the workspace time zone.
+- Dates: the platform `Intl` API (no date library); always store UTC, display in the workspace time zone.
 - Tests next to the code: `*.test.ts`. Playwright E2E in `apps/web/e2e/` (Chromium is preinstalled in cloud sessions: do not run `playwright install`).
 
 ## Environment
