@@ -82,6 +82,7 @@
     "close": "Chiudi",
     "loading": "Caricamento…",
     "error": "Qualcosa è andato storto",
+    "noStatuses": "Non esiste ancora nessuno stato: creane almeno uno in Impostazioni.",
     "name": "Nome",
     "color": "Colore",
     "none": "Nessuno",

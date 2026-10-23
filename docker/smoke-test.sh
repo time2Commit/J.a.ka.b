@@ -52,6 +52,11 @@ curl -fsS -c "$jar" -H "Origin: $BASE" -H 'Content-Type: application/json' \
   "$BASE/api/auth/sign-up/email" >/dev/null || fail "sign-up of the first account"
 ok "first account created"
 
+# A new installation can create projects right away: the migrations created the default statuses.
+curl -fsS -b "$jar" -H "Origin: $BASE" -H 'Content-Type: application/json' \
+  -d '{"name":"Smoke project"}' "$BASE/api/projects" >/dev/null || fail "creating a project"
+ok "project created"
+
 backup=$(curl -fsS -b "$jar" -H "Origin: $BASE" -X POST "$BASE/api/admin/backups") || fail "backup request"
 echo "$backup" | grep -q '"dumpError":null' || fail "backup without database dump: $backup"
 ok "backup made (archive and database dump)"

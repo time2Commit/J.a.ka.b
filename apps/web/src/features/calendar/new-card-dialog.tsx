@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, isNoStatusesError } from "@/lib/api";
 import { templatesKey } from "@/features/templates/keys";
 import type { ProjectListItem, Status, TemplateItem } from "@/lib/types";
 import { ProjectCombobox, type ProjectChoice } from "./project-combobox";
@@ -102,7 +102,11 @@ export function NewCardDialog({
     },
     onError: (error) =>
       toast.error(
-        error instanceof ApiError && error.status === 409 ? t("projectExists") : common("error"),
+        error instanceof ApiError && error.status === 409
+          ? t("projectExists")
+          : isNoStatusesError(error)
+            ? common("noStatuses")
+            : common("error"),
       ),
   });
 

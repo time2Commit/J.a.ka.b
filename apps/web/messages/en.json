@@ -82,6 +82,7 @@
     "close": "Close",
     "loading": "Loading…",
     "error": "Something went wrong",
+    "noStatuses": "No status exists yet: create at least one in Settings.",
     "name": "Name",
     "color": "Color",
     "none": "None",

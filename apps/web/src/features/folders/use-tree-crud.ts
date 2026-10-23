@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, isNoStatusesError } from "@/lib/api";
 import { isOnItemPage, type TreeItem } from "./tree";
 
 /**
@@ -43,7 +43,11 @@ export function useTreeCrud<Input extends object>(options: {
     },
     onError: (error) =>
       toast.error(
-        error instanceof ApiError && error.status === 409 ? t("nameTaken") : common("error"),
+        error instanceof ApiError && error.status === 409
+          ? t("nameTaken")
+          : isNoStatusesError(error)
+            ? common("noStatuses")
+            : common("error"),
       ),
   });
 

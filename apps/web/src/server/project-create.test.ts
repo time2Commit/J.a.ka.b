@@ -115,6 +115,23 @@ describe("createProject", () => {
       ),
     ).rejects.toMatchObject({ status: 404 });
   });
+
+  it("says that a status is missing when none exists yet", async () => {
+    // Emptying the shared status table would disturb the other test files: a stand-in database
+    // answers the few lookups made before the status is chosen.
+    const empty = {
+      project: { findUnique: async () => null },
+      status: { findUnique: async () => null, findFirst: async () => null },
+    };
+    const db = { $transaction: (fn: (tx: typeof empty) => unknown) => fn(empty) };
+    await expect(
+      createProject(
+        db as unknown as typeof prisma,
+        { name: name("NoStatus"), folderId: null, templateId: null },
+        creatorId,
+      ),
+    ).rejects.toMatchObject({ status: 422 });
+  });
 });
 
 describe("deleteProject", () => {

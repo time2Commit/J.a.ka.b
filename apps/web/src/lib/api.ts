@@ -7,6 +7,10 @@ export class ApiError extends Error {
   }
 }
 
+/** The server refused to create a card or project because no status exists yet (see `noStatuses`). */
+export const isNoStatusesError = (error: unknown) =>
+  error instanceof ApiError && error.status === 422;
+
 export async function api<T>(path: string, init?: RequestInit & { json?: unknown }): Promise<T> {
   const { json, ...rest } = init ?? {};
   const res = await fetch(path, {
