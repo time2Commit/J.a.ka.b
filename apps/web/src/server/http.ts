@@ -5,7 +5,7 @@ import { getSession } from "../lib/session";
 import { HttpError, TooManyRequests } from "./errors";
 import { limiterFor, type RateLimitRule } from "./rate-limit";
 
-export interface Actor {
+interface Actor {
   id: string;
   role: "admin" | "member";
 }
@@ -21,7 +21,7 @@ const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
  * keeps it back from other sites). Calls without `Origin` (scripts, tests) are not browser
  * requests and are left to the session check.
  */
-export function assertSameOrigin(req: Request, appUrl = process.env.APP_URL) {
+function assertSameOrigin(req: Request, appUrl = process.env.APP_URL) {
   if (SAFE_METHODS.has(req.method)) return;
   const origin = req.headers.get("origin");
   if (origin === null) return;

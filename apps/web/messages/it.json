@@ -1,7 +1,6 @@
 {
   "App": {
-    "name": "J.a.ka.b",
-    "tagline": "Just another kanban board"
+    "name": "J.a.ka.b"
   },
   "Auth": {
     "loginTitle": "Accedi",
@@ -96,9 +95,7 @@
     "newTitle": "Nuova card",
     "project": "Progetto",
     "newProject": "Nuovo progetto",
-    "existingProject": "Progetto esistente",
     "projectName": "Nome del progetto",
-    "selectProject": "Seleziona un progetto",
     "title": "Titolo della card (facoltativo)",
     "start": "Inizio",
     "end": "Fine",
@@ -157,7 +154,6 @@
     "done": "Conta come completato",
     "moveUp": "Sposta su",
     "moveDown": "Sposta giù",
-    "statusInUse": "Questo stato è in uso e non può essere eliminato",
     "labels": "Etichette",
     "users": "Utenti",
     "usersHelp": "Crea gli account per il tuo team. Potranno cambiare la password in seguito.",
@@ -166,7 +162,6 @@
     "member": "Membro",
     "newUser": "Nuovo utente",
     "userCreated": "Utente creato",
-    "emailInUse": "Email già in uso",
     "backup": {
       "title": "Backup ed export",
       "help": "Scarica l'intera board (impostazioni, stati, etichette, persone, ogni progetto con nota, file e card) in un unico archivio importabile in un'altra istanza. Le note sono incluse anche in Markdown.",
@@ -377,8 +372,7 @@
       "labelPlaceholder": "es. Inviata al cliente",
       "save": "Salva versione",
       "saved": "Versione salvata",
-      "open": "Cronologia versioni",
-      "saveButton": "Salva versione"
+      "open": "Cronologia versioni"
     }
   },
   "Templates": {
@@ -393,7 +387,6 @@
     "delete": "Elimina {name}",
     "confirmDelete": "Eliminare il template “{name}”? I progetti già creati non cambiano.",
     "newTitle": "Nuovo template",
-    "editTitle": "Modifica template",
     "name": "Nome",
     "status": "Stato dei nuovi progetti",
     "firstStatus": "Primo stato",

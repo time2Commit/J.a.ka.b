@@ -3,9 +3,9 @@ import { canonicalJson, isEmptyDocument, NOTE_FIELD, jsonToYdoc, ydocToJson } fr
 import * as Y from "yjs";
 
 /** An automatic version is taken when at least this long has passed since the previous one. */
-export const AUTO_VERSION_INTERVAL_MS = 10 * 60 * 1000;
+const AUTO_VERSION_INTERVAL_MS = 10 * 60 * 1000;
 /** Automatic versions are all kept for this long; older ones are thinned to one per day. */
-export const KEEP_ALL_AUTO_DAYS = 7;
+const KEEP_ALL_AUTO_DAYS = 7;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -63,7 +63,7 @@ export async function createVersion(
   });
 }
 
-export async function lastVersion(db: PrismaClient, projectId: string) {
+async function lastVersion(db: PrismaClient, projectId: string) {
   return db.noteVersion.findFirst({
     where: { projectId },
     orderBy: { createdAt: "desc" },
@@ -109,7 +109,7 @@ export async function maybeAutoVersion(
   return true;
 }
 
-export async function pruneVersions(db: PrismaClient, projectId: string, now = new Date()) {
+async function pruneVersions(db: PrismaClient, projectId: string, now = new Date()) {
   const autos = await db.noteVersion.findMany({
     where: { projectId, reason: "auto" },
     select: { id: true, reason: true, createdAt: true },

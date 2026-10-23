@@ -1,7 +1,7 @@
 import { Prisma, type PrismaClient } from "@jakab/db";
 import { normalizeProjectName } from "@jakab/shared";
 
-export const SUGGESTION_LIMIT = 8;
+const SUGGESTION_LIMIT = 8;
 
 export interface ProjectSuggestion {
   id: string;

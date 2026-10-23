@@ -20,7 +20,7 @@ type CardRecord = Prisma.CardGetPayload<{ include: typeof cardInclude }>;
 export type CardDto = ReturnType<typeof toCardDto>;
 
 /** What the calendar and the card panel show: everything here belongs to the card itself. */
-export function toCardDto(card: CardRecord) {
+function toCardDto(card: CardRecord) {
   return {
     id: card.id,
     projectId: card.projectId,
