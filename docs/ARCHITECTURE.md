@@ -45,7 +45,7 @@ Design choice: status, %, labels and members belong to the **card**, so each blo
 | Files           | `StorageDriver` abstraction → **filesystem on a Docker volume** (S3/MinIO driver possible later)                                                            | Simple for a single host                                                          |
 | Export          | **prosemirror-markdown** (custom serializer) + **archiver** (zip)                                                                                           | Markdown + `attachments/` folder                                                  |
 | i18n            | **next-intl**, Italian and English locales                                                                                                                  | UI usable by everyone                                                             |
-| Dates           | **date-fns** with locales, configurable time zone                                                                                                           |                                                                                   |
+| Dates           | **Intl** (built in) with locales, configurable time zone                                                                                                    |                                                                                   |
 | Tests           | **Vitest** (unit), **Playwright** (E2E)                                                                                                                     |                                                                                   |
 | Quality         | ESLint, Prettier + `prettier-plugin-tailwindcss`, Husky + lint-staged, GitHub Actions CI                                                                    |                                                                                   |
 | Reverse proxy   | **Caddy** (automatic HTTPS or internal certificate)                                                                                                         | Routes `/` → web and `/collab` → Hocuspocus (WebSocket)                           |
@@ -233,7 +233,7 @@ Each milestone ends with tests and a working demo, so the app is usable from mil
 
 ## 8. Recommended libraries and tools
 
-**Libraries (look & UX):** shadcn/ui, Tailwind v4, lucide-react, sonner, motion, next-themes, cmdk, @tiptap/\* (starter-kit, table, task-list, highlight, color, mention, collaboration, collaboration-caret, drag-handle), FullCalendar, react-dropzone, nanoid, date-fns, next-intl.
+**Libraries (look & UX):** shadcn/ui, Tailwind v4, lucide-react, sonner, motion, next-themes, cmdk, @tiptap/\* (starter-kit, table, highlight, text-style, mention, collaboration, collaboration-caret), FullCalendar, next-intl.
 
 **Development:** Prettier + prettier-plugin-tailwindcss, secretlint (secret scanning), ESLint (typescript-eslint, react-hooks, jsx-a11y), Husky + lint-staged, Vitest + Testing Library, Playwright, Prisma Studio.
 
