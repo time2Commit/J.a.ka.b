@@ -11,6 +11,7 @@ import { assertFolderExists } from "./folders";
 import { existingIds } from "./ids";
 import { noteFromTemplate } from "./note-json";
 import { notifyBoardChanged } from "./notify";
+import { replaceRelations } from "./relations";
 import type { StorageDriver } from "./storage";
 import { parseDefaults } from "./templates";
 
@@ -49,12 +50,7 @@ export async function updateProject(
       where: { id },
       data: {
         ...fields,
-        ...(labelIds && {
-          labels: { deleteMany: {}, create: labelIds.map((labelId) => ({ labelId })) },
-        }),
-        ...(memberIds && {
-          members: { deleteMany: {}, create: memberIds.map((uid) => ({ userId: uid })) },
-        }),
+        ...replaceRelations({ labelIds, memberIds }),
       },
       include: projectInclude,
     });

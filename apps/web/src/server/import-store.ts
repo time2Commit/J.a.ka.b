@@ -2,10 +2,10 @@ import { createWriteStream } from "node:fs";
 import { mkdir, readdir, rename, rm, stat } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import type { Readable } from "node:stream";
 import { badRequest, HttpError } from "./errors";
+import { sizeLimiter } from "./stream-limit";
 import { uploadRoot } from "./storage";
 
 /** Uploaded archives wait here between the preview and the import (inside the upload volume). */
@@ -26,22 +26,15 @@ export async function saveImportUpload(body: Readable, maxBytes: number) {
   await mkdir(dir(), { recursive: true });
   const target = importPath(id);
   const partial = `${target}.part`;
-  let size = 0;
-  const meter = new Transform({
-    transform(chunk: Buffer, _encoding, callback) {
-      size += chunk.length;
-      if (size > maxBytes) return callback(new HttpError(413, "Archive too large"));
-      callback(null, chunk);
-    },
-  });
+  const meter = sizeLimiter(maxBytes, () => new HttpError(413, "Archive too large"));
   try {
-    await pipeline(body, meter, createWriteStream(partial, { flags: "wx" }));
+    await pipeline(body, meter.stream, createWriteStream(partial, { flags: "wx" }));
     await rename(partial, target);
   } catch (error) {
     await rm(partial, { force: true });
     throw error;
   }
-  return { id, path: target, size };
+  return { id, path: target, size: meter.size() };
 }
 
 export async function removeImport(id: string) {

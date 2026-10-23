@@ -5,6 +5,7 @@ import { prepareClone, type PreparedClone } from "./clone";
 import { conflict, notFound } from "./errors";
 import { existingIds } from "./ids";
 import { insertProject } from "./projects";
+import { replaceRelations } from "./relations";
 import type { StorageDriver } from "./storage";
 import { notifyBoardChanged } from "./notify";
 
@@ -208,12 +209,7 @@ export async function updateCard(
       where: { id },
       data: {
         ...fields,
-        ...(labelIds && {
-          labels: { deleteMany: {}, create: labelIds.map((labelId) => ({ labelId })) },
-        }),
-        ...(memberIds && {
-          members: { deleteMany: {}, create: memberIds.map((uid) => ({ userId: uid })) },
-        }),
+        ...replaceRelations({ labelIds, memberIds }),
       },
       include: cardInclude,
     });
