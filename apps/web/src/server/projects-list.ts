@@ -6,31 +6,37 @@ import type { PrismaClient } from "@jakab/db";
  * between folders is not a modification).
  */
 export async function listProjects(db: PrismaClient) {
-  const projects = await db.project.findMany({
-    where: { archivedAt: null },
-    orderBy: { name: "asc" },
-    select: {
-      id: true,
-      name: true,
-      statusId: true,
-      progress: true,
-      folderId: true,
-      createdAt: true,
-      note: { select: { updatedAt: true } },
-      cards: { select: { end: true, updatedAt: true } },
-    },
-  });
-  return projects.map(({ cards, note, createdAt, ...p }) => {
-    const times = [
-      createdAt.getTime(),
-      note?.updatedAt.getTime() ?? 0,
-      ...cards.map((c) => c.updatedAt.getTime()),
-    ];
+  // The two card dates are worked out by the database: reading every card of every project just
+  // to take a maximum would cost more with each card that is added.
+  const [projects, cardDates] = await Promise.all([
+    db.project.findMany({
+      where: { archivedAt: null },
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        statusId: true,
+        progress: true,
+        folderId: true,
+        createdAt: true,
+        note: { select: { updatedAt: true } },
+      },
+    }),
+    db.card.groupBy({
+      by: ["projectId"],
+      where: { project: { archivedAt: null } },
+      _max: { end: true, updatedAt: true },
+    }),
+  ]);
+  const cards = new Map(cardDates.map((c) => [c.projectId, c._max]));
+  return projects.map(({ note, createdAt, ...p }) => {
+    const latest = cards.get(p.id);
+    const times = [createdAt, note?.updatedAt, latest?.updatedAt].flatMap((d) =>
+      d ? d.getTime() : [],
+    );
     return {
       ...p,
-      lastCardEnd: cards.length
-        ? new Date(Math.max(...cards.map((c) => c.end.getTime()))).toISOString()
-        : null,
+      lastCardEnd: latest?.end ? latest.end.toISOString() : null,
       lastModified: new Date(Math.max(...times)).toISOString(),
     };
   });
