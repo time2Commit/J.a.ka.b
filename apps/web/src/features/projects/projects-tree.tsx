@@ -1,17 +1,15 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useMemo } from "react";
 import { FolderTree, useFolders } from "@/features/folders/folder-tree";
 import { NewItemDialog } from "@/features/folders/new-item-dialog";
 import type { TreeItem } from "@/features/folders/tree";
+import { useTreeCrud } from "@/features/folders/use-tree-crud";
 import { templatesKey } from "@/features/templates/keys";
-import { api, ApiError } from "@/lib/api";
-import type { Meta, ProjectDto, ProjectTreeItem, TemplateItem } from "@/lib/types";
-import { usePathname } from "next/navigation";
+import { api } from "@/lib/api";
+import type { Meta, ProjectTreeItem, TemplateItem } from "@/lib/types";
 
 /** The projects of the tree, as the overview and the tree itself read them. */
 export function useProjectTreeData() {
@@ -24,10 +22,6 @@ export function useProjectTreeData() {
 /** The tree of the projects: open a note, create projects and folders, move and delete them. */
 export function ProjectsTree() {
   const t = useTranslations("Projects.tree");
-  const common = useTranslations("Common");
-  const router = useRouter();
-  const pathname = usePathname();
-  const queryClient = useQueryClient();
   const projects = useProjectTreeData();
   const folders = useFolders("project");
   const meta = useQuery({ queryKey: ["meta"], queryFn: () => api<Meta>("/api/meta") });
@@ -35,7 +29,18 @@ export function ProjectsTree() {
     queryKey: templatesKey,
     queryFn: () => api<TemplateItem[]>("/api/templates"),
   });
-  const [creating, setCreating] = useState<{ folderId: string | null } | null>(null);
+  const { creating, startCreating, stopCreating, create, deleteItem } = useTreeCrud<{
+    name: string;
+    folderId: string | null;
+    templateId: string | null;
+  }>({
+    namespace: "Projects.tree",
+    apiPath: "/api/projects",
+    basePath: "/projects",
+    queryRoot: "projects",
+    alsoOnDelete: ["cards"],
+    forbiddenOnDelete: true,
+  });
 
   const items: TreeItem[] = useMemo(
     () =>
@@ -52,33 +57,6 @@ export function ProjectsTree() {
     [projects.data, meta.data],
   );
 
-  const create = useMutation({
-    mutationFn: (input: { name: string; folderId: string | null; templateId: string | null }) =>
-      api<ProjectDto>("/api/projects", { method: "POST", json: input }),
-    onSuccess: (project) => {
-      setCreating(null);
-      void queryClient.invalidateQueries({ queryKey: ["projects"] });
-      router.push(`/projects/${project.id}`);
-    },
-    onError: (error) =>
-      toast.error(
-        error instanceof ApiError && error.status === 409 ? t("nameTaken") : common("error"),
-      ),
-  });
-  const remove = useMutation({
-    mutationFn: (id: string) => api(`/api/projects/${id}`, { method: "DELETE" }),
-    onSuccess: (_data, id) => {
-      toast.success(t("itemDeleted"));
-      void queryClient.invalidateQueries({ queryKey: ["projects"] });
-      void queryClient.invalidateQueries({ queryKey: ["cards"] });
-      if (pathname.startsWith(`/projects/${id}`)) router.push("/projects");
-    },
-    onError: (error) =>
-      toast.error(
-        error instanceof ApiError && error.status === 403 ? t("deleteForbidden") : common("error"),
-      ),
-  });
-
   return (
     <>
       <FolderTree
@@ -89,10 +67,8 @@ export function ProjectsTree() {
         moveItem={(id, folderId) =>
           api(`/api/projects/${id}`, { method: "PATCH", json: { folderId } })
         }
-        onNewItem={(folderId) => setCreating({ folderId })}
-        deleteItem={(item) => {
-          if (window.confirm(t("deleteItemConfirm", { name: item.name }))) remove.mutate(item.id);
-        }}
+        onNewItem={startCreating}
+        deleteItem={deleteItem}
       />
       <NewItemDialog
         open={creating !== null}
@@ -102,7 +78,7 @@ export function ProjectsTree() {
         initialFolderId={creating?.folderId ?? null}
         templates={templates.data}
         pending={create.isPending}
-        onClose={() => setCreating(null)}
+        onClose={stopCreating}
         onSubmit={(values) => create.mutate(values)}
       />
     </>

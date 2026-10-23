@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { DialogField, FormDialog } from "@/components/form-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -39,46 +40,32 @@ export function FolderNameDialog({
   namespace: "Projects.tree" | "Templates.tree";
 }) {
   const t = useTranslations(namespace);
-  const common = useTranslations("Common");
   const [name, setName] = useState(initial);
   useEffect(() => {
     if (open) setName(initial);
   }, [open, initial]);
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent>
-        <form
-          className="flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (name.trim()) onSubmit(name.trim());
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription className="sr-only">{t("folderName")}</DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="folder-name">{t("folderName")}</Label>
-            <Input
-              id="folder-name"
-              value={name}
-              maxLength={80}
-              autoFocus
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              {common("cancel")}
-            </Button>
-            <Button type="submit" disabled={pending || !name.trim()}>
-              {confirmLabel}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <FormDialog
+      open={open}
+      title={title}
+      description={t("folderName")}
+      hideDescription
+      submitLabel={confirmLabel}
+      submitDisabled={pending || !name.trim()}
+      onClose={onClose}
+      onSubmit={() => name.trim() && onSubmit(name.trim())}
+    >
+      <DialogField>
+        <Label htmlFor="folder-name">{t("folderName")}</Label>
+        <Input
+          id="folder-name"
+          value={name}
+          maxLength={80}
+          autoFocus
+          onChange={(e) => setName(e.target.value)}
+        />
+      </DialogField>
+    </FormDialog>
   );
 }
 

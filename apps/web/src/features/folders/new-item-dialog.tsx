@@ -2,15 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DialogField, FormDialog } from "@/components/form-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -47,7 +39,6 @@ export function NewItemDialog({
   onSubmit: (values: NewItemValues) => void;
 }) {
   const t = useTranslations(namespace);
-  const common = useTranslations("Common");
   const [name, setName] = useState("");
   const [folderId, setFolderId] = useState<string | null>(initialFolderId);
   const [templateId, setTemplateId] = useState<string | null>(null);
@@ -61,71 +52,57 @@ export function NewItemDialog({
   const flat = flattenFolders(buildTree(folders, [], "name").folders);
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent>
-        <form
-          className="flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (name.trim()) onSubmit({ name: name.trim(), folderId, templateId });
-          }}
+    <FormDialog
+      open={open}
+      title={title}
+      description={t("newItemHelp")}
+      submitLabel={t("create")}
+      submitDisabled={pending || !name.trim()}
+      onClose={onClose}
+      onSubmit={() => name.trim() && onSubmit({ name: name.trim(), folderId, templateId })}
+    >
+      <DialogField>
+        <Label htmlFor="new-item-name">{t("itemName")}</Label>
+        <Input
+          id="new-item-name"
+          value={name}
+          maxLength={120}
+          autoFocus
+          onChange={(e) => setName(e.target.value)}
+        />
+      </DialogField>
+      <DialogField>
+        <Label htmlFor="new-item-folder">{t("folder")}</Label>
+        <Select
+          id="new-item-folder"
+          value={folderId ?? ""}
+          onChange={(e) => setFolderId(e.target.value || null)}
         >
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>{t("newItemHelp")}</DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="new-item-name">{t("itemName")}</Label>
-            <Input
-              id="new-item-name"
-              value={name}
-              maxLength={120}
-              autoFocus
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="new-item-folder">{t("folder")}</Label>
-            <Select
-              id="new-item-folder"
-              value={folderId ?? ""}
-              onChange={(e) => setFolderId(e.target.value || null)}
-            >
-              <option value="">{t("topLevel")}</option>
-              {flat.map(({ folder, depth }) => (
-                <option key={folder.id} value={folder.id}>
-                  {`${"  ".repeat(depth)}${folder.name}`}
-                </option>
-              ))}
-            </Select>
-          </div>
-          {templates && templates.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="new-item-template">{t("startFrom")}</Label>
-              <Select
-                id="new-item-template"
-                value={templateId ?? ""}
-                onChange={(e) => setTemplateId(e.target.value || null)}
-              >
-                <option value="">{t("noTemplate")}</option>
-                {templates.map((tpl) => (
-                  <option key={tpl.id} value={tpl.id}>
-                    {tpl.name}
-                  </option>
-                ))}
-              </Select>
-            </div>
-          )}
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              {common("cancel")}
-            </Button>
-            <Button type="submit" disabled={pending || !name.trim()}>
-              {t("create")}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          <option value="">{t("topLevel")}</option>
+          {flat.map(({ folder, depth }) => (
+            <option key={folder.id} value={folder.id}>
+              {`${"  ".repeat(depth)}${folder.name}`}
+            </option>
+          ))}
+        </Select>
+      </DialogField>
+      {templates && templates.length > 0 && (
+        <DialogField>
+          <Label htmlFor="new-item-template">{t("startFrom")}</Label>
+          <Select
+            id="new-item-template"
+            value={templateId ?? ""}
+            onChange={(e) => setTemplateId(e.target.value || null)}
+          >
+            <option value="">{t("noTemplate")}</option>
+            {templates.map((tpl) => (
+              <option key={tpl.id} value={tpl.id}>
+                {tpl.name}
+              </option>
+            ))}
+          </Select>
+        </DialogField>
+      )}
+    </FormDialog>
   );
 }

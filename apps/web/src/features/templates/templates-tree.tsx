@@ -1,14 +1,13 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { usePathname, useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useMemo } from "react";
 import { FolderTree, useFolders } from "@/features/folders/folder-tree";
 import { NewItemDialog } from "@/features/folders/new-item-dialog";
 import type { TreeItem } from "@/features/folders/tree";
-import { api, ApiError } from "@/lib/api";
+import { useTreeCrud } from "@/features/folders/use-tree-crud";
+import { api } from "@/lib/api";
 import type { TemplateItem } from "@/lib/types";
 import { templatesKey } from "./keys";
 
@@ -22,13 +21,17 @@ export function useTemplateList() {
 /** The tree of the templates: open one to edit it, create templates and folders, move, delete. */
 export function TemplatesTree() {
   const t = useTranslations("Templates.tree");
-  const common = useTranslations("Common");
-  const router = useRouter();
-  const pathname = usePathname();
-  const queryClient = useQueryClient();
   const templates = useTemplateList();
   const folders = useFolders("template");
-  const [creating, setCreating] = useState<{ folderId: string | null } | null>(null);
+  const { creating, startCreating, stopCreating, create, deleteItem } = useTreeCrud<{
+    name: string;
+    folderId: string | null;
+  }>({
+    namespace: "Templates.tree",
+    apiPath: "/api/templates",
+    basePath: "/templates",
+    queryRoot: "templates",
+  });
 
   const items: TreeItem[] = useMemo(
     () =>
@@ -41,29 +44,6 @@ export function TemplatesTree() {
     [templates.data],
   );
 
-  const create = useMutation({
-    mutationFn: (input: { name: string; folderId: string | null }) =>
-      api<TemplateItem>("/api/templates", { method: "POST", json: input }),
-    onSuccess: (template) => {
-      setCreating(null);
-      void queryClient.invalidateQueries({ queryKey: ["templates"] });
-      router.push(`/templates/${template.id}`);
-    },
-    onError: (error) =>
-      toast.error(
-        error instanceof ApiError && error.status === 409 ? t("nameTaken") : common("error"),
-      ),
-  });
-  const remove = useMutation({
-    mutationFn: (id: string) => api(`/api/templates/${id}`, { method: "DELETE" }),
-    onSuccess: (_data, id) => {
-      toast.success(t("itemDeleted"));
-      void queryClient.invalidateQueries({ queryKey: ["templates"] });
-      if (pathname.startsWith(`/templates/${id}`)) router.push("/templates");
-    },
-    onError: () => toast.error(common("error")),
-  });
-
   return (
     <>
       <FolderTree
@@ -74,10 +54,8 @@ export function TemplatesTree() {
         moveItem={(id, folderId) =>
           api(`/api/templates/${id}`, { method: "PATCH", json: { folderId } })
         }
-        onNewItem={(folderId) => setCreating({ folderId })}
-        deleteItem={(item) => {
-          if (window.confirm(t("deleteItemConfirm", { name: item.name }))) remove.mutate(item.id);
-        }}
+        onNewItem={startCreating}
+        deleteItem={deleteItem}
       />
       <NewItemDialog
         open={creating !== null}
@@ -86,7 +64,7 @@ export function TemplatesTree() {
         folders={folders.data ?? []}
         initialFolderId={creating?.folderId ?? null}
         pending={create.isPending}
-        onClose={() => setCreating(null)}
+        onClose={stopCreating}
         onSubmit={({ name, folderId }) => create.mutate({ name, folderId })}
       />
     </>

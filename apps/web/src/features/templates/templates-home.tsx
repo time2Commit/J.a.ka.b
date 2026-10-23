@@ -2,9 +2,9 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { FileStack } from "lucide-react";
-import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { useFolders } from "@/features/folders/folder-tree";
+import { RecentList, RecentRow } from "@/features/folders/recent-list";
 import { folderPathNames } from "@/features/folders/tree";
 import { api } from "@/lib/api";
 import type { Meta } from "@/lib/types";
@@ -26,47 +26,39 @@ export function TemplatesHome() {
     <div className="mx-auto flex max-w-2xl flex-col gap-4">
       <p className="text-muted-foreground">{t("help")}</p>
       <p className="text-muted-foreground">{t("tree.pickOne")}</p>
-      {recent.length === 0 ? (
-        <p className="text-muted-foreground">{t("empty")}</p>
-      ) : (
-        <section aria-label={t("tree.recent")} className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold">{t("tree.recent")}</h2>
-          <ul className="flex flex-col divide-y rounded-xl border bg-card" aria-label={t("title")}>
-            {recent.map((tpl) => {
-              const path = folderPathNames(folders.data ?? [], tpl.folderId).join(" / ");
-              const details = [
-                statusName(tpl.defaults.statusId),
-                t("minutes", { count: tpl.defaults.durationMin }),
-                tpl.defaults.checklist.length > 0
-                  ? t("checklistCount", { count: tpl.defaults.checklist.length })
-                  : null,
-                tpl.hasNote ? t("withNote") : null,
-              ]
-                .filter(Boolean)
-                .join(" · ");
-              return (
-                <li key={tpl.id}>
-                  <Link
-                    href={`/templates/${tpl.id}`}
-                    className="flex flex-wrap items-center gap-3 px-4 py-3 hover:bg-accent/50"
-                  >
-                    <FileStack className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{tpl.name}</span>
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {[path, details].filter(Boolean).join(" — ")}
-                      </span>
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {format.relativeTime(new Date(tpl.updatedAt))}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
+      <RecentList
+        heading={t("tree.recent")}
+        empty={t("empty")}
+        isEmpty={recent.length === 0}
+        listLabel={t("title")}
+      >
+        {recent.map((tpl) => {
+          const path = folderPathNames(folders.data ?? [], tpl.folderId).join(" / ");
+          const details = [
+            statusName(tpl.defaults.statusId),
+            t("minutes", { count: tpl.defaults.durationMin }),
+            tpl.defaults.checklist.length > 0
+              ? t("checklistCount", { count: tpl.defaults.checklist.length })
+              : null,
+            tpl.hasNote ? t("withNote") : null,
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          return (
+            <RecentRow
+              key={tpl.id}
+              href={`/templates/${tpl.id}`}
+              icon={<FileStack className="size-4 shrink-0 text-muted-foreground" aria-hidden />}
+              name={tpl.name}
+              detail={[path, details].filter(Boolean).join(" — ")}
+            >
+              <span className="text-xs text-muted-foreground">
+                {format.relativeTime(new Date(tpl.updatedAt))}
+              </span>
+            </RecentRow>
+          );
+        })}
+      </RecentList>
     </div>
   );
 }
