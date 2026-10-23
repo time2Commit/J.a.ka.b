@@ -115,3 +115,9 @@ export function flattenFolders(
     ...flattenFolders(n.children, depth + 1),
   ]);
 }
+
+/** Whether `pathname` is the page of the item `id` (or one below it) under `basePath`. */
+export function isOnItemPage(pathname: string, basePath: string, id: string): boolean {
+  const page = `${basePath}/${id}`;
+  return pathname === page || pathname.startsWith(`${page}/`);
+}

@@ -51,8 +51,10 @@ export function branchHeight(
 ): number {
   const children = new Map<string, string[]>();
   for (const folder of folders) {
-    if (folder.parentId)
-      children.set(folder.parentId, [...(children.get(folder.parentId) ?? []), folder.id]);
+    if (!folder.parentId) continue;
+    const siblings = children.get(folder.parentId);
+    if (siblings) siblings.push(folder.id);
+    else children.set(folder.parentId, [folder.id]);
   }
   const seen = new Set<string>();
   const walk = (node: string): number => {

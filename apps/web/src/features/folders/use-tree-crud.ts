@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 import { api, ApiError } from "@/lib/api";
-import type { TreeItem } from "./tree";
+import { isOnItemPage, type TreeItem } from "./tree";
 
 /**
  * What the trees of projects and of templates do the same way: create an item (and open it),
@@ -54,7 +54,7 @@ export function useTreeCrud<Input extends object>(options: {
       for (const root of [queryRoot, ...alsoOnDelete]) {
         void queryClient.invalidateQueries({ queryKey: [root] });
       }
-      if (pathname.startsWith(`${basePath}/${id}`)) router.push(basePath);
+      if (isOnItemPage(pathname, basePath, id)) router.push(basePath);
     },
     onError: (error) =>
       toast.error(
