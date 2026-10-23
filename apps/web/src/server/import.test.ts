@@ -204,6 +204,10 @@ describe("import round trip", () => {
   it("previews, then recreates a project on an instance that has none of its data", async () => {
     const zip = await exportedBoard();
     const parsed = await parseArchive(zip);
+    // The board archive holds everything in the (shared) test database: accounts and projects
+    // that other test files create and delete at the same moment. Only this test's data counts.
+    parsed.board!.users = parsed.board!.users.filter((u) => u.email === names.email);
+    parsed.projects = parsed.projects.filter((p) => p.data.name === names.project);
     await wipeSource();
 
     const preview = await previewArchive(prisma, parsed);

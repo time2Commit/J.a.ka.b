@@ -21,9 +21,10 @@ describe("queryRootsFor", () => {
     }
   });
 
-  it("keeps the settings fresh after a project change (an import can add statuses)", () => {
-    expect(queryRootsFor(event("project"))).toContain("meta");
-    expect(queryRootsFor(event("project"))).toContain("cards");
+  it("keeps the settings and the templates fresh after a project change (an import adds them)", () => {
+    expect(queryRootsFor(event("project"))).toEqual(
+      expect.arrayContaining(["projects", "cards", "meta", "templates"]),
+    );
   });
 
   it("refreshes everything when the event is not understood", () => {
@@ -31,5 +32,9 @@ describe("queryRootsFor", () => {
     expect([...queryRootsFor("not json")].sort()).toEqual(all);
     expect([...queryRootsFor("{}")].sort()).toEqual(all);
     expect([...queryRootsFor(event("something-new"))].sort()).toEqual(all);
+    // names every object inherits are not kinds of change
+    for (const inherited of ["constructor", "toString", "__proto__", "hasOwnProperty"]) {
+      expect([...queryRootsFor(event(inherited))].sort()).toEqual(all);
+    }
   });
 });

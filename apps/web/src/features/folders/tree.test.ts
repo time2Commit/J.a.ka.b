@@ -6,6 +6,7 @@ import {
   folderAndDescendants,
   folderPathNames,
   flattenFolders,
+  isOnItemPage,
 } from "./tree";
 
 const folder = (id: string, name: string, parentId: string | null = null): Folder => ({
@@ -73,5 +74,16 @@ describe("folder helpers", () => {
     expect(folderPathNames(folders, null)).toEqual([]);
     const flat = flattenFolders(buildTree(folders, [], "name").folders);
     expect(flat.map((f) => `${f.depth}:${f.folder.name}`)).toEqual(["0:Alpha", "1:Sub", "0:Beta"]);
+  });
+});
+
+describe("isOnItemPage", () => {
+  it("is true on the page of the item and below it, and only there", () => {
+    expect(isOnItemPage("/projects/abc", "/projects", "abc")).toBe(true);
+    expect(isOnItemPage("/projects/abc/notes", "/projects", "abc")).toBe(true);
+    expect(isOnItemPage("/projects/abcd", "/projects", "abc")).toBe(false);
+    expect(isOnItemPage("/projects/abc-notes", "/projects", "abc")).toBe(false);
+    expect(isOnItemPage("/projects", "/projects", "abc")).toBe(false);
+    expect(isOnItemPage("/templates/abc", "/projects", "abc")).toBe(false);
   });
 });
