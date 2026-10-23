@@ -17,12 +17,17 @@ const embed = (attachmentId: string) => ({ type: "fileEmbed", attrs: { attachmen
 const doc = (...ids: string[]) => ({ type: "doc", content: ids.map(embed) });
 
 let projectId: string;
+let busyId: string;
 let statusId: string;
+let templateId: string;
 const ids = {
   inNote: `a-note-${run}`,
   inVersion: `a-version-${run}`,
   orphan: `a-orphan-${run}`,
   recent: `a-recent-${run}`,
+  inTemplate: `a-template-${run}`,
+  inOldVersion: `a-old-version-${run}`,
+  busyOrphan: `a-busy-orphan-${run}`,
 };
 
 beforeAll(async () => {
@@ -59,10 +64,46 @@ beforeAll(async () => {
   await prisma.noteVersion.create({
     data: { projectId, yState: Buffer.from([]), json: doc(ids.inVersion), reason: "auto" },
   });
+
+  // A project with more versions than one reading block, the last of which holds a file.
+  const busyName = `Orphans busy ${run}`;
+  busyId = (
+    await prisma.project.create({
+      data: { name: busyName, nameNormalized: busyName.toLowerCase(), statusId, createdById: "u" },
+    })
+  ).id;
+  const busyFile = (id: string) => ({
+    ...attachment(id, old),
+    projectId: busyId,
+    storageKey: `${busyId}/${id}`,
+  });
+  await prisma.attachment.createMany({
+    data: [busyFile(ids.inTemplate), busyFile(ids.inOldVersion), busyFile(ids.busyOrphan)],
+  });
+  await prisma.noteVersion.createMany({
+    data: Array.from({ length: 120 }, (_, i) => ({
+      projectId: busyId,
+      yState: Buffer.from([]),
+      json: i === 119 ? doc(ids.inOldVersion) : doc(),
+      reason: "auto" as const,
+      createdAt: new Date(Date.now() - (200 - i) * 60_000),
+    })),
+  });
+  templateId = (
+    await prisma.template.create({
+      data: {
+        name: `Orphans template ${run}`,
+        defaults: {},
+        noteJson: doc(ids.inTemplate),
+        createdBy: "u",
+      },
+    })
+  ).id;
 });
 
 afterAll(async () => {
-  await prisma.project.deleteMany({ where: { id: projectId } });
+  await prisma.template.deleteMany({ where: { id: templateId } });
+  await prisma.project.deleteMany({ where: { id: { in: [projectId, busyId] } } });
   await prisma.status.deleteMany({ where: { id: statusId } });
   await prisma.$disconnect();
 });
@@ -90,5 +131,17 @@ describe("cleanupOrphanAttachments", () => {
       orderBy: { id: "asc" },
     });
     expect(left.map((a) => a.id).sort()).toEqual([ids.inNote, ids.inVersion, ids.recent].sort());
+  });
+
+  it("looks through every saved version and every template, not just the latest ones", async () => {
+    await cleanupOrphanAttachments(prisma, storage, { olderThanDays: 14 });
+    expect(removedKeys).toContain(`${busyId}/${ids.busyOrphan}`);
+    expect(removedKeys).not.toContain(`${busyId}/${ids.inOldVersion}`);
+    expect(removedKeys).not.toContain(`${busyId}/${ids.inTemplate}`);
+    const left = await prisma.attachment.findMany({
+      where: { projectId: busyId },
+      select: { id: true },
+    });
+    expect(left.map((a) => a.id).sort()).toEqual([ids.inOldVersion, ids.inTemplate].sort());
   });
 });

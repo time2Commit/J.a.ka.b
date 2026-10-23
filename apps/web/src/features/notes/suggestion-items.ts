@@ -1,10 +1,7 @@
+import { foldForSearch } from "@jakab/editor/plain-text";
+
 /** Lowercase, accents stripped: "Città" matches "citta". */
-const fold = (value: string) =>
-  value
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase()
-    .trim();
+const fold = (value: string) => foldForSearch(value).trim();
 
 export interface MentionCandidate {
   id: string;

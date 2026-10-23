@@ -2,17 +2,17 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { queryRootsFor } from "./board-event-queries";
 
-/** Subscribes to the server-sent board events and refreshes the cached data on every change. */
+/** Subscribes to the server-sent board events and refreshes the cached data a change can affect. */
 export function useBoardEvents() {
   const queryClient = useQueryClient();
   useEffect(() => {
     const source = new EventSource("/api/events");
-    source.addEventListener("board", () => {
-      void queryClient.invalidateQueries({ queryKey: ["cards"] });
-      void queryClient.invalidateQueries({ queryKey: ["meta"] });
-      void queryClient.invalidateQueries({ queryKey: ["projects"] });
-      void queryClient.invalidateQueries({ queryKey: ["templates"] });
+    source.addEventListener("board", (event) => {
+      for (const root of queryRootsFor((event as MessageEvent<string>).data)) {
+        void queryClient.invalidateQueries({ queryKey: [root] });
+      }
     });
     return () => source.close();
   }, [queryClient]);
