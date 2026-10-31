@@ -160,7 +160,9 @@ test("the card panel saves each change on its own and only for that card", async
   expect(second.ok()).toBe(true);
   await page.reload();
 
-  await page.locator(".fc-event", { hasText: "Panel project" }).first().click();
+  // Other cards of the same day can overlap this one in the time grid and cover it, so the
+  // click is dispatched on the element itself instead of at its (possibly covered) center.
+  await page.locator(".fc-event", { hasText: "Panel project" }).first().dispatchEvent("click");
   const panel = page.getByRole("dialog");
   // No save button: every change is stored as soon as it is made.
   await expect(panel.getByRole("button", { name: "Save" })).toHaveCount(0);
