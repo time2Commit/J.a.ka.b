@@ -9,16 +9,16 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@hocuspocus/server": "^4.7.1",
+    "@hocuspocus/server": "^4.8.0",
     "@jakab/db": "workspace:*",
     "@jakab/editor": "workspace:*",
     "@jakab/shared": "workspace:*",
-    "dotenv": "^18.0.8",
+    "dotenv": "^18.0.9",
     "yjs": "^13.6.33",
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@hocuspocus/provider": "^4.7.1",
+    "@hocuspocus/provider": "^4.8.0",
     "@types/node": "^26.6.5",
     "@types/ws": "^8.18.2",
     "tsx": "^4.23.15",
