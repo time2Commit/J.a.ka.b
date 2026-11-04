@@ -9,10 +9,11 @@ updates:
       minor-and-patch:
         update-types: [minor, patch]
     ignore:
-      # 3.0.10 and 3.0.11 lose text when two people edit the same note (two collaborative
-      # e2e tests fail). Remove once a fixed release is out.
+      # 3.0.10, 3.0.11 and 3.0.12 lose text when two people edit the same note
+      # (two collaborative e2e tests fail), so every release from 3.0.10 is skipped.
+      # Check new releases by hand and remove this once one passes the e2e tests.
       - dependency-name: "@tiptap/y-tiptap"
-        versions: ["3.0.10", "3.0.11"]
+        versions: [">= 3.0.10"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
