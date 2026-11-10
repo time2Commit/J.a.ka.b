@@ -8,6 +8,14 @@ export interface Status {
   order: number;
   isDone: boolean;
 }
+export interface Calendar {
+  id: string;
+  name: string;
+  color: string;
+  kind: string;
+  isDefault: boolean;
+  order: number;
+}
 interface Label {
   id: string;
   name: string;
@@ -30,10 +38,16 @@ interface Workspace {
 export interface Meta {
   workspace: Workspace;
   statuses: Status[];
+  calendars: Calendar[];
   labels: Label[];
   users: Member[];
   /** The signed-in person's own settings. */
-  preferences: { calendarView: CalendarView | null; projectSort: ProjectSort | null };
+  preferences: {
+    calendarView: CalendarView | null;
+    projectSort: ProjectSort | null;
+    /** Calendars this person chose not to see. */
+    hiddenCalendarIds: string[];
+  };
 }
 export interface ProjectDto {
   id: string;

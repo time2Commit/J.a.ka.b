@@ -31,6 +31,13 @@ export const archiveStatusSchema = z.object({
   order: z.number().int().optional(),
   isDone: z.boolean().default(false),
 });
+export const archiveCalendarSchema = z.object({
+  name: z.string().min(1).max(40),
+  color,
+  kind: z.string().min(1).max(40).default("local"),
+  order: z.number().int().optional(),
+  isDefault: z.boolean().default(false),
+});
 export const archiveLabelSchema = z.object({ name: z.string().min(1).max(40), color });
 
 export const archiveManifestSchema = z.object({
@@ -73,6 +80,8 @@ export const archiveBoardSchema = z.object({
   }),
   statuses: z.array(archiveStatusSchema),
   labels: z.array(archiveLabelSchema),
+  /** Older archives have none: their cards go to the default calendar. */
+  calendars: z.array(archiveCalendarSchema).default([]),
   templates: z.array(archiveTemplateSchema).default([]),
   /** Every folder of the project tree, empty ones included. */
   folders: z.array(folderPath).default([]),
@@ -98,6 +107,8 @@ export const archiveCardSchema = z.object({
   statusOverride: z.string().nullable(),
   progressOverride: z.number().int().min(0).max(100).nullable(),
   shortNotes: z.string().nullable(),
+  /** The card's calendar by name; null (or absent in older archives) = the default calendar. */
+  calendar: z.string().trim().min(1).max(40).nullable().default(null),
   members: z.array(z.string()),
   labels: z.array(z.string()),
   /**

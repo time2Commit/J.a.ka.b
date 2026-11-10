@@ -8,6 +8,7 @@ describe("queryRootsFor", () => {
     expect(queryRootsFor(event("card"))).toEqual(["cards", "projects"]);
     expect(queryRootsFor(event("workspace"))).toEqual(["meta"]);
     expect(queryRootsFor(event("folder"))).toEqual(["projects", "templates"]);
+    expect(queryRootsFor(event("calendar"))).toEqual(["meta", "cards"]);
   });
 
   it("refreshes the cards, the lists and the settings when a status or a label changes", () => {

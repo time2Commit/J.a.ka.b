@@ -57,6 +57,7 @@ interface CardPatch {
   title?: string | null;
   shortNotes?: string | null;
   statusId?: string;
+  calendarId?: string;
   progress?: number;
   labelIds?: string[];
   memberIds?: string[];
@@ -96,12 +97,18 @@ export function CardPanel({
       old?.map((c) => {
         if (c.id !== id) return c;
         const status = patch.statusId ? meta.statuses.find((s) => s.id === patch.statusId) : null;
+        const calendar = patch.calendarId
+          ? meta.calendars.find((x) => x.id === patch.calendarId)
+          : null;
         return {
           ...c,
           ...(patch.title !== undefined && { title: patch.title }),
           ...(patch.shortNotes !== undefined && { shortNotes: patch.shortNotes }),
           ...(patch.progress !== undefined && { progress: patch.progress }),
           ...(status && { status }),
+          ...(calendar && {
+            calendar: { id: calendar.id, name: calendar.name, color: calendar.color },
+          }),
           ...(patch.labelIds && {
             labels: meta.labels.filter((l) => patch.labelIds!.includes(l.id)),
           }),
@@ -179,6 +186,22 @@ export function CardPanel({
                   ))}
                 </Select>
               </div>
+              {meta.calendars.length > 1 && (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="c-calendar">{t("calendar")}</Label>
+                  <Select
+                    id="c-calendar"
+                    value={card.calendar.id}
+                    onChange={(e) => now({ calendarId: e.target.value })}
+                  >
+                    {meta.calendars.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              )}
               <div className="flex flex-col gap-2">
                 <Label htmlFor="c-progress">
                   {t("progress")}: {progress}%

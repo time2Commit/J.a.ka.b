@@ -1,3 +1,4 @@
+import { DEFAULT_CALENDAR_ID } from "@jakab/db/defaults";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createPrismaClient } from "@jakab/db";
 import { listProjects } from "./projects-list";
@@ -28,6 +29,7 @@ async function project(label: string, createdAt: string, noteAt?: string) {
 const card = (projectId: string, end: string, updatedAt: string) =>
   prisma.card.create({
     data: {
+      calendarId: DEFAULT_CALENDAR_ID,
       projectId,
       statusId,
       start: at("2026-02-01T09:00:00Z"),

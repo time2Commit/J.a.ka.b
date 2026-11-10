@@ -1,3 +1,4 @@
+import { DEFAULT_CALENDAR_ID } from "@jakab/db/defaults";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -143,6 +144,7 @@ describe("deleteProject", () => {
     );
     await prisma.card.create({
       data: {
+        calendarId: DEFAULT_CALENDAR_ID,
         projectId: project.id,
         start: new Date("2026-06-01T09:00:00Z"),
         end: new Date("2026-06-01T10:00:00Z"),

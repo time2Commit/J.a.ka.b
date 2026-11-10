@@ -95,7 +95,10 @@
 .jakab-calendar .fc-event {
   border-width: 0 0 0 3px;
   border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-xs, none);
+  /* The calendar of a card: a thin bar inside the status-colored edge (--calendar-color is set per event). */
+  box-shadow:
+    inset 4px 0 0 var(--calendar-color, transparent),
+    var(--shadow-xs, none);
   cursor: pointer;
 }
 .jakab-calendar .fc-col-header-cell-cushion,

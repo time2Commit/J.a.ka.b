@@ -15,13 +15,14 @@ Decisions taken: multi-user full-stack web app · configurable statuses + % · r
 
 ## 1. Key concepts (domain)
 
-| Concept              | Meaning                                                                                                                                                               |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Project**          | The main entity. It has a unique name, a **project note** (collaborative document), attachments and version history.                                                  |
-| **Card**             | A _scheduled_ block on the calendar (start/end, all-day or timed). **Many cards → one project** (e.g. "Client X" Monday 9–12 and Thursday 14–18 share the same note). |
-| **Status**           | Configurable list per workspace (name, color, order, "done" flag). Shown as a badge on the card plus an optional % bar.                                               |
-| **Labels / Members** | Customizable; assigned to each card.                                                                                                                                  |
-| **Template**         | Default settings (status, labels, members, duration, checklist) plus initial note content.                                                                            |
+| Concept              | Meaning                                                                                                                                                                                                                                                                   |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Project**          | The main entity. It has a unique name, a **project note** (collaborative document), attachments and version history.                                                                                                                                                      |
+| **Card**             | A _scheduled_ block on the calendar (start/end, all-day or timed). **Many cards → one project** (e.g. "Client X" Monday 9–12 and Thursday 14–18 share the same note).                                                                                                     |
+| **Calendar**         | A named, colored container of cards, shared by the whole workspace; every card belongs to exactly one. One calendar is the default: it receives cards that name none and cannot be deleted. Only administrators manage calendars; each person chooses which ones to show. |
+| **Status**           | Configurable list per workspace (name, color, order, "done" flag). Shown as a badge on the card plus an optional % bar.                                                                                                                                                   |
+| **Labels / Members** | Customizable; assigned to each card.                                                                                                                                                                                                                                      |
+| **Template**         | Default settings (status, labels, members, duration, checklist) plus initial note content.                                                                                                                                                                                |
 
 Design choice: status, %, labels and members belong to the **card**, so each block of work has its own state. The project (which owns the note, files and versions) remembers the values of the card edited last and a new card of that project starts from them; project lists show those values.
 
@@ -95,7 +96,8 @@ docker-compose.yml, .env.example
 - `Project` (id, name, `nameNormalized` with trigram index, statusId, progress 0–100, color, archivedAt, `folderId?`, createdBy, `templateId?`, `clonedFromId?`)
 - `ProjectFolder` (id, `kind` project|template, name, `parentId?`): the trees of projects and of templates; an item without a folder is uncategorized (`Project.folderId`, `Template.folderId`). `User.projectSort` stores how each person orders the trees.
 - `ProjectLabel`, `ProjectMember` (join tables)
-- `Card` (id, projectId, title?, start, end, allDay, statusId, progress 0–100, short notes, createdBy) + `CardMember` / `CardLabel`
+- `Calendar` (id, name unique, color, `kind` string, isDefault, order): `kind` is checked by zod rather than a Postgres enum so a new kind needs no migration; only `local` exists so far. `User.hiddenCalendarIds` holds the calendars each person hides, so the choice follows them across devices.
+- `Card` (id, projectId, calendarId, title?, start, end, allDay, statusId, progress 0–100, short notes, createdBy) + `CardMember` / `CardLabel`
 - `NoteDocument` (projectId PK, `yState bytea`, `json jsonb` – latest readable copy for search/export, updatedAt, updatedBy)
 - `NoteVersion` (id, projectId, `yState bytea`, json, authors[], reason: `auto|manual|pre-restore`, label?, createdBy, createdAt)
 - `Attachment` (id, projectId, originalName, mime, size, sha256, storageKey, uploadedBy, createdAt)
@@ -112,6 +114,7 @@ docker-compose.yml, .env.example
 - **Custom card rendering** (`eventContent`), top to bottom: labels, project name, colored status badge with %, member avatars, % bar. Compact views (month, list, all-day) show labels as small bars.
 - **Default view per person**: picking a view saves it on the user (`user.calendarView`, `PATCH /api/me/preferences`), and `/api/meta` returns it, so the calendar opens on it from any device.
 - **Statuses are shared by reference**: renaming or recolouring one changes every card that uses it (the settings screen refreshes the card queries). Deleting one in use asks where its projects and cards move (`DELETE /api/statuses/:id` with `replaceWith`, the nearest status when omitted) and does it in one transaction.
+- **Calendars are shared; showing them is personal**: the board lists them (when there is more than one) with a checkbox and a color dot above "To schedule"; toggling saves `hiddenCalendarIds` through `PATCH /api/me/preferences`. A card keeps the color of its status; its calendar shows as a thin bar of the calendar's color inside the card's left edge. Administrators create, rename, recolor, reorder and delete calendars in Settings (`/api/calendars`); deleting one moves its cards to another (`replaceWith`, the default calendar when omitted) in one transaction. The new-card dialog and the card panel let you pick the calendar, preset to the default.
 - Drag & drop and resize → optimistic update (TanStack Query) + `PATCH /api/cards/:id`; "Undo" toast.
 - **"To schedule" side panel**: projects without future cards, draggable onto the calendar (FullCalendar `Draggable`).
 - Filters by member, label, status; quick search (⌘K with `cmdk`).

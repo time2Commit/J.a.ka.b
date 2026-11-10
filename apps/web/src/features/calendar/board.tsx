@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import type { CardDto, Meta, ProjectSuggestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { CalendarList } from "./calendar-list";
 import { CardContent } from "./card-content";
 import { CardPanel } from "./card-panel";
 import { CommandPalette } from "./command-palette";
@@ -80,10 +81,13 @@ export function Board() {
     placeholderData: keepPreviousData,
   });
 
+  const hiddenCalendarIds = meta.data?.preferences.hiddenCalendarIds;
   const visible = useMemo(() => {
     const search = filters.search.trim().toLowerCase();
+    const hidden = new Set(hiddenCalendarIds);
     return (cards.data ?? []).filter(
       (c) =>
+        !hidden.has(c.calendar.id) &&
         (!search ||
           c.projectName.toLowerCase().includes(search) ||
           c.title?.toLowerCase().includes(search)) &&
@@ -91,7 +95,7 @@ export function Board() {
         (!filters.labelId || c.labels.some((l) => l.id === filters.labelId)) &&
         (!filters.memberId || c.memberIds.includes(filters.memberId)),
     );
-  }, [cards.data, filters]);
+  }, [cards.data, filters, hiddenCalendarIds]);
 
   const events: EventInput[] = useMemo(
     () =>
@@ -330,7 +334,14 @@ export function Board() {
             }}
           />
         </div>
-        <ToSchedulePanel statuses={m.statuses} />
+        <div className="flex flex-col gap-4">
+          {/* Also shown while a calendar is hidden, so it can always be shown again. */}
+          {(m.calendars.length > 1 ||
+            m.calendars.some((c) => m.preferences.hiddenCalendarIds.includes(c.id))) && (
+            <CalendarList meta={m} />
+          )}
+          <ToSchedulePanel statuses={m.statuses} />
+        </div>
       </div>
 
       <CommandPalette
@@ -345,6 +356,8 @@ export function Board() {
         draft={dialog.draft ?? defaultDraft(new Date(), m.workspace.timeZone)}
         timeZone={m.workspace.timeZone}
         statuses={m.statuses}
+        calendars={m.calendars}
+        hiddenCalendarIds={m.preferences.hiddenCalendarIds}
       />
       <CardPanel card={selected} meta={m} onClose={() => setSelectedId(null)} />
     </div>

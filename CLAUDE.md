@@ -67,6 +67,7 @@ Internal packages are named `@jakab/<name>` and export TypeScript sources direct
 
 - **Project** = main entity holding the note, attachments and versions. Unique name; `nameNormalized` (from `normalizeProjectName`) powers pg_trgm suggestions.
 - **Card** = a scheduled block on the calendar (start/end/allDay). **Many cards → one project.**
+- **Calendar** = a named, colored container of cards, shared by the whole workspace (every card belongs to exactly one; the default one cannot be deleted). Only admins manage calendars; each person only chooses which to show (`User.hiddenCalendarIds`). A card's color comes from its status, never from its calendar. Calendars are not projects and do not own notes.
 - **Status and progress %** live on the project and are shown on the card; board columns do NOT represent status. A card may override them.
 - Creating a card always creates (or links) a project and its note, in the same transaction.
 - Restoring a version is **non-destructive**: save a `pre-restore` version first.

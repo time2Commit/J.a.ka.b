@@ -78,7 +78,12 @@ async function loadBundle(
       members: true,
       cards: {
         orderBy: { start: "asc" },
-        include: { members: true, labels: { include: { label: true } }, status: true },
+        include: {
+          members: true,
+          labels: { include: { label: true } },
+          status: true,
+          calendar: true,
+        },
       },
       attachments: { orderBy: { createdAt: "asc" } },
       note: { select: { json: true } },
@@ -139,6 +144,7 @@ async function loadBundle(
         statusOverride: c.status.name,
         progressOverride: c.progress,
         shortNotes: c.shortNotes,
+        calendar: c.calendar.name,
         members: emails(c.members.map((m) => m.userId)),
         labels: c.labels.map((l) => l.label.name),
         perCard: true,
@@ -269,9 +275,10 @@ export async function exportBoard(
   storage: StorageDriver,
   options: ExportOptions,
 ): Promise<{ stream: Readable; fileName: string }> {
-  const [workspace, statuses, labels, users, projects, templates] = await Promise.all([
+  const [workspace, statuses, calendars, labels, users, projects, templates] = await Promise.all([
     db.workspace.findUnique({ where: { id: "default" } }),
     db.status.findMany({ orderBy: { order: "asc" } }),
+    db.calendar.findMany({ orderBy: { order: "asc" } }),
     db.label.findMany({ orderBy: { name: "asc" } }),
     db.user.findMany({ orderBy: { name: "asc" } }),
     db.project.findMany({
@@ -313,6 +320,13 @@ export async function exportBoard(
       isDone: s.isDone,
     })),
     labels: labels.map((l) => ({ name: l.name, color: l.color })),
+    calendars: calendars.map((c) => ({
+      name: c.name,
+      color: c.color,
+      kind: c.kind,
+      order: c.order,
+      isDefault: c.isDefault,
+    })),
     folders: [...folderPaths.values()].sort((a, b) => a.join("/").localeCompare(b.join("/"))),
     templateFolders: [...templateFolderPaths.values()].sort((a, b) =>
       a.join("/").localeCompare(b.join("/")),

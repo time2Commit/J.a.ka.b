@@ -363,3 +363,73 @@ test("renaming a status in use changes every card; deleting one moves its cards 
   await page.getByRole("link", { name: "Calendar" }).click();
   await expect(card).toContainText("Done");
 });
+
+test("creates a calendar, puts a card in it, hides it, and deletes it moving the card", async ({
+  page,
+  request,
+}) => {
+  // Create the calendar in Settings.
+  await page.getByRole("link", { name: "Settings" }).click();
+  await page.waitForLoadState("networkidle");
+  // The innermost block holding both the section's help text and its add form is the section.
+  const section = page
+    .locator("div")
+    .filter({ has: page.getByText(/^Each card belongs to one calendar/) })
+    .filter({ has: page.getByPlaceholder("Name") })
+    .last();
+  await section.getByPlaceholder("Name").fill("Holidays");
+  await section.getByRole("button", { name: "Add" }).click();
+  await expect(section.getByRole("listitem").locator('input[value="Holidays"]')).toBeVisible();
+
+  // A card in the new calendar, chosen in the new-card dialog.
+  await page.getByRole("link", { name: "Calendar" }).click();
+  await page.getByRole("button", { name: "New card" }).click();
+  const dialog = page.getByRole("dialog");
+  await chooseNewProject(page, "Trip planning");
+  await fillTimes(page, "10:00", "11:00");
+  await dialog.getByLabel("Calendar", { exact: true }).selectOption({ label: "Holidays" });
+  await dialog.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByText("Card created")).toBeVisible();
+  const card = page.locator(".fc-event", { hasText: "Trip planning" });
+  await expect(card).toBeVisible();
+  // The stylesheet draws the calendar's color as a bar inside the card's edge.
+  await expect(card).toHaveCSS("--calendar-color", /#22c55e/i);
+
+  // Hide the calendar: its cards leave the board; show it again: they are back.
+  const list = page.getByRole("region", { name: "Calendars" });
+  // click + expect, not uncheck(): the checkbox follows the saved choice a moment after the click
+  await list.getByLabel("Holidays").click();
+  await expect(list.getByLabel("Holidays")).not.toBeChecked();
+  await expect(card).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "New card" })).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Calendars" }).getByLabel("Holidays"),
+  ).not.toBeChecked();
+  await expect(card).toHaveCount(0);
+  await page.getByRole("region", { name: "Calendars" }).getByLabel("Holidays").click();
+  await expect(card).toBeVisible();
+
+  // The default calendar cannot be deleted; another one can, and its card moves.
+  await page.getByRole("link", { name: "Settings" }).click();
+  await page.waitForLoadState("networkidle");
+
+  await expect(
+    section
+      .locator("li", { has: page.locator('input[value="Main"]') })
+      .getByRole("button", { name: "Delete" }),
+  ).toBeDisabled();
+  await section
+    .locator("li", { has: page.locator('input[value="Holidays"]') })
+    .getByRole("button", { name: "Delete" })
+    .click();
+  await page.getByRole("dialog").getByLabel("Move them to").selectOption({ label: "Main" });
+  await page.getByRole("dialog").getByRole("button", { name: "Delete calendar" }).click();
+  await expect(page.getByText("Calendar deleted")).toBeVisible();
+  await page.getByRole("link", { name: "Calendar" }).click();
+  await expect(card).toBeVisible();
+
+  // The API refuses what the screen does not offer.
+  const refused = await request.delete("/api/calendars/main", { data: {} });
+  expect(refused.status()).toBe(409);
+});
