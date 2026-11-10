@@ -2,6 +2,7 @@ import type { Prisma, PrismaClient } from "@jakab/db";
 import type { CardCreateInput, CardUpdateInput } from "@jakab/shared";
 import { randomUUID } from "node:crypto";
 import { prepareClone, type PreparedClone } from "./clone";
+import { getDefaultCalendar } from "./calendars";
 import { conflict, notFound } from "./errors";
 import { existingIds } from "./ids";
 import { insertProject } from "./projects";
@@ -12,6 +13,7 @@ import { notifyBoardChanged } from "./notify";
 const cardInclude = {
   project: { select: { name: true } },
   status: true,
+  calendar: { select: { id: true, name: true, color: true } },
   labels: { include: { label: true } },
   members: true,
 } satisfies Prisma.CardInclude;
@@ -37,6 +39,7 @@ function toCardDto(card: CardRecord) {
       color: card.status.color,
       isDone: card.status.isDone,
     },
+    calendar: card.calendar,
     progress: card.progress,
     labels: card.labels.map(({ label }) => ({
       id: label.id,
@@ -141,9 +144,15 @@ export async function createCard(
         };
       }
 
+      const calendar = input.calendarId
+        ? await tx.calendar.findUnique({ where: { id: input.calendarId }, select: { id: true } })
+        : await getDefaultCalendar(tx);
+      if (!calendar) throw notFound("Calendar");
+
       const card = await tx.card.create({
         data: {
           projectId,
+          calendarId: calendar.id,
           title: input.title || null,
           start: input.start,
           end: input.end,
@@ -203,6 +212,14 @@ export async function updateCard(
     const start = input.start ?? existing.start;
     const end = input.end ?? existing.end;
     if (end < start) throw conflict("end must not be before start");
+
+    if (input.calendarId) {
+      const calendar = await tx.calendar.findUnique({
+        where: { id: input.calendarId },
+        select: { id: true },
+      });
+      if (!calendar) throw notFound("Calendar");
+    }
 
     const { labelIds, memberIds, ...fields } = input;
     const card = await tx.card.update({

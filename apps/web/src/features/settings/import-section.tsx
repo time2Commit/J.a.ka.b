@@ -24,6 +24,7 @@ interface Preview {
   }[];
   newStatuses: string[];
   newLabels: string[];
+  newCalendars: string[];
   templates: { name: string; exists: boolean }[];
   people: { email: string; name: string | null; exists: boolean }[];
 }
@@ -99,6 +100,9 @@ export function ImportSection() {
   const missing = upload?.preview.people.filter((p) => !p.exists) ?? [];
   const when = (iso: string) => format.dateTime(new Date(iso), { dateStyle: "medium" });
 
+  const newCatalog = upload
+    ? [...upload.preview.newStatuses, ...upload.preview.newLabels, ...upload.preview.newCalendars]
+    : [];
   return (
     <SectionCard title={t("title")} help={t("help")} contentClassName="flex flex-col gap-4">
       {!upload && (
@@ -160,11 +164,9 @@ export function ImportSection() {
             ))}
           </ul>
 
-          {(upload.preview.newStatuses.length > 0 || upload.preview.newLabels.length > 0) && (
+          {newCatalog.length > 0 && (
             <p className="text-sm text-muted-foreground">
-              {t("willCreate", {
-                items: [...upload.preview.newStatuses, ...upload.preview.newLabels].join(", "),
-              })}
+              {t("willCreate", { items: newCatalog.join(", ") })}
             </p>
           )}
 

@@ -1,3 +1,4 @@
+import { DEFAULT_CALENDAR_ID } from "@jakab/db/defaults";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createPrismaClient } from "@jakab/db";
 import { normalizeProjectName } from "@jakab/shared";
@@ -45,7 +46,9 @@ beforeAll(async () => {
     ids[key] = project.id;
   }
   const card = (projectId: string, start: Date, end: Date) =>
-    prisma.card.create({ data: { projectId, start, end, createdById: "u", statusId } });
+    prisma.card.create({
+      data: { calendarId: DEFAULT_CALENDAR_ID, projectId, start, end, createdById: "u", statusId },
+    });
   await card(ids.prefix!, day(-3), day(-3)); // past
   await card(ids.prefix!, day(2), day(2)); // upcoming
   await card(ids.contains!, day(-1), day(-1)); // past only

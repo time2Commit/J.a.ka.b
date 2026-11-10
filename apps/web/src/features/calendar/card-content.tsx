@@ -30,7 +30,17 @@ export function CardContent({
     </div>
   );
   return (
-    <div className="flex min-w-0 flex-col gap-1 overflow-hidden px-1.5 py-1 text-xs leading-tight">
+    <div
+      // The stylesheet draws the card's calendar as a bar inside the edge of the event element;
+      // this runs on every render, so a recolored calendar updates the bar too.
+      ref={(el) =>
+        el
+          ?.closest<HTMLElement>(".fc-event")
+          ?.style.setProperty("--calendar-color", card.calendar.color)
+      }
+      title={card.calendar.name}
+      className="flex min-w-0 flex-col gap-1 overflow-hidden py-1 pr-1.5 pl-2.5 text-xs leading-tight"
+    >
       {card.labels.length > 0 && (
         <div className="flex min-w-0 flex-wrap gap-0.5">
           {card.labels.map((l) => (

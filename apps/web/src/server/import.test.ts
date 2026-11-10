@@ -18,6 +18,7 @@ const names = {
   project: `Roundtrip ${run}`,
   status: `St ${run}`,
   label: `Lb ${run}`,
+  calendar: `Cal ${run}`,
   email: `round.${run}@example.com`,
   template: `Tpl ${run}`,
   folder: `Fo ${run}`,
@@ -54,6 +55,7 @@ async function exportedBoard(includeVersions = true) {
 /** Removes the exported data so the archive can be imported "on a fresh instance". */
 async function wipeSource() {
   await prisma.project.deleteMany({ where: { id: sourceProjectId } });
+  await prisma.calendar.deleteMany({ where: { name: names.calendar } });
   await prisma.label.deleteMany({ where: { name: names.label } });
   await prisma.status.deleteMany({ where: { name: names.status } });
   await prisma.user.deleteMany({ where: { email: names.email } });
@@ -173,8 +175,12 @@ beforeAll(async () => {
       label: "Milestone",
     },
   });
+  const calendar = await prisma.calendar.create({
+    data: { name: names.calendar, color: "#ff8800", order: 90 },
+  });
   await prisma.card.create({
     data: {
+      calendarId: calendar.id,
       projectId: project.id,
       title: "Kick-off",
       start: new Date("2026-04-06T09:00:00Z"),
@@ -190,6 +196,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await prisma.project.deleteMany({ where: { name: { startsWith: names.project } } });
+  await prisma.calendar.deleteMany({ where: { name: names.calendar } });
   await prisma.label.deleteMany({ where: { name: names.label } });
   await prisma.status.deleteMany({ where: { name: names.status } });
   await prisma.user.deleteMany({ where: { email: names.email } });
@@ -215,6 +222,7 @@ describe("import round trip", () => {
     expect(entry).toMatchObject({ exists: false, cards: 1, attachments: 1, hasVersions: true });
     expect(preview.newStatuses).toContain(names.status);
     expect(preview.newLabels).toContain(names.label);
+    expect(preview.newCalendars).toContain(names.calendar);
     expect(preview.people.find((p) => p.email === names.email)).toMatchObject({ exists: false });
     expect(preview.templates).toContainEqual({ name: names.template, exists: false });
 
@@ -243,7 +251,7 @@ describe("import round trip", () => {
         status: true,
         labels: { include: { label: true } },
         members: true,
-        cards: { include: { members: true, labels: true } },
+        cards: { include: { members: true, labels: true, calendar: true } },
         attachments: true,
         note: true,
         versions: true,
@@ -260,6 +268,13 @@ describe("import round trip", () => {
     expect(imported.cards[0]).toMatchObject({ title: "Kick-off", progress: 20 });
     expect(imported.cards[0]!.members.map((m) => m.userId)).toEqual([created.id]);
     expect(imported.cards[0]!.start.toISOString()).toBe("2026-04-06T09:00:00.000Z");
+    // The calendar is matched by name and created when this instance lacks it; it never becomes
+    // the default.
+    expect(imported.cards[0]!.calendar).toMatchObject({
+      name: names.calendar,
+      color: "#ff8800",
+      isDefault: false,
+    });
 
     // The file was copied and the note now points at the new attachment and the new person.
     const [attachment] = imported.attachments;

@@ -70,7 +70,8 @@
     "search": "Ricerca rapida",
     "searchPlaceholder": "Cerca progetti…",
     "searchEmpty": "Nessun progetto trovato",
-    "searchNoCards": "Questo progetto non ha ancora card: trascinalo da “Da programmare”"
+    "searchNoCards": "Questo progetto non ha ancora card: trascinalo da “Da programmare”",
+    "calendars": "Calendari"
   },
   "Common": {
     "save": "Salva",
@@ -133,7 +134,8 @@
     "startEmpty": "Progetto vuoto",
     "startTemplates": "Template",
     "startClone": "Copia di un progetto",
-    "cloneNote": "Copia anche la nota e i suoi file"
+    "cloneNote": "Copia anche la nota e i suoi file",
+    "calendar": "Calendario"
   },
   "Settings": {
     "title": "Impostazioni",
@@ -214,7 +216,14 @@
       "list": "Backup",
       "archive": "Archivio della board (importabile)",
       "database": "Dump del database"
-    }
+    },
+    "calendars": "Calendari",
+    "calendarsHelp": "Ogni card appartiene a un calendario. Tutti nel workspace vedono gli stessi calendari e scelgono quali mostrare. Il calendario predefinito riceve le nuove card e non si può eliminare.",
+    "defaultCalendar": "Predefinito",
+    "deleteCalendarTitle": "Elimina «{name}»",
+    "deleteCalendarHelp": "Le card di questo calendario vengono spostate in quello che scegli qui sotto.",
+    "deleteCalendarConfirm": "Elimina calendario",
+    "calendarDeleted": "Calendario eliminato"
   },
   "Projects": {
     "title": "Progetti",

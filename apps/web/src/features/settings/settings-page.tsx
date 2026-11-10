@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { api, ApiError } from "@/lib/api";
-import type { Meta, Status } from "@/lib/types";
+import type { Calendar, Meta, Status } from "@/lib/types";
+import { CalendarDeleteDialog } from "./calendar-delete-dialog";
 import { BackupFilesSection } from "./backup-files-section";
 import { ImportSection } from "./import-section";
 import { SectionCard } from "./section-card";
@@ -316,6 +317,101 @@ function StatusesSection({ meta }: { meta: Meta }) {
   );
 }
 
+function CalendarsSection({ meta }: { meta: Meta }) {
+  const t = useTranslations("Settings");
+  const common = useTranslations("Common");
+  const add = useMetaMutation((input: { name: string; color: string }) =>
+    api("/api/calendars", { method: "POST", json: input }),
+  );
+  const update = useMetaMutation(({ id, ...json }: { id: string; name?: string; color?: string }) =>
+    api(`/api/calendars/${id}`, { method: "PATCH", json }),
+  );
+  const [deleting, setDeleting] = useState<Calendar | null>(null);
+  const remove = useMetaMutation(
+    ({ id, replaceWith }: { id: string; replaceWith: string }) =>
+      api(`/api/calendars/${id}`, { method: "DELETE", json: { replaceWith } }),
+    t("calendarDeleted"),
+  );
+  const reorder = useMetaMutation((ids: string[]) =>
+    api("/api/calendars/reorder", { method: "POST", json: { ids } }),
+  );
+
+  const move = (index: number, delta: number) => {
+    const ids = meta.calendars.map((c) => c.id);
+    const target = index + delta;
+    if (target < 0 || target >= ids.length) return;
+    [ids[index], ids[target]] = [ids[target]!, ids[index]!];
+    reorder.mutate(ids);
+  };
+
+  return (
+    <SectionCard
+      title={t("calendars")}
+      help={t("calendarsHelp")}
+      contentClassName="flex flex-col gap-3"
+    >
+      <ul className="flex flex-col gap-2">
+        {meta.calendars.map((c, i) => (
+          <li key={c.id} className="flex flex-wrap items-center gap-2">
+            <ColorNameFields
+              color={c.color}
+              name={c.name}
+              onColor={(color) => update.mutate({ id: c.id, color })}
+              onName={(name) => update.mutate({ id: c.id, name })}
+            />
+            {c.isDefault && (
+              <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
+                {t("defaultCalendar")}
+              </span>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={t("moveUp")}
+              disabled={i === 0}
+              onClick={() => move(i, -1)}
+            >
+              <ArrowUp />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={t("moveDown")}
+              disabled={i === meta.calendars.length - 1}
+              onClick={() => move(i, 1)}
+            >
+              <ArrowDown />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={common("delete")}
+              disabled={c.isDefault}
+              onClick={() => setDeleting(c)}
+            >
+              <Trash2 />
+            </Button>
+          </li>
+        ))}
+      </ul>
+      <AddColorNameForm
+        initialColor={PALETTE[2]!}
+        pending={add.isPending}
+        onAdd={(input, done) => add.mutate(input, { onSuccess: done })}
+      />
+      <CalendarDeleteDialog
+        calendar={deleting}
+        calendars={meta.calendars}
+        pending={remove.isPending}
+        onCancel={() => setDeleting(null)}
+        onConfirm={(replaceWith) =>
+          remove.mutate({ id: deleting!.id, replaceWith }, { onSuccess: () => setDeleting(null) })
+        }
+      />
+    </SectionCard>
+  );
+}
+
 function LabelsSection({ meta }: { meta: Meta }) {
   const t = useTranslations("Settings");
   const common = useTranslations("Common");
@@ -479,6 +575,7 @@ export function SettingsPage() {
       <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
       <WorkspaceSection meta={meta.data} />
       <StatusesSection meta={meta.data} />
+      <CalendarsSection meta={meta.data} />
       <LabelsSection meta={meta.data} />
       <UsersSection meta={meta.data} />
       <BackupFilesSection />

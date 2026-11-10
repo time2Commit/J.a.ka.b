@@ -14,6 +14,17 @@ export const statusUpdateSchema = statusInputSchema.partial();
 export const statusDeleteSchema = z.object({ replaceWith: id.optional() });
 export const statusReorderSchema = z.object({ ids: z.array(id).min(1) });
 
+/** Kinds of calendar. Only local ones hold cards; more kinds can be added without a migration. */
+export const CALENDAR_KINDS = ["local"] as const;
+export const calendarInputSchema = z.object({
+  name: z.string().trim().min(1).max(40),
+  color: hexColor,
+});
+export const calendarUpdateSchema = calendarInputSchema.partial();
+/** Moves the cards of a deleted calendar to another one (the default calendar when omitted). */
+export const calendarDeleteSchema = z.object({ replaceWith: id.optional() });
+export const calendarReorderSchema = z.object({ ids: z.array(id).min(1) });
+
 export const labelInputSchema = z.object({
   name: z.string().trim().min(1).max(40),
   color: hexColor,
@@ -41,6 +52,8 @@ export const cardCreateSchema = z
     allDay: z.boolean().default(false),
     shortNotes: z.string().max(2000).optional(),
     statusId: id.optional(),
+    /** The calendar of the card; the default calendar when absent. */
+    calendarId: id.optional(),
     labelIds: z.array(id).default([]),
     memberIds: z.array(id).default([]),
     /** New projects only: start from a template... */
@@ -72,6 +85,7 @@ export const cardUpdateSchema = z
     allDay: z.boolean(),
     shortNotes: z.string().max(2000).nullable(),
     statusId: id,
+    calendarId: id,
     progress,
     labelIds: z.array(id),
     memberIds: z.array(id),
@@ -166,6 +180,7 @@ export const cardRangeQuerySchema = z.object({
 });
 
 export type StatusInput = z.infer<typeof statusInputSchema>;
+export type CalendarInput = z.infer<typeof calendarInputSchema>;
 export type LabelInput = z.infer<typeof labelInputSchema>;
 export type UserCreateInput = z.infer<typeof userCreateSchema>;
 export type CardCreateInput = z.infer<typeof cardCreateSchema>;
@@ -208,6 +223,8 @@ export const userPreferencesSchema = z
   .object({
     calendarView: z.enum(CALENDAR_VIEWS).nullable(),
     projectSort: z.enum(PROJECT_SORTS).nullable(),
+    /** Calendars this person chose to hide; unknown ids are ignored. */
+    hiddenCalendarIds: z.array(id).max(200),
   })
   .partial();
 export type UserPreferencesInput = z.infer<typeof userPreferencesSchema>;

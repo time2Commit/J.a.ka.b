@@ -1,3 +1,4 @@
+import { DEFAULT_CALENDAR_ID } from "@jakab/db/defaults";
 import { createPrismaClient } from "@jakab/db";
 import type { CardCreateInput } from "@jakab/shared";
 import { mkdtemp, readdir, rm } from "node:fs/promises";
@@ -99,6 +100,7 @@ beforeAll(async () => {
   });
   await prisma.card.create({
     data: {
+      calendarId: DEFAULT_CALENDAR_ID,
       projectId: sourceId,
       start: new Date("2026-05-04T09:00:00Z"),
       end: new Date("2026-05-04T11:30:00Z"),

@@ -70,7 +70,8 @@
     "search": "Quick search",
     "searchPlaceholder": "Search projects…",
     "searchEmpty": "No projects found",
-    "searchNoCards": "This project has no cards yet: drag it from “To schedule”"
+    "searchNoCards": "This project has no cards yet: drag it from “To schedule”",
+    "calendars": "Calendars"
   },
   "Common": {
     "save": "Save",
@@ -133,7 +134,8 @@
     "startEmpty": "Empty project",
     "startTemplates": "Template",
     "startClone": "Copy of a project",
-    "cloneNote": "Copy the note and its files too"
+    "cloneNote": "Copy the note and its files too",
+    "calendar": "Calendar"
   },
   "Settings": {
     "title": "Settings",
@@ -214,7 +216,14 @@
       "list": "Backups",
       "archive": "Board archive (importable)",
       "database": "Database dump"
-    }
+    },
+    "calendars": "Calendars",
+    "calendarsHelp": "Each card belongs to one calendar. Everyone in the workspace sees the same calendars and chooses which ones to show. The default calendar receives new cards and cannot be deleted.",
+    "defaultCalendar": "Default",
+    "deleteCalendarTitle": "Delete “{name}”",
+    "deleteCalendarHelp": "The cards of this calendar are moved to the one you choose below.",
+    "deleteCalendarConfirm": "Delete calendar",
+    "calendarDeleted": "Calendar deleted"
   },
   "Projects": {
     "title": "Projects",

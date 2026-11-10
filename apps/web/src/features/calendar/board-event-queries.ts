@@ -3,7 +3,7 @@ const ALL = ["cards", "meta", "projects", "templates"];
 
 /**
  * What a change to each kind of thing makes out of date. The server names the kind in every
- * event; it is deliberately generous (a status shows on cards; an import, which is announced as a
+ * event; it is deliberately generous (a status shows on cards; a calendar on cards and in the list of calendars; an import, which is announced as a
  * project change, can also add statuses, labels, templates and folders) and only leaves out what
  * cannot be affected.
  */
@@ -12,6 +12,7 @@ const AFFECTED: Record<string, string[]> = {
   project: ["projects", "cards", "meta", "templates"],
   folder: ["projects", "templates"],
   workspace: ["meta"],
+  calendar: ["meta", "cards"],
   status: ALL,
   label: ALL,
 };

@@ -9,6 +9,7 @@ import {
   type ArchiveManifest,
   type ArchiveProject,
 } from "@jakab/shared";
+import { getDefaultCalendar } from "./calendars";
 import { ensureFolderPath } from "./folders";
 import { randomBytes, randomUUID } from "node:crypto";
 import { badRequest, HttpError } from "./errors";
@@ -110,6 +111,7 @@ export interface ImportPreview {
   }[];
   newStatuses: string[];
   newLabels: string[];
+  newCalendars: string[];
   templates: { name: string; exists: boolean }[];
   people: { email: string; name: string | null; exists: boolean }[];
 }
@@ -139,9 +141,10 @@ export async function previewArchive(
   db: PrismaClient,
   parsed: ParsedArchive,
 ): Promise<ImportPreview> {
-  const [statuses, labels, users, existing, templates] = await Promise.all([
+  const [statuses, labels, calendars, users, existing, templates] = await Promise.all([
     db.status.findMany({ select: { name: true } }),
     db.label.findMany({ select: { name: true } }),
+    db.calendar.findMany({ select: { name: true } }),
     db.user.findMany({ select: { email: true } }),
     db.project.findMany({
       where: {
@@ -154,6 +157,7 @@ export async function previewArchive(
   const haveTemplate = new Set(templates.map((t) => t.name));
   const haveStatus = new Set(statuses.map((s) => s.name));
   const haveLabel = new Set(labels.map((l) => l.name));
+  const haveCalendar = new Set(calendars.map((c) => c.name));
   const haveUser = new Set(users.map((u) => emailKey(u.email)));
   const haveProject = new Set(existing.map((p) => p.nameNormalized));
 
@@ -174,6 +178,9 @@ export async function previewArchive(
     })),
     newStatuses: [...new Set(wantedStatuses)].filter((n) => !haveStatus.has(n)),
     newLabels: [...new Set(wantedLabels)].filter((n) => !haveLabel.has(n)),
+    newCalendars: [...new Set(wantedCalendarList(parsed).map((c) => c.name))].filter(
+      (n) => !haveCalendar.has(n),
+    ),
     templates: (parsed.board?.templates ?? []).map((t) => ({
       name: t.name,
       exists: haveTemplate.has(t.name),
@@ -204,6 +211,9 @@ interface Context {
   maxFileBytes: number;
   statusIds: Map<string, string>;
   labelIds: Map<string, string>;
+  calendarIds: Map<string, string>;
+  /** Where a card goes when the archive names no calendar, or one it does not describe. */
+  defaultCalendarId: string;
   userIds: Map<string, string>;
   options: ImportOptions;
 }
@@ -288,6 +298,9 @@ async function importProject(ctx: Context, { slug, data }: ParsedProject) {
                 start: new Date(c.start),
                 end: new Date(c.end),
                 allDay: c.allDay,
+                calendarId:
+                  (c.calendar ? ctx.calendarIds.get(c.calendar) : undefined) ??
+                  ctx.defaultCalendarId,
                 statusId:
                   (c.statusOverride ? ctx.statusIds.get(c.statusOverride) : undefined) ??
                   projectStatusId,
@@ -390,11 +403,26 @@ function wantedLabelList(parsed: ParsedArchive) {
   return [...known, ...extra];
 }
 
-/** Finds or creates statuses and labels by name; returns name → id. */
+/** Every calendar the archive uses, cards included. Older archives have none. */
+function wantedCalendarList(parsed: ParsedArchive) {
+  const known = parsed.board?.calendars ?? [];
+  const names = new Set(known.map((c) => c.name));
+  const extra = parsed.projects
+    .flatMap((p) => p.data.cards.flatMap((c) => c.calendar ?? []))
+    .filter((name) => !names.has(name) && names.add(name))
+    .map((name) => ({ name, color: NEUTRAL_COLOR, kind: "local" }));
+  return [...known, ...extra];
+}
+
+/** Finds or creates statuses, labels and calendars by name; returns name → id. */
 async function ensureCatalog(
   db: PrismaClient,
   parsed: ParsedArchive,
-): Promise<{ statusIds: Map<string, string>; labelIds: Map<string, string> }> {
+): Promise<{
+  statusIds: Map<string, string>;
+  labelIds: Map<string, string>;
+  calendarIds: Map<string, string>;
+}> {
   const statusIds = new Map((await db.status.findMany()).map((s) => [s.name, s.id]));
   let order = ((await db.status.aggregate({ _max: { order: true } }))._max.order ?? -1) + 1;
   for (const s of wantedStatusList(parsed)) {
@@ -411,7 +439,20 @@ async function ensureCatalog(
     const created = await db.label.create({ data: { name: l.name, color: l.color } });
     labelIds.set(l.name, created.id);
   }
-  return { statusIds, labelIds };
+
+  // Only local calendars hold cards. The archive's default calendar is matched by name like the
+  // rest and never replaces the default of this instance.
+  const calendarIds = new Map((await db.calendar.findMany()).map((c) => [c.name, c.id]));
+  let calendarOrder =
+    ((await db.calendar.aggregate({ _max: { order: true } }))._max.order ?? -1) + 1;
+  for (const c of wantedCalendarList(parsed)) {
+    if (calendarIds.has(c.name) || c.kind !== "local") continue;
+    const created = await db.calendar.create({
+      data: { name: c.name, color: c.color, kind: "local", order: calendarOrder++ },
+    });
+    calendarIds.set(c.name, created.id);
+  }
+  return { statusIds, labelIds, calendarIds };
 }
 
 /** Maps e-mail → user id, creating the missing accounts when asked. */
@@ -504,7 +545,8 @@ export async function applyArchive(
       update: { name, timeZone, workDayStart, workDayEnd, firstDayOfWeek },
     });
   }
-  const { statusIds, labelIds } = await ensureCatalog(db, parsed);
+  const { statusIds, labelIds, calendarIds } = await ensureCatalog(db, parsed);
+  const defaultCalendarId = (await getDefaultCalendar(db)).id;
   const { userIds, createdUsers } = await ensureUsers(db, parsed, options, env.hashPassword);
   const ctx: Context = {
     db,
@@ -514,6 +556,8 @@ export async function applyArchive(
     maxFileBytes: env.maxFileBytes,
     statusIds,
     labelIds,
+    calendarIds,
+    defaultCalendarId,
     userIds,
     options,
   };

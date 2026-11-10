@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { api, ApiError, isNoStatusesError } from "@/lib/api";
 import { templatesKey } from "@/features/templates/keys";
-import type { ProjectListItem, Status, TemplateItem } from "@/lib/types";
+import type { Calendar, ProjectListItem, Status, TemplateItem } from "@/lib/types";
 import { ProjectCombobox, type ProjectChoice } from "./project-combobox";
 import { autoEndDate, draftToRange, withDuration, type Draft } from "./time";
 
@@ -27,12 +27,14 @@ export function NewCardDialog({
   draft,
   timeZone,
   statuses,
+  calendars,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   draft: Draft;
   timeZone: string;
   statuses: Status[];
+  calendars: Calendar[];
 }) {
   const t = useTranslations("Card");
   const common = useTranslations("Common");
@@ -46,6 +48,8 @@ export function NewCardDialog({
   // New projects only: "" (empty), "t:<template id>" or "p:<project id>" (a copy of it).
   const [startFrom, setStartFrom] = useState("");
   const [cloneNote, setCloneNote] = useState(true);
+  const defaultCalendarId = (calendars.find((c) => c.isDefault) ?? calendars[0])?.id ?? "";
+  const [calendarId, setCalendarId] = useState(defaultCalendarId);
 
   const isNewProject = choice?.kind === "new";
   const templates = useQuery({
@@ -68,8 +72,9 @@ export function NewCardDialog({
       setChoice(null);
       setStartFrom("");
       setCloneNote(true);
+      setCalendarId(defaultCalendarId);
     }
-  }, [open, draft]);
+  }, [open, draft, defaultCalendarId]);
 
   const create = useMutation({
     mutationFn: () => {
@@ -87,6 +92,7 @@ export function NewCardDialog({
                   cloneNote,
                 }),
               }),
+          calendarId: calendarId || undefined,
           title: title || undefined,
           shortNotes: notes || undefined,
           allDay: form.allDay,
@@ -264,6 +270,23 @@ export function NewCardDialog({
             )}
           </div>
           {invalidRange && <p className="text-sm text-destructive">{t("invalidRange")}</p>}
+
+          {calendars.length > 1 && (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="card-calendar">{t("calendar")}</Label>
+              <Select
+                id="card-calendar"
+                value={calendarId}
+                onChange={(e) => setCalendarId(e.target.value)}
+              >
+                {calendars.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          )}
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="card-notes">{t("notes")}</Label>

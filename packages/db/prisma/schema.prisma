@@ -31,6 +31,9 @@ model User {
   avatarColor   String   @default("#6366f1")
   calendarView  String? // preferred calendar view, see CALENDAR_VIEWS in @jakab/shared
   projectSort   String? // how the project tree is ordered, see PROJECT_SORTS in @jakab/shared
+  // Calendars this person chose not to see: a personal choice, kept on the user so it follows them
+  // across devices. Calendars themselves are shared by the whole workspace.
+  hiddenCalendarIds String[] @default([])
   role          Role     @default(member)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -116,6 +119,23 @@ model Status {
   cards    Card[]
 
   @@map("status")
+}
+
+/// A named, colored container of cards, shared by the whole workspace. `kind` is a string checked by
+/// zod (not an enum) so a new kind needs no migration; only "local" exists so far. Exactly one
+/// calendar is the default (`isDefault`): it receives cards that name no calendar, and it cannot be
+/// deleted.
+model Calendar {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  color     String
+  kind      String  @default("local")
+  isDefault Boolean @default(false)
+  order     Int
+
+  cards Card[]
+
+  @@map("calendar")
 }
 
 model Label {
@@ -215,6 +235,8 @@ model Card {
   // card edited last, as the starting point for its next card.
   statusId         String
   status           Status   @relation(fields: [statusId], references: [id])
+  calendarId       String
+  calendar         Calendar @relation(fields: [calendarId], references: [id])
   progress         Int      @default(0)
   shortNotes       String?
   createdById      String
@@ -226,6 +248,7 @@ model Card {
 
   @@index([projectId])
   @@index([statusId])
+  @@index([calendarId])
   @@index([start, end])
   @@map("card")
 }
