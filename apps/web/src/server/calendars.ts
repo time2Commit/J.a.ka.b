@@ -38,11 +38,17 @@ export async function updateCalendar(db: PrismaClient, id: string, input: Partia
   return calendar;
 }
 
+/** Sets the order of the calendars named, each at most once; an unknown id is refused. */
 export async function reorderCalendars(db: PrismaClient, ids: string[]) {
-  await db.$transaction(
-    ids.map((id, order) => db.calendar.updateMany({ where: { id }, data: { order } })),
-  );
-  await notifyBoardChanged(db, "calendar");
+  if (new Set(ids).size !== ids.length) throw conflict("A calendar can appear only once");
+  await db.$transaction(async (tx) => {
+    const known = new Set((await tx.calendar.findMany({ select: { id: true } })).map((c) => c.id));
+    if (!ids.every((id) => known.has(id))) throw notFound("Calendar");
+    for (const [order, id] of ids.entries()) {
+      await tx.calendar.update({ where: { id }, data: { order } });
+    }
+    await notifyBoardChanged(tx, "calendar");
+  });
 }
 
 /**

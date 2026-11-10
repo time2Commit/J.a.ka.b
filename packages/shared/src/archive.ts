@@ -108,7 +108,7 @@ export const archiveCardSchema = z.object({
   progressOverride: z.number().int().min(0).max(100).nullable(),
   shortNotes: z.string().nullable(),
   /** The card's calendar by name; null (or absent in older archives) = the default calendar. */
-  calendar: z.string().nullable().default(null),
+  calendar: z.string().trim().min(1).max(40).nullable().default(null),
   members: z.array(z.string()),
   labels: z.array(z.string()),
   /**

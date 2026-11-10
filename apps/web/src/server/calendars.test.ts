@@ -105,6 +105,8 @@ describe("calendars", () => {
     await reorderCalendars(prisma, [b.id, a.id]);
     const ids = (await listCalendars(prisma)).map((c) => c.id);
     expect(ids.indexOf(b.id)).toBeLessThan(ids.indexOf(a.id));
+    await expect(reorderCalendars(prisma, [a.id, a.id])).rejects.toMatchObject({ status: 409 });
+    await expect(reorderCalendars(prisma, [a.id, "nope"])).rejects.toMatchObject({ status: 404 });
   });
 
   it("moves the cards of a deleted calendar to the one asked for, or the default", async () => {

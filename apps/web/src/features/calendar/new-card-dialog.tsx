@@ -28,6 +28,7 @@ export function NewCardDialog({
   timeZone,
   statuses,
   calendars,
+  hiddenCalendarIds,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -35,6 +36,8 @@ export function NewCardDialog({
   timeZone: string;
   statuses: Status[];
   calendars: Calendar[];
+  /** Calendars the person hides: a card made in one will not show until it is shown again. */
+  hiddenCalendarIds: string[];
 }) {
   const t = useTranslations("Card");
   const common = useTranslations("Common");
@@ -282,6 +285,7 @@ export function NewCardDialog({
                 {calendars.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
+                    {hiddenCalendarIds.includes(c.id) ? ` (${t("calendarHidden")})` : ""}
                   </option>
                 ))}
               </Select>

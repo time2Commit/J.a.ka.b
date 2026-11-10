@@ -178,9 +178,13 @@ export async function previewArchive(
     })),
     newStatuses: [...new Set(wantedStatuses)].filter((n) => !haveStatus.has(n)),
     newLabels: [...new Set(wantedLabels)].filter((n) => !haveLabel.has(n)),
-    newCalendars: [...new Set(wantedCalendarList(parsed).map((c) => c.name))].filter(
-      (n) => !haveCalendar.has(n),
-    ),
+    newCalendars: [
+      ...new Set(
+        wantedCalendarList(parsed)
+          .filter((c) => c.kind === "local")
+          .map((c) => c.name),
+      ),
+    ].filter((n) => !haveCalendar.has(n)),
     templates: (parsed.board?.templates ?? []).map((t) => ({
       name: t.name,
       exists: haveTemplate.has(t.name),

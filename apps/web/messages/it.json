@@ -135,7 +135,8 @@
     "startTemplates": "Template",
     "startClone": "Copia di un progetto",
     "cloneNote": "Copia anche la nota e i suoi file",
-    "calendar": "Calendario"
+    "calendar": "Calendario",
+    "calendarHidden": "nascosto"
   },
   "Settings": {
     "title": "Impostazioni",

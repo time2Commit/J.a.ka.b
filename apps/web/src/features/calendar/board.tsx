@@ -335,7 +335,11 @@ export function Board() {
           />
         </div>
         <div className="flex flex-col gap-4">
-          {m.calendars.length > 1 && <CalendarList meta={m} />}
+          {/* Also shown while a calendar is hidden, so it can always be shown again. */}
+          {(m.calendars.length > 1 ||
+            m.calendars.some((c) => m.preferences.hiddenCalendarIds.includes(c.id))) && (
+            <CalendarList meta={m} />
+          )}
           <ToSchedulePanel statuses={m.statuses} />
         </div>
       </div>
@@ -353,6 +357,7 @@ export function Board() {
         timeZone={m.workspace.timeZone}
         statuses={m.statuses}
         calendars={m.calendars}
+        hiddenCalendarIds={m.preferences.hiddenCalendarIds}
       />
       <CardPanel card={selected} meta={m} onClose={() => setSelectedId(null)} />
     </div>
