@@ -8,6 +8,8 @@ import { decryptSecret, SecretUnreadable } from "./secret-box";
 import { SourceError, type Source, type SourceErrorCode, type SourceEventInput } from "./types";
 
 const HOUR = 60 * 60 * 1000;
+/** Taken off the next due time so the hourly check never lands a moment too early and skips a day. */
+const SCHEDULE_SLACK_MS = 10 * 60 * 1000;
 /** After a failure that may pass by itself, try again in a few hours (one daily request budget). */
 const RETRY_AFTER_ERROR_MS = 6 * HOUR;
 /** Saved events older than this are dropped; the provider only looks 31 days back, so we keep the past. */
@@ -146,7 +148,7 @@ async function run(
             lastSyncAt: now,
             lastSyncError: null,
             lastSyncErrorCode: null,
-            nextSyncAt: new Date(now.getTime() + def.intervalHours * HOUR),
+            nextSyncAt: new Date(now.getTime() + def.intervalHours * HOUR - SCHEDULE_SLACK_MS),
           },
         });
         await notifyBoardChanged(tx, "source", id);
@@ -272,14 +274,19 @@ async function recordFailure(
       ? null
       : (extra.retryAt ?? new Date(now.getTime() + RETRY_AFTER_ERROR_MS));
   const state = extra.state !== undefined && def ? def.parseState(extra.state) : undefined;
-  await db.calendarSource.update({
-    where: { id: row.id },
-    data: {
-      lastSyncError: message,
-      lastSyncErrorCode: code,
-      nextSyncAt,
-      ...(state !== undefined && { state: state as Prisma.InputJsonValue }),
-    },
-  });
-  await notifyBoardChanged(db, "source", row.id);
+  try {
+    await db.calendarSource.update({
+      where: { id: row.id },
+      data: {
+        lastSyncError: message,
+        lastSyncErrorCode: code,
+        nextSyncAt,
+        ...(state !== undefined && { state: state as Prisma.InputJsonValue }),
+      },
+    });
+    await notifyBoardChanged(db, "source", row.id);
+  } catch (error) {
+    // Disconnected while it was running: nothing is left to record the failure on.
+    if ((error as { code?: string }).code !== "P2025") throw error;
+  }
 }

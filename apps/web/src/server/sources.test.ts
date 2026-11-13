@@ -145,11 +145,13 @@ describe("connecting a source", () => {
     const { fetchImpl } = provider([KEY]);
     const taken = await createCalendar(prisma, { name: `Taken ${run}`, color: "#123456" });
     calendarIds.push(taken.id);
-    const before = await prisma.calendarSource.count();
     await expect(
       connectSource(prisma, streamingInput("Taken"), { fetchImpl }),
     ).rejects.toMatchObject({ status: 409 });
-    expect(await prisma.calendarSource.count()).toBe(before);
+    expect(await prisma.calendar.count({ where: { name: `Taken ${run}` } })).toBe(1);
+    expect(
+      await prisma.calendarSource.count({ where: { calendar: { name: `Taken ${run}` } } }),
+    ).toBe(0);
   });
 
   it("refuses an unknown kind and options that do not fit the kind", async () => {
@@ -168,14 +170,19 @@ describe("connecting a source", () => {
 describe("verifying credentials", () => {
   it("returns the options without saving anything", async () => {
     const { fetchImpl, seen } = provider([KEY]);
-    const before = await prisma.calendarSource.count();
+    const before = await prisma.calendarSource.count({
+      where: { calendar: { name: { contains: run } } },
+    });
     const result = await verifySourceCredentials(
       { kind: "streaming-releases", credentials: { apiKey: KEY }, config: {} },
       { fetchImpl },
     );
     expect(result.options).toMatchObject({ country: "it", services: [{ id: "alphastream" }] });
     expect(seen).toEqual([{ path: "/v4/countries/it", key: KEY }]);
-    expect(await prisma.calendarSource.count()).toBe(before);
+    // nothing was created (only this run's rows are counted: other tests run meanwhile)
+    expect(
+      await prisma.calendarSource.count({ where: { calendar: { name: { contains: run } } } }),
+    ).toBe(before);
   });
 
   it("explains a rejected key and an unreachable provider", async () => {

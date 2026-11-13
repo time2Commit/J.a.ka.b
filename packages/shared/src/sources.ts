@@ -41,10 +41,15 @@ export const sourceUpdateSchema = z
   })
   .partial();
 
-export const externalEventRangeSchema = z.object({
-  from: z.coerce.date(),
-  to: z.coerce.date(),
-});
+const MAX_RANGE_MS = 400 * 24 * 60 * 60 * 1000;
+export const externalEventRangeSchema = z
+  .object({
+    from: z.coerce.date(),
+    to: z.coerce.date(),
+  })
+  .refine((r) => r.to > r.from && r.to.getTime() - r.from.getTime() <= MAX_RANGE_MS, {
+    message: "The range must be positive and at most 400 days",
+  });
 
 export type SourceVerifyInput = z.infer<typeof sourceVerifySchema>;
 export type SourceConnectInput = z.infer<typeof sourceConnectSchema>;
@@ -156,15 +161,6 @@ export const streamingReleaseDetailsSchema = z.object({
   /** Names of the services (an arrival on several services on one day is one event). */
   services: z.array(z.string().max(60)).max(30),
 });
-
-/** What the board needs to know about the source behind a calendar (everyone may read it). */
-export interface CalendarSourceInfo {
-  kind: string;
-  /** What the provider requires us to show wherever its data appears. */
-  attribution: { name: string; url: string };
-  /** The last update failed: the calendar may be out of date. */
-  failed: boolean;
-}
 
 /** What `verify` returns for this kind: the services the provider has in the country. */
 export interface StreamingReleasesVerifyOptions {

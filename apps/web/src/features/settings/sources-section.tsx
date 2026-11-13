@@ -310,7 +310,7 @@ function OptionsDialog({
       title={t("optionsDialog.title", { name })}
       description={t("optionsDialog.description")}
       submitLabel={common("save")}
-      submitDisabled={save.isPending || choices.isLoading || !ui.isValid(config)}
+      submitDisabled={save.isPending || choices.isLoading || choices.isError || !ui.isValid(config)}
       onClose={onClose}
       onSubmit={() => save.mutate()}
     >
@@ -320,7 +320,7 @@ function OptionsDialog({
       {choices.isError && (
         <p className="text-sm text-destructive">{errorText(choices.error, common("error"), t)}</p>
       )}
-      {ui.OptionsFields && !choices.isLoading && (
+      {ui.OptionsFields && !choices.isLoading && !choices.isError && (
         <ui.OptionsFields
           config={config}
           options={choices.data?.options ?? null}

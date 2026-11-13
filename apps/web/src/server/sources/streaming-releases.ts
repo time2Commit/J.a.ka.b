@@ -374,7 +374,11 @@ function toEvents(
     const details: StreamingReleaseDetails = {
       type: group.type,
       ...(group.season !== undefined && { season: group.season }),
-      availability: group.available ? "available" : "upcoming",
+      // What already arrived stays arrived, even if the provider still lists it as upcoming.
+      availability:
+        group.available || (old.success && old.data.availability === "available")
+          ? "available"
+          : "upcoming",
       services,
     };
     events.push({

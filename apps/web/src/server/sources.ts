@@ -10,7 +10,7 @@ import type {
   SourceUpdateInput,
   SourceVerifyInput,
 } from "@jakab/shared";
-import { badRequest, conflict, notFound } from "./errors";
+import { badRequest, conflict, HttpError, notFound } from "./errors";
 import { notifyBoardChanged } from "./notify";
 import { createSourceFetch, SourceHttpError } from "./sources/http";
 import { getSource, listSources } from "./sources/registry";
@@ -95,10 +95,7 @@ export async function verifySource(
       credentials = JSON.parse(decryptSecret(row.secret));
     }
   } catch {
-    throw Object.assign(badRequest("The stored key cannot be read: enter it again"), {
-      status: 422,
-      code: "key_unreadable",
-    });
+    throw new HttpError(422, "The stored key cannot be read: enter it again", "key_unreadable");
   }
   return verifySourceCredentials(
     { kind: row.kind, credentials, config: input.config ?? row.config },
@@ -132,10 +129,10 @@ export async function verifySourceCredentials(
 function toHttpError(error: unknown) {
   if (error instanceof SourceError) {
     const status = error.code === "key_rejected" ? 422 : error.code === "quota" ? 429 : 502;
-    return Object.assign(badRequest(error.message), { status, code: error.code });
+    return new HttpError(status, error.message, error.code);
   }
   if (error instanceof SourceHttpError) {
-    return Object.assign(badRequest(error.message), { status: 502, code: "unavailable" });
+    return new HttpError(502, error.message, "unavailable");
   }
   return error;
 }
@@ -200,6 +197,7 @@ export async function updateSource(
   const now = (deps.now ?? (() => new Date()))();
   const data: Prisma.CalendarSourceUpdateInput = {};
   let syncNow = false;
+  let dropFutureEvents: Date | null = null;
 
   if (input.credentials !== undefined) {
     if (!def.needsCredentials) throw badRequest("This source has no credentials");
@@ -218,11 +216,10 @@ export async function updateSource(
     if (JSON.stringify(config) !== JSON.stringify(def.parseConfig(row.config))) {
       data.config = config as Prisma.InputJsonValue;
       data.state = def.resetState(row.state) as Prisma.InputJsonValue;
-      // What the old options fetched from today on is replaced by what the new ones fetch.
+      // What the old options fetched from today on is replaced by what the new ones fetch; the
+      // removal and the new options are saved together.
       const today = dayStartUtc(dayInZone(now, (await getWorkspace(db)).timeZone));
-      await db.externalEvent.deleteMany({
-        where: { calendarId: row.calendarId, start: { gte: today } },
-      });
+      dropFutureEvents = today;
       syncNow = true;
     }
   }
@@ -236,8 +233,15 @@ export async function updateSource(
   const enabled = input.enabled ?? row.enabled;
   if (syncNow && enabled) data.nextSyncAt = now;
   if (Object.keys(data).length > 0) {
-    await db.calendarSource.update({ where: { id }, data });
-    await notifyBoardChanged(db, "source", id);
+    await db.$transaction(async (tx) => {
+      if (dropFutureEvents) {
+        await tx.externalEvent.deleteMany({
+          where: { calendarId: row.calendarId, start: { gte: dropFutureEvents } },
+        });
+      }
+      await tx.calendarSource.update({ where: { id }, data });
+      await notifyBoardChanged(tx, "source", id);
+    });
   }
   if (syncNow && enabled) await syncSource(db, id, deps);
   return toSourceDto(await getRow(db, id), now);

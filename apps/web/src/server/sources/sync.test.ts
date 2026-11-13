@@ -112,7 +112,7 @@ describe("syncSource", () => {
 
     const after = await prisma.calendarSource.findUniqueOrThrow({ where: { id: source.id } });
     expect(after.lastSyncAt?.toISOString()).toBe(NOW.toISOString());
-    expect(after.nextSyncAt?.toISOString()).toBe("2026-11-14T10:00:00.000Z");
+    expect(after.nextSyncAt?.toISOString()).toBe("2026-11-14T09:50:00.000Z");
     expect(after.lastSyncError).toBeNull();
     expect(after.state).toEqual({ n: 2 });
   });
