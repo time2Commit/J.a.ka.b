@@ -144,7 +144,7 @@ export async function previewArchive(
   const [statuses, labels, calendars, users, existing, templates] = await Promise.all([
     db.status.findMany({ select: { name: true } }),
     db.label.findMany({ select: { name: true } }),
-    db.calendar.findMany({ select: { name: true } }),
+    db.calendar.findMany({ select: { name: true } }), // every kind: a name is taken whatever its kind
     db.user.findMany({ select: { email: true } }),
     db.project.findMany({
       where: {
@@ -446,11 +446,17 @@ async function ensureCatalog(
 
   // Only local calendars hold cards. The archive's default calendar is matched by name like the
   // rest and never replaces the default of this instance.
-  const calendarIds = new Map((await db.calendar.findMany()).map((c) => [c.name, c.id]));
+  // A source calendar is never a place for cards, and its name stays taken: cards that name it
+  // go to the default calendar.
+  const allCalendars = await db.calendar.findMany();
+  const takenNames = new Set(allCalendars.map((c) => c.name));
+  const calendarIds = new Map(
+    allCalendars.filter((c) => c.kind === "local").map((c) => [c.name, c.id]),
+  );
   let calendarOrder =
     ((await db.calendar.aggregate({ _max: { order: true } }))._max.order ?? -1) + 1;
   for (const c of wantedCalendarList(parsed)) {
-    if (calendarIds.has(c.name) || c.kind !== "local") continue;
+    if (calendarIds.has(c.name) || takenNames.has(c.name) || c.kind !== "local") continue;
     const created = await db.calendar.create({
       data: { name: c.name, color: c.color, kind: "local", order: calendarOrder++ },
     });

@@ -30,6 +30,10 @@ export default defineConfig({
         UPLOAD_MAX_MB: "1",
         UPLOAD_DIR: "./data/e2e-uploads",
         BACKUP_DIR: "./data/e2e-backups",
+        // A source with no provider, so a source can be connected without the internet.
+        JAKAB_TEST_SOURCES: "1",
+        // No scheduled updates during the suite: the test updates by hand.
+        SOURCES_SYNC_CRON: "",
       },
     },
     {

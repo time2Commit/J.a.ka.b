@@ -71,7 +71,21 @@
     "searchPlaceholder": "Search projects…",
     "searchEmpty": "No projects found",
     "searchNoCards": "This project has no cards yet: drag it from “To schedule”",
-    "calendars": "Calendars"
+    "calendars": "Calendars",
+    "sourceCalendar": "Filled by a source",
+    "sourceFailed": "The last update failed: this calendar may be out of date",
+    "external": {
+      "inCalendar": "Calendar: {calendar}",
+      "available": "Available now",
+      "upcoming": "Coming soon",
+      "movie": "Film",
+      "series": "Series",
+      "season": "Season {number}",
+      "services": "On {services}",
+      "openLink": "Open on the service",
+      "readOnly": "Read-only: this event comes from a source and cannot be edited.",
+      "attribution": "Data provided by {name}"
+    }
   },
   "Common": {
     "save": "Save",
@@ -224,7 +238,9 @@
     "deleteCalendarTitle": "Delete “{name}”",
     "deleteCalendarHelp": "The cards of this calendar are moved to the one you choose below.",
     "deleteCalendarConfirm": "Delete calendar",
-    "calendarDeleted": "Calendar deleted"
+    "calendarDeleted": "Calendar deleted",
+    "sourceCalendar": "Filled by a source",
+    "sourceCalendarDelete": "Disconnect its source to remove this calendar"
   },
   "Projects": {
     "title": "Projects",
@@ -459,5 +475,106 @@
     "projects": "Projects",
     "notes": "In the notes",
     "templates": "Templates"
+  },
+  "Sources": {
+    "title": "Sources",
+    "help": "Connect an outside provider to fill a read-only calendar with its events. Each source updates itself and gets a calendar of its own; its events never become cards.",
+    "catalogTitle": "Available sources",
+    "connectedTitle": "Connected sources",
+    "noneConnected": "No source is connected yet.",
+    "connect": "Connect",
+    "attribution": "Data provided by {name}",
+    "keyHint": "Key ending in {hint}",
+    "calendar": "Calendar",
+    "kinds": {
+      "streaming-releases": {
+        "description": "New and upcoming arrivals on streaming services. Cinema releases are not covered; titles appear in English or in their original language.",
+        "country": "Country",
+        "countryHelp": "Two-letter country code, for example it.",
+        "services": "Services to follow",
+        "servicesHelp": "Choose at least one: only their arrivals appear on the calendar.",
+        "noServices": "The provider lists no service for this country.",
+        "subscriptionOnly": "Only titles included in the subscription (no rent or purchase)",
+        "showType": "Show",
+        "showTypes": {
+          "both": "Films and series",
+          "movie": "Films only",
+          "series": "Series only"
+        },
+        "changes": "Arrivals",
+        "changeKinds": {
+          "both": "New and upcoming",
+          "new": "New only",
+          "upcoming": "Upcoming only"
+        }
+      }
+    },
+    "status": {
+      "active": "Active",
+      "paused": "Paused",
+      "error": "Error",
+      "key_needed": "Key needed"
+    },
+    "lastUpdate": "Last updated {date}",
+    "neverUpdated": "Not updated yet",
+    "nextUpdate": "Next update {date}",
+    "usage": "{used} of {limit} requests used this month",
+    "usageResumes": "Monthly limit reached: updates resume on {date}.",
+    "errors": {
+      "key_rejected": "The provider rejected the key. Enter a valid one.",
+      "key_unreadable": "The stored key can no longer be read (the server secret changed). Enter it again.",
+      "quota": "The provider's request quota is used up. Updates resume later.",
+      "quota_cap": "The monthly request cap was reached. Updates resume next month.",
+      "unavailable": "The provider could not be reached or is not available now. It will be tried again.",
+      "invalid_response": "The provider's answer was not understood.",
+      "unknown": "The last update failed."
+    },
+    "actions": {
+      "updateNow": "Update now",
+      "updating": "Updating…",
+      "pause": "Pause",
+      "resume": "Resume",
+      "replaceKey": "Replace key",
+      "options": "Options",
+      "disconnect": "Disconnect"
+    },
+    "connectDialog": {
+      "title": "Connect {name}",
+      "description": "Check the key first, then choose what the calendar should show.",
+      "apiKey": "API key",
+      "apiKeyHelp": "Saved encrypted on the server, never shown again in full.",
+      "verify": "Verify",
+      "verifying": "Verifying…",
+      "noCredentials": "This source needs no key. Verify it to continue.",
+      "calendarName": "Calendar name",
+      "create": "Create calendar",
+      "creating": "Creating…",
+      "back": "Back",
+      "nameTaken": "A calendar with this name already exists."
+    },
+    "keyDialog": {
+      "title": "Replace the key of {name}",
+      "description": "The new key is checked before it replaces the old one.",
+      "save": "Check and save"
+    },
+    "optionsDialog": {
+      "title": "Options of {name}",
+      "description": "Changing the options replaces the coming events with what the new options fetch.",
+      "loading": "Asking the provider for its options…"
+    },
+    "disconnectDialog": {
+      "title": "Disconnect {name}",
+      "help": "This deletes its calendar and every event it holds. Cards are not affected.",
+      "confirm": "Disconnect"
+    },
+    "toasts": {
+      "connected": "Source connected",
+      "updated": "Source updated",
+      "paused": "Source paused",
+      "resumed": "Source resumed",
+      "keyReplaced": "Key replaced",
+      "optionsSaved": "Options saved",
+      "disconnected": "Source disconnected"
+    }
   }
 }

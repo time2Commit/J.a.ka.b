@@ -11,18 +11,20 @@ import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { CALENDAR_VIEWS, type CalendarView } from "@jakab/shared";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, CloudDownload, Plus, Search } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
+import type { ExternalEventDto } from "@jakab/shared";
 import type { CardDto, Meta, ProjectSuggestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { CalendarList } from "./calendar-list";
 import { CardContent } from "./card-content";
 import { CardPanel } from "./card-panel";
 import { CommandPalette } from "./command-palette";
+import { ExternalEventDialog } from "./external-event-dialog";
 import { emptyFilters, FilterBar, type Filters } from "./filters";
 import { NewCardDialog } from "./new-card-dialog";
 import { ToSchedulePanel } from "./to-schedule-panel";
@@ -81,6 +83,16 @@ export function Board() {
     placeholderData: keepPreviousData,
   });
 
+  // Events of the source calendars: read-only, kept apart from the cards.
+  const externalEvents = useQuery({
+    queryKey: ["external-events", range?.from, range?.to],
+    queryFn: () =>
+      api<ExternalEventDto[]>(`/api/external-events?from=${range!.from}&to=${range!.to}`),
+    enabled: Boolean(range),
+    placeholderData: keepPreviousData,
+  });
+  const [selectedExternalId, setSelectedExternalId] = useState<string | null>(null);
+
   const hiddenCalendarIds = meta.data?.preferences.hiddenCalendarIds;
   const visible = useMemo(() => {
     const search = filters.search.trim().toLowerCase();
@@ -97,9 +109,23 @@ export function Board() {
     );
   }, [cards.data, filters, hiddenCalendarIds]);
 
+  const calendars = meta.data?.calendars;
+  const visibleExternal = useMemo(() => {
+    const search = filters.search.trim().toLowerCase();
+    const hidden = new Set(hiddenCalendarIds);
+    // Status, label and member describe cards: an event, which has none, does not pass them.
+    const cardFilter = filters.statusId || filters.labelId || filters.memberId;
+    return (externalEvents.data ?? []).filter(
+      (e) =>
+        !cardFilter &&
+        !hidden.has(e.calendarId) &&
+        (!search || e.title.toLowerCase().includes(search)),
+    );
+  }, [externalEvents.data, filters, hiddenCalendarIds]);
+
   const events: EventInput[] = useMemo(
-    () =>
-      visible.map((c) => ({
+    () => [
+      ...visible.map((c) => ({
         id: c.id,
         title: c.projectName,
         start: c.start,
@@ -110,7 +136,25 @@ export function Board() {
         textColor: "var(--card-foreground)",
         extendedProps: { card: c },
       })),
-    [visible],
+      ...visibleExternal.map((e) => {
+        const color = calendars?.find((c) => c.id === e.calendarId)?.color ?? "#64748b";
+        return {
+          id: `external:${e.id}`,
+          title: e.title,
+          start: e.start,
+          end: e.end,
+          allDay: e.allDay,
+          // Read-only: nothing to drag or resize. Only the calendar's color, no status or progress.
+          editable: false,
+          classNames: ["jakab-external-event"],
+          backgroundColor: `color-mix(in oklab, ${color} 22%, var(--card))`,
+          borderColor: color,
+          textColor: "var(--card-foreground)",
+          extendedProps: { external: e },
+        };
+      }),
+    ],
+    [visible, visibleExternal, calendars],
   );
 
   const workspace = meta.data?.workspace;
@@ -314,10 +358,23 @@ export function Board() {
             events={events}
             datesSet={onDatesSet}
             select={onSelect}
-            eventClick={(info) => setSelectedId(info.event.id)}
+            eventClick={(info) => {
+              const external = info.event.extendedProps.external as ExternalEventDto | undefined;
+              if (external) setSelectedExternalId(external.id);
+              else setSelectedId(info.event.id);
+            }}
             eventDrop={(info) => applyChange(info, t("moved"))}
             eventResize={(info) => applyChange(info, t("resized"))}
             eventContent={(arg) => {
+              const external = arg.event.extendedProps.external as ExternalEventDto | undefined;
+              if (external) {
+                return (
+                  <div className="flex min-w-0 items-center gap-1 overflow-hidden px-1.5 py-0.5 text-xs">
+                    <CloudDownload className="size-3 shrink-0 opacity-60" aria-hidden />
+                    <span className="truncate font-medium">{arg.event.title}</span>
+                  </div>
+                );
+              }
               const card = arg.event.extendedProps.card as CardDto | undefined;
               if (!card) return undefined;
               return (
@@ -356,10 +413,17 @@ export function Board() {
         draft={dialog.draft ?? defaultDraft(new Date(), m.workspace.timeZone)}
         timeZone={m.workspace.timeZone}
         statuses={m.statuses}
-        calendars={m.calendars}
+        calendars={m.calendars.filter((c) => c.source === null)}
         hiddenCalendarIds={m.preferences.hiddenCalendarIds}
       />
       <CardPanel card={selected} meta={m} onClose={() => setSelectedId(null)} />
+      <ExternalEventDialog
+        event={externalEvents.data?.find((e) => e.id === selectedExternalId) ?? null}
+        calendar={m.calendars.find(
+          (c) => c.id === externalEvents.data?.find((e) => e.id === selectedExternalId)?.calendarId,
+        )}
+        onClose={() => setSelectedExternalId(null)}
+      />
     </div>
   );
 }

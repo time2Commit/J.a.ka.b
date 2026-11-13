@@ -71,7 +71,21 @@
     "searchPlaceholder": "Cerca progetti…",
     "searchEmpty": "Nessun progetto trovato",
     "searchNoCards": "Questo progetto non ha ancora card: trascinalo da “Da programmare”",
-    "calendars": "Calendari"
+    "calendars": "Calendari",
+    "sourceCalendar": "Riempito da una fonte",
+    "sourceFailed": "L'ultimo aggiornamento non è riuscito: questo calendario potrebbe non essere aggiornato",
+    "external": {
+      "inCalendar": "Calendario: {calendar}",
+      "available": "Già disponibile",
+      "upcoming": "In arrivo",
+      "movie": "Film",
+      "series": "Serie",
+      "season": "Stagione {number}",
+      "services": "Su {services}",
+      "openLink": "Apri sul servizio",
+      "readOnly": "Sola lettura: questo evento arriva da una fonte e non si può modificare.",
+      "attribution": "Dati forniti da {name}"
+    }
   },
   "Common": {
     "save": "Salva",
@@ -224,7 +238,9 @@
     "deleteCalendarTitle": "Elimina «{name}»",
     "deleteCalendarHelp": "Le card di questo calendario vengono spostate in quello che scegli qui sotto.",
     "deleteCalendarConfirm": "Elimina calendario",
-    "calendarDeleted": "Calendario eliminato"
+    "calendarDeleted": "Calendario eliminato",
+    "sourceCalendar": "Riempito da una fonte",
+    "sourceCalendarDelete": "Scollega la sua fonte per eliminare questo calendario"
   },
   "Projects": {
     "title": "Progetti",
@@ -459,5 +475,106 @@
     "projects": "Progetti",
     "notes": "Nelle note",
     "templates": "Template"
+  },
+  "Sources": {
+    "title": "Fonti",
+    "help": "Collega un fornitore esterno per riempire un calendario in sola lettura con i suoi eventi. Ogni fonte si aggiorna da sola e ha un calendario tutto suo; i suoi eventi non diventano mai card.",
+    "catalogTitle": "Fonti disponibili",
+    "connectedTitle": "Fonti collegate",
+    "noneConnected": "Nessuna fonte è ancora collegata.",
+    "connect": "Collega",
+    "attribution": "Dati forniti da {name}",
+    "keyHint": "Chiave che termina con {hint}",
+    "calendar": "Calendario",
+    "kinds": {
+      "streaming-releases": {
+        "description": "Nuovi arrivi e prossime uscite sui servizi di streaming. Le uscite al cinema non sono coperte; i titoli compaiono in inglese o nella lingua originale.",
+        "country": "Paese",
+        "countryHelp": "Codice del paese di due lettere, per esempio it.",
+        "services": "Servizi da seguire",
+        "servicesHelp": "Scegline almeno uno: sul calendario compaiono solo i loro arrivi.",
+        "noServices": "Il fornitore non elenca servizi per questo paese.",
+        "subscriptionOnly": "Solo titoli inclusi nell'abbonamento (niente noleggio o acquisto)",
+        "showType": "Titoli",
+        "showTypes": {
+          "both": "Film e serie",
+          "movie": "Solo film",
+          "series": "Solo serie"
+        },
+        "changes": "Arrivi",
+        "changeKinds": {
+          "both": "Nuovi e in arrivo",
+          "new": "Solo nuovi",
+          "upcoming": "Solo in arrivo"
+        }
+      }
+    },
+    "status": {
+      "active": "Attiva",
+      "paused": "In pausa",
+      "error": "Errore",
+      "key_needed": "Chiave da reinserire"
+    },
+    "lastUpdate": "Ultimo aggiornamento {date}",
+    "neverUpdated": "Non ancora aggiornata",
+    "nextUpdate": "Prossimo aggiornamento {date}",
+    "usage": "{used} di {limit} richieste usate questo mese",
+    "usageResumes": "Limite mensile raggiunto: gli aggiornamenti riprendono il {date}.",
+    "errors": {
+      "key_rejected": "Il fornitore ha rifiutato la chiave. Inseriscine una valida.",
+      "key_unreadable": "La chiave salvata non si può più leggere (il segreto del server è cambiato). Inseriscila di nuovo.",
+      "quota": "La quota di richieste del fornitore è esaurita. Gli aggiornamenti riprenderanno più avanti.",
+      "quota_cap": "Il tetto mensile di richieste è stato raggiunto. Gli aggiornamenti riprendono il mese prossimo.",
+      "unavailable": "Il fornitore non è raggiungibile o non è disponibile ora. Si riproverà.",
+      "invalid_response": "La risposta del fornitore non è stata capita.",
+      "unknown": "L'ultimo aggiornamento non è riuscito."
+    },
+    "actions": {
+      "updateNow": "Aggiorna ora",
+      "updating": "Aggiornamento…",
+      "pause": "Metti in pausa",
+      "resume": "Riprendi",
+      "replaceKey": "Sostituisci la chiave",
+      "options": "Opzioni",
+      "disconnect": "Scollega"
+    },
+    "connectDialog": {
+      "title": "Collega {name}",
+      "description": "Prima si verifica la chiave, poi si sceglie cosa deve mostrare il calendario.",
+      "apiKey": "Chiave API",
+      "apiKeyHelp": "Salvata cifrata sul server, mai più mostrata per intero.",
+      "verify": "Verifica",
+      "verifying": "Verifica in corso…",
+      "noCredentials": "Questa fonte non richiede una chiave. Verificala per continuare.",
+      "calendarName": "Nome del calendario",
+      "create": "Crea calendario",
+      "creating": "Creazione…",
+      "back": "Indietro",
+      "nameTaken": "Esiste già un calendario con questo nome."
+    },
+    "keyDialog": {
+      "title": "Sostituisci la chiave di {name}",
+      "description": "La nuova chiave viene controllata prima di prendere il posto della vecchia.",
+      "save": "Controlla e salva"
+    },
+    "optionsDialog": {
+      "title": "Opzioni di {name}",
+      "description": "Cambiando le opzioni, gli eventi in arrivo vengono sostituiti da ciò che le nuove opzioni scaricano.",
+      "loading": "Chiedo al fornitore le sue opzioni…"
+    },
+    "disconnectDialog": {
+      "title": "Scollega {name}",
+      "help": "Elimina il suo calendario e tutti gli eventi che contiene. Le card non vengono toccate.",
+      "confirm": "Scollega"
+    },
+    "toasts": {
+      "connected": "Fonte collegata",
+      "updated": "Fonte aggiornata",
+      "paused": "Fonte in pausa",
+      "resumed": "Fonte ripresa",
+      "keyReplaced": "Chiave sostituita",
+      "optionsSaved": "Opzioni salvate",
+      "disconnected": "Fonte scollegata"
+    }
   }
 }

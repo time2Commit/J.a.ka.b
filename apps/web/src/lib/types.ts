@@ -1,4 +1,4 @@
-import type { CalendarView, ProjectSort } from "@jakab/shared";
+import type { CalendarSourceInfo, CalendarView, ProjectSort } from "@jakab/shared";
 export type { CardDto } from "@/server/cards";
 
 export interface Status {
@@ -15,6 +15,8 @@ export interface Calendar {
   kind: string;
   isDefault: boolean;
   order: number;
+  /** Set on the calendar of a connected source: read-only, filled by the provider. */
+  source: CalendarSourceInfo | null;
 }
 interface Label {
   id: string;

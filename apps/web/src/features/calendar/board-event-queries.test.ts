@@ -8,15 +8,23 @@ describe("queryRootsFor", () => {
     expect(queryRootsFor(event("card"))).toEqual(["cards", "projects"]);
     expect(queryRootsFor(event("workspace"))).toEqual(["meta"]);
     expect(queryRootsFor(event("folder"))).toEqual(["projects", "templates"]);
-    expect(queryRootsFor(event("calendar"))).toEqual(["meta", "cards"]);
+    expect(queryRootsFor(event("calendar"))).toEqual([
+      "meta",
+      "cards",
+      "external-events",
+      "sources",
+    ]);
+    expect(queryRootsFor(event("source"))).toEqual(["meta", "external-events", "sources"]);
   });
 
   it("refreshes the cards, the lists and the settings when a status or a label changes", () => {
     for (const entity of ["status", "label"]) {
       expect([...queryRootsFor(event(entity))].sort()).toEqual([
         "cards",
+        "external-events",
         "meta",
         "projects",
+        "sources",
         "templates",
       ]);
     }
@@ -29,7 +37,7 @@ describe("queryRootsFor", () => {
   });
 
   it("refreshes everything when the event is not understood", () => {
-    const all = ["cards", "meta", "projects", "templates"];
+    const all = ["cards", "external-events", "meta", "projects", "sources", "templates"];
     expect([...queryRootsFor("not json")].sort()).toEqual(all);
     expect([...queryRootsFor("{}")].sort()).toEqual(all);
     expect([...queryRootsFor(event("something-new"))].sort()).toEqual(all);
