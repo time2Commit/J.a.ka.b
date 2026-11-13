@@ -9,6 +9,13 @@ export async function register() {
     // A bad BACKUP_CRON must not stop the app from starting.
     console.error("backup schedule not started", error);
   }
+  try {
+    const { startSourceSchedule } = await import("./server/source-schedule");
+    startSourceSchedule();
+  } catch (error) {
+    // A bad SOURCES_SYNC_CRON must not stop the app from starting.
+    console.error("source schedule not started", error);
+  }
   const run = () =>
     Promise.all([runOrphanCleanup(), runImportCleanup()])
       .then(([orphans]) => orphans)

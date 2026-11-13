@@ -65,6 +65,7 @@ services:
       ORPHAN_FILE_DAYS: ${ORPHAN_FILE_DAYS:-14}
       BACKUP_CRON: ${BACKUP_CRON-0 3 * * *}
       BACKUP_KEEP: ${BACKUP_KEEP:-7}
+      SOURCES_SYNC_CRON: ${SOURCES_SYNC_CRON-0 * * * *}
     volumes:
       - uploads:/data/uploads
       - backups:/data/backups

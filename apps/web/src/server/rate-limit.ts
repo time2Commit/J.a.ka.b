@@ -55,4 +55,7 @@ export const LIMITS = {
   export: { name: "export", limit: 20, windowMs: 10 * MINUTE },
   import: { name: "import", limit: 6, windowMs: 10 * MINUTE },
   backup: { name: "backup", limit: 6, windowMs: 10 * MINUTE },
+  // Each of these calls the provider on the person's behalf (and spends its quota).
+  sourceVerify: { name: "source-verify", limit: 10, windowMs: 10 * MINUTE },
+  sourceSync: { name: "source-sync", limit: 6, windowMs: 10 * MINUTE },
 } satisfies Record<string, RateLimitRule>;

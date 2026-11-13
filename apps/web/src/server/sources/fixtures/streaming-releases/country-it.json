@@ -1,0 +1,36 @@
+{
+  "countryCode": "it",
+  "name": "Italy",
+  "services": [
+    {
+      "id": "alphastream",
+      "name": "Alpha Stream",
+      "homePage": "https://example.com",
+      "themeColorCode": "#000000",
+      "imageSet": {},
+      "streamingOptionTypes": {
+        "addon": false,
+        "buy": false,
+        "rent": false,
+        "free": false,
+        "subscription": true
+      },
+      "addons": []
+    },
+    {
+      "id": "betaplay",
+      "name": "Beta Play",
+      "homePage": "https://example.com",
+      "themeColorCode": "#000000",
+      "imageSet": {},
+      "streamingOptionTypes": {
+        "addon": false,
+        "buy": true,
+        "rent": true,
+        "free": false,
+        "subscription": true
+      },
+      "addons": []
+    }
+  ]
+}

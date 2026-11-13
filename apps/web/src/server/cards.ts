@@ -10,6 +10,11 @@ import { replaceRelations } from "./relations";
 import type { StorageDriver } from "./storage";
 import { notifyBoardChanged } from "./notify";
 
+/** A source calendar holds the read-only events of its source, never cards. */
+function assertHoldsCards(calendar: { kind: string }) {
+  if (calendar.kind !== "local") throw conflict("Cards cannot be placed in a source calendar");
+}
+
 const cardInclude = {
   project: { select: { name: true } },
   status: true,
@@ -145,9 +150,13 @@ export async function createCard(
       }
 
       const calendar = input.calendarId
-        ? await tx.calendar.findUnique({ where: { id: input.calendarId }, select: { id: true } })
+        ? await tx.calendar.findUnique({
+            where: { id: input.calendarId },
+            select: { id: true, kind: true },
+          })
         : await getDefaultCalendar(tx);
       if (!calendar) throw notFound("Calendar");
+      assertHoldsCards(calendar);
 
       const card = await tx.card.create({
         data: {
@@ -216,9 +225,10 @@ export async function updateCard(
     if (input.calendarId) {
       const calendar = await tx.calendar.findUnique({
         where: { id: input.calendarId },
-        select: { id: true },
+        select: { id: true, kind: true },
       });
       if (!calendar) throw notFound("Calendar");
+      assertHoldsCards(calendar);
     }
 
     const { labelIds, memberIds, ...fields } = input;

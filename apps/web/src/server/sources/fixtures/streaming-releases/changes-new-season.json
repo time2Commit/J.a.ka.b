@@ -1,0 +1,59 @@
+{
+  "changes": [
+    {
+      "changeType": "new",
+      "itemType": "season",
+      "showId": "200",
+      "showType": "series",
+      "service": {
+        "id": "alphastream",
+        "name": "Alpha Stream",
+        "homePage": "https://example.com",
+        "themeColorCode": "#000000",
+        "imageSet": {}
+      },
+      "streamingOptionType": "subscription",
+      "season": 1,
+      "timestamp": 1794463200
+    },
+    {
+      "changeType": "new",
+      "itemType": "season",
+      "showId": "200",
+      "showType": "series",
+      "service": {
+        "id": "alphastream",
+        "name": "Alpha Stream",
+        "homePage": "https://example.com",
+        "themeColorCode": "#000000",
+        "imageSet": {}
+      },
+      "streamingOptionType": "subscription",
+      "season": 2,
+      "timestamp": 1794204000
+    }
+  ],
+  "shows": {
+    "100": {
+      "itemType": "show",
+      "showType": "movie",
+      "id": "100",
+      "title": "The Example Film",
+      "originalTitle": "Il Film d'Esempio"
+    },
+    "200": {
+      "itemType": "show",
+      "showType": "series",
+      "id": "200",
+      "title": "Example Series",
+      "originalTitle": "Example Series"
+    },
+    "300": {
+      "itemType": "show",
+      "showType": "movie",
+      "id": "300",
+      "title": "Another Film"
+    }
+  },
+  "hasMore": false
+}

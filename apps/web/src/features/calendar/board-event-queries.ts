@@ -1,5 +1,5 @@
 /** The cached data a board can show; each is a query key root. */
-const ALL = ["cards", "meta", "projects", "templates"];
+const ALL = ["cards", "meta", "projects", "templates", "external-events", "sources"];
 
 /**
  * What a change to each kind of thing makes out of date. The server names the kind in every
@@ -12,7 +12,9 @@ const AFFECTED: Record<string, string[]> = {
   project: ["projects", "cards", "meta", "templates"],
   folder: ["projects", "templates"],
   workspace: ["meta"],
-  calendar: ["meta", "cards"],
+  calendar: ["meta", "cards", "external-events", "sources"],
+  // A source was updated, paused or changed: its events and its status in the settings.
+  source: ["meta", "external-events", "sources"],
   status: ALL,
   label: ALL,
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CloudDownload, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import type { Meta } from "@/lib/types";
@@ -56,6 +57,18 @@ export function CalendarList({ meta }: { meta: Meta }) {
                 aria-hidden
               />
               <span className="truncate">{c.name}</span>
+              {c.source && (
+                <CloudDownload
+                  className="size-3.5 shrink-0 text-muted-foreground"
+                  aria-label={t("sourceCalendar")}
+                />
+              )}
+              {c.source?.failed && (
+                <TriangleAlert
+                  className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400"
+                  aria-label={t("sourceFailed")}
+                />
+              )}
             </label>
           </li>
         ))}

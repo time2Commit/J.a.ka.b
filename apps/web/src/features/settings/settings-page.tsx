@@ -15,6 +15,7 @@ import { CalendarDeleteDialog } from "./calendar-delete-dialog";
 import { BackupFilesSection } from "./backup-files-section";
 import { ImportSection } from "./import-section";
 import { SectionCard } from "./section-card";
+import { SourcesSection } from "./sources-section";
 import { StatusDeleteDialog } from "./status-delete-dialog";
 
 const PALETTE = [
@@ -364,6 +365,11 @@ function CalendarsSection({ meta }: { meta: Meta }) {
                 {t("defaultCalendar")}
               </span>
             )}
+            {c.source && (
+              <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
+                {t("sourceCalendar")}
+              </span>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -386,7 +392,8 @@ function CalendarsSection({ meta }: { meta: Meta }) {
               variant="ghost"
               size="icon"
               aria-label={common("delete")}
-              disabled={c.isDefault}
+              title={c.source ? t("sourceCalendarDelete") : undefined}
+              disabled={c.isDefault || c.source !== null}
               onClick={() => setDeleting(c)}
             >
               <Trash2 />
@@ -401,7 +408,7 @@ function CalendarsSection({ meta }: { meta: Meta }) {
       />
       <CalendarDeleteDialog
         calendar={deleting}
-        calendars={meta.calendars}
+        calendars={meta.calendars.filter((c) => c.source === null)}
         pending={remove.isPending}
         onCancel={() => setDeleting(null)}
         onConfirm={(replaceWith) =>
@@ -576,6 +583,7 @@ export function SettingsPage() {
       <WorkspaceSection meta={meta.data} />
       <StatusesSection meta={meta.data} />
       <CalendarsSection meta={meta.data} />
+      <SourcesSection meta={meta.data} />
       <LabelsSection meta={meta.data} />
       <UsersSection meta={meta.data} />
       <BackupFilesSection />

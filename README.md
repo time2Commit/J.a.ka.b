@@ -109,6 +109,7 @@ This is the way to install J.a.ka.b on a server (or on your own computer, to try
 
 - A machine with **Docker Engine and Docker Compose v2** (`docker compose version` must work) and `git`. About 2 GB of RAM and 5 GB of disk are enough to start.
 - For a public installation with HTTPS: a **domain name** (or sub-domain) whose DNS record points at the machine, and ports **80 and 443** reachable from the internet. Without a domain you can still run it over plain HTTP (see [option B](#2-configure)).
+- To use **sources** (Settings → Sources), the server must be able to reach the provider over HTTPS (outbound internet access). Everything else works on a closed network.
 
 ### 2. Configure
 
@@ -207,6 +208,7 @@ Set in `.env` (see [`.env.production.example`](.env.production.example) for all 
 | `BOOTSTRAP_TOKEN`                | if set, creating the first (admin) account requires this token                                                     |
 | `UPLOAD_MAX_MB`, `IMPORT_MAX_MB` | largest file in a note, largest backup archive to import                                                           |
 | `BACKUP_CRON`, `BACKUP_KEEP`     | nightly backup schedule (empty = off) and how many to keep                                                         |
+| `SOURCES_SYNC_CRON`              | how often the server checks which connected sources are due for an update (default hourly; empty = off)            |
 | `ORPHAN_FILE_DAYS`               | days an unreferenced file is kept                                                                                  |
 
 ## Backups and restore

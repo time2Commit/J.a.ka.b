@@ -278,7 +278,9 @@ export async function exportBoard(
   const [workspace, statuses, calendars, labels, users, projects, templates] = await Promise.all([
     db.workspace.findUnique({ where: { id: "default" } }),
     db.status.findMany({ orderBy: { order: "asc" } }),
-    db.calendar.findMany({ orderBy: { order: "asc" } }),
+    // Source calendars and their events are left out: the provider's data is not ours to
+    // redistribute, and a restored board reconnects its sources by hand.
+    db.calendar.findMany({ where: { kind: "local" }, orderBy: { order: "asc" } }),
     db.label.findMany({ orderBy: { name: "asc" } }),
     db.user.findMany({ orderBy: { name: "asc" } }),
     db.project.findMany({

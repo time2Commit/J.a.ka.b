@@ -60,11 +60,15 @@ export async function deleteCalendar(db: PrismaClient, id: string, replaceWith?:
     const calendar = await tx.calendar.findUnique({ where: { id } });
     if (!calendar) throw notFound("Calendar");
     if (calendar.isDefault) throw conflict("The default calendar cannot be deleted");
+    if (calendar.kind !== "local") {
+      throw conflict("A source calendar goes away when its source is disconnected");
+    }
     if (replaceWith === id) throw conflict("Pick a different calendar to move cards to");
     const replacement = replaceWith
       ? await tx.calendar.findUnique({ where: { id: replaceWith } })
       : await getDefaultCalendar(tx);
     if (!replacement) throw notFound("Calendar");
+    if (replacement.kind !== "local") throw conflict("Cards can only move to a local calendar");
 
     const cards = await tx.card.updateMany({
       where: { calendarId: id },

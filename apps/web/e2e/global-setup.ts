@@ -12,6 +12,8 @@ export default async function globalSetup() {
   await rm("e2e/.auth", { recursive: true, force: true });
   const prisma = createPrismaClient(url);
   await prisma.$transaction([
+    // Source calendars (with their sources and events) left behind by an interrupted run.
+    prisma.calendar.deleteMany({ where: { kind: "source" } }),
     prisma.project.deleteMany(),
     prisma.projectFolder.deleteMany(),
     prisma.template.deleteMany(),

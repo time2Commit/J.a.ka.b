@@ -186,7 +186,7 @@ export function CardPanel({
                   ))}
                 </Select>
               </div>
-              {meta.calendars.length > 1 && (
+              {meta.calendars.filter((c) => c.source === null).length > 1 && (
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="c-calendar">{t("calendar")}</Label>
                   <Select
@@ -194,11 +194,13 @@ export function CardPanel({
                     value={card.calendar.id}
                     onChange={(e) => now({ calendarId: e.target.value })}
                   >
-                    {meta.calendars.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
+                    {meta.calendars
+                      .filter((c) => c.source === null)
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
                   </Select>
                 </div>
               )}

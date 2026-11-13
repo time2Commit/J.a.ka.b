@@ -14,8 +14,11 @@ export const statusUpdateSchema = statusInputSchema.partial();
 export const statusDeleteSchema = z.object({ replaceWith: id.optional() });
 export const statusReorderSchema = z.object({ ids: z.array(id).min(1) });
 
-/** Kinds of calendar. Only local ones hold cards; more kinds can be added without a migration. */
-export const CALENDAR_KINDS = ["local"] as const;
+/**
+ * Kinds of calendar. Only local ones hold cards; a `source` calendar holds the read-only events of
+ * a connected source. More kinds can be added without a migration.
+ */
+export const CALENDAR_KINDS = ["local", "source"] as const;
 export const calendarInputSchema = z.object({
   name: z.string().trim().min(1).max(40),
   color: hexColor,
