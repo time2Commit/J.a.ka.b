@@ -14,11 +14,9 @@ import { badRequest, conflict, HttpError, notFound } from "./errors";
 import { notifyBoardChanged } from "./notify";
 import { createSourceFetch, SourceHttpError } from "./sources/http";
 import { getSource, listSources } from "./sources/registry";
-import { dayInZone, dayStartUtc } from "./sources/days";
 import { decryptSecret, encryptSecret, SecretUnreadable } from "./sources/secret-box";
 import { syncSource, type SyncDeps } from "./sources/sync";
 import { SourceError, type Source } from "./sources/types";
-import { getWorkspace } from "./workspace";
 
 type SourceRow = Prisma.CalendarSourceGetPayload<object>;
 
@@ -197,7 +195,7 @@ export async function updateSource(
   const now = (deps.now ?? (() => new Date()))();
   const data: Prisma.CalendarSourceUpdateInput = {};
   let syncNow = false;
-  let dropFutureEvents: Date | null = null;
+  let dropEvents = false;
 
   if (input.credentials !== undefined) {
     if (!def.needsCredentials) throw badRequest("This source has no credentials");
@@ -216,10 +214,9 @@ export async function updateSource(
     if (JSON.stringify(config) !== JSON.stringify(def.parseConfig(row.config))) {
       data.config = config as Prisma.InputJsonValue;
       data.state = def.resetState(row.state) as Prisma.InputJsonValue;
-      // What the old options fetched from today on is replaced by what the new ones fetch; the
-      // removal and the new options are saved together.
-      const today = dayStartUtc(dayInZone(now, (await getWorkspace(db)).timeZone));
-      dropFutureEvents = today;
+      // The calendar mirrors only the latest import: everything the old options fetched goes, in
+      // the same transaction that saves the new options, and the new options fetch it again.
+      dropEvents = true;
       syncNow = true;
     }
   }
@@ -234,10 +231,8 @@ export async function updateSource(
   if (syncNow && enabled) data.nextSyncAt = now;
   if (Object.keys(data).length > 0) {
     await db.$transaction(async (tx) => {
-      if (dropFutureEvents) {
-        await tx.externalEvent.deleteMany({
-          where: { calendarId: row.calendarId, start: { gte: dropFutureEvents } },
-        });
+      if (dropEvents) {
+        await tx.externalEvent.deleteMany({ where: { calendarId: row.calendarId } });
       }
       await tx.calendarSource.update({ where: { id }, data });
       await notifyBoardChanged(tx, "source", id);

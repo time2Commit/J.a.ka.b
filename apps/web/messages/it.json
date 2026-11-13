@@ -559,7 +559,7 @@
     },
     "optionsDialog": {
       "title": "Opzioni di {name}",
-      "description": "Cambiando le opzioni, gli eventi in arrivo vengono sostituiti da ciò che le nuove opzioni scaricano.",
+      "description": "Cambiando le opzioni, tutti gli eventi di questo calendario vengono sostituiti da ciò che le nuove opzioni scaricano.",
       "loading": "Chiedo al fornitore le sue opzioni…"
     },
     "disconnectDialog": {

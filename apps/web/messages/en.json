@@ -559,7 +559,7 @@
     },
     "optionsDialog": {
       "title": "Options of {name}",
-      "description": "Changing the options replaces the coming events with what the new options fetch.",
+      "description": "Changing the options replaces every event of this calendar with what the new options fetch.",
       "loading": "Asking the provider for its options…"
     },
     "disconnectDialog": {
