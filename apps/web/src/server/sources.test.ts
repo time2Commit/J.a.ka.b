@@ -256,12 +256,22 @@ describe("a source calendar", () => {
 });
 
 describe("changing a source", () => {
-  it("changed options fetch again from the start and replace the coming events", async () => {
+  it("changed options fetch again from the start and replace everything the old ones imported", async () => {
     const first = provider([KEY], "Old Title");
     const dto = await connect("Options", { fetchImpl: first.fetchImpl });
     await prisma.calendarSource.update({
       where: { id: dto.id },
       data: { state: { month: "2026-11", requests: 5, lastFetchedDay: "2026-11-12" } },
+    });
+    await prisma.externalEvent.create({
+      data: {
+        calendarId: dto.calendarId,
+        externalId: "old:1:2020-01-01",
+        title: "Past Leftover",
+        start: new Date("2020-01-01T00:00:00Z"),
+        end: new Date("2020-01-02T00:00:00Z"),
+        allDay: true,
+      },
     });
     const second = provider([KEY], "New Title");
     const updated = await updateSource(
