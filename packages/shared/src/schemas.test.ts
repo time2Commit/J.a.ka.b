@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { ZodType } from "zod";
 import * as shared from "./index";
 import {
+  accountUpdateSchema,
   cardCreateSchema,
   cardUpdateSchema,
+  passwordChangeSchema,
   projectUpdateSchema,
   statusInputSchema,
   statusUpdateSchema,
@@ -113,6 +115,67 @@ describe("templateInputSchema", () => {
   });
 });
 
+describe("accountUpdateSchema", () => {
+  it("trims the name and rejects a blank or very long one", () => {
+    expect(accountUpdateSchema.parse({ name: "  Anna Neri " })).toEqual({ name: "Anna Neri" });
+    expect(accountUpdateSchema.safeParse({ name: "   " }).success).toBe(false);
+    expect(accountUpdateSchema.safeParse({ name: "x".repeat(81) }).success).toBe(false);
+  });
+  it("drops fields a person may not change about themselves", () => {
+    expect(
+      accountUpdateSchema.parse({ name: "Anna", role: "admin", email: "x@example.com" }),
+    ).toEqual({ name: "Anna" });
+  });
+});
+
+describe("passwordChangeSchema", () => {
+  const valid = {
+    currentPassword: "password123",
+    newPassword: "password456",
+    confirmPassword: "password456",
+  };
+  const fieldsOf = (input: unknown) => {
+    const result = passwordChangeSchema.safeParse(input);
+    return result.success ? [] : result.error.issues.map((issue) => issue.path.join("."));
+  };
+
+  it("accepts a new password of 8 to 128 characters, confirmed", () => {
+    expect(passwordChangeSchema.safeParse(valid).success).toBe(true);
+    const longest = "x".repeat(128);
+    expect(fieldsOf({ ...valid, newPassword: longest, confirmPassword: longest })).toEqual([]);
+  });
+  it("requires the current password", () => {
+    expect(fieldsOf({ ...valid, currentPassword: "" })).toEqual(["currentPassword"]);
+  });
+  it("rejects a new password that is too short or too long", () => {
+    expect(fieldsOf({ ...valid, newPassword: "short12", confirmPassword: "short12" })).toEqual([
+      "newPassword",
+    ]);
+    const tooLong = "x".repeat(129);
+    expect(fieldsOf({ ...valid, newPassword: tooLong, confirmPassword: tooLong })).toEqual([
+      "newPassword",
+    ]);
+  });
+  it("rejects a confirmation that differs", () => {
+    expect(fieldsOf({ ...valid, confirmPassword: "password457" })).toEqual(["confirmPassword"]);
+  });
+  it("rejects a new password equal to the current one", () => {
+    expect(
+      fieldsOf({
+        ...valid,
+        newPassword: valid.currentPassword,
+        confirmPassword: valid.currentPassword,
+      }),
+    ).toEqual(["newPassword"]);
+  });
+  it("does not trim passwords", () => {
+    const spaced = " password456 ";
+    expect(
+      passwordChangeSchema.parse({ ...valid, newPassword: spaced, confirmPassword: spaced }),
+    ).toMatchObject({ newPassword: spaced });
+  });
+});
+
 describe("update schemas", () => {
   // `.partial()` keeps `.default()`: an update schema built from an input schema with defaults
   // would overwrite every stored field the caller did not send.
@@ -132,6 +195,7 @@ describe("update schemas", () => {
         "templateUpdateSchema",
         "workspaceUpdateSchema",
         "sourceUpdateSchema",
+        "accountUpdateSchema",
       ]),
     );
   });

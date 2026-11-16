@@ -1,6 +1,7 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import { CircleUser, LogOut } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -31,6 +32,11 @@ export function UserMenu({ name, email, color }: { name: string; email: string; 
           <div className="text-xs font-normal text-muted-foreground">{email}</div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/account">
+            <CircleUser /> {t("account")}
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={async () => {
             await authClient.signOut();
