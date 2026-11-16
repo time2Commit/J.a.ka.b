@@ -67,7 +67,10 @@ async function handleDisconnect(
   for (const document of deps.hocuspocus.documents.values()) {
     for (const connection of document.getConnections()) {
       if ((connection.context as Partial<AuthContext> | undefined)?.user?.id !== userId) continue;
-      connection.close(SESSION_ENDED);
+      // The whole socket, not only this document: closing the document alone would leave the
+      // socket open with its authentication still remembered. The browser reconnects by itself
+      // and its session is checked again.
+      connection.webSocket.close(SESSION_ENDED.code, SESSION_ENDED.reason);
       closed++;
     }
   }

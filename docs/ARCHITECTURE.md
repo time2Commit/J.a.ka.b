@@ -91,7 +91,7 @@ docker-compose.yml, .env.example
 
 ## 4. Data model (Prisma, summary)
 
-- `User` (id, name, email, avatarColor, role) + Better Auth session/account tables
+- `User` (id, name, email, avatarColor, role, deactivatedAt, mustChangePassword) + Better Auth session/account tables
 - `Workspace` (settings: time zone, working hours, first day of week) — a single one at first, ready for multiple teams
 - `Status` (id, name, color, order, isDone)
 - `Label` (id, name, color)
@@ -204,6 +204,13 @@ projects/<slug>/
 
 - Better Auth with email+password; first registered user = admin; afterwards invitations by the admin only (open sign-up can be disabled).
 - **Account page** (`/account`, for everyone, from the profile menu): a person changes their own name (`PATCH /api/me`) and their own password. The password goes through the auth library's change-password route, which checks the current one, and every other session of that person is closed; the device used stays signed in. The email is read-only.
+- **Account management** (admins, Settings → Users; `PATCH /api/users/:id`, `POST /api/users/:id/reset-password`, rules in `server/users.ts`):
+  - _Reset_: there is no email, so the admin sets a temporary password and passes it on. `mustChangePassword` is set: every page redirects to the account page until the person chooses a new one (each page calls `requireSession`; the auth hook clears the flag when the person changes the password).
+  - _Deactivate_ (`deactivatedAt`), never delete: the account keeps the authorship of notes, versions and activity and stays on the cards it was assigned to, marked as deactivated; pickers, the person filter and mentions leave it out. Reactivating restores access with the same password.
+  - Nobody deactivates, demotes or resets themselves, and every change runs with the account rows locked and re-checks that the caller is still an active admin: at least one active admin always remains.
+  - Deactivating and resetting delete the person's sessions in the same transaction. Three more barriers cover what a deleted session does not: the auth hook refuses new sessions of a deactivated account, `route()` answers 403 and the collab server refuses a session whose account is deactivated.
+  - Live connections: `/api/events` checks the session again at every heartbeat and as soon as a `user` event about its owner arrives, then ends the stream (the browser goes to the login page); the web app asks the collab server to close the person's WebSockets (`POST /internal/users/:id/disconnect`, with the admin's cookie), which then fail to reconnect.
+  - Exports carry `deactivatedAt`; an import that creates missing accounts keeps them deactivated and marks their one-time password as temporary.
 - Roles: **admin** (statuses, labels, users, backups), **member** (everything else). The Hocuspocus WebSocket validates the session cookie in `onAuthenticate`.
 
 **Hardening** (milestone 8):

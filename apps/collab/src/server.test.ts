@@ -15,6 +15,8 @@ const ORIGIN = "http://localhost:3000";
 let web: HttpServer;
 /** `x-forwarded-for` of every session check the fake web app received. */
 const forwardedFor: (string | undefined)[] = [];
+/** People whose session the fake web app no longer accepts. */
+const signedOut = new Set<string>();
 let collab: ReturnType<typeof createCollabServer>;
 let statusId: string;
 let projectId: string;
@@ -29,9 +31,19 @@ function startFakeWeb() {
       forwardedFor.push(req.headers["x-forwarded-for"] as string | undefined);
       const match = /s=(\w+)/.exec(req.headers.cookie ?? "");
       res.setHeader("content-type", "application/json");
-      if (!match) return void res.end("null");
+      if (!match || signedOut.has(match[1]!)) return void res.end("null");
+      const name = match[1]!;
       res.end(
-        JSON.stringify({ user: { id: `u-${match[1]}`, name: match[1], avatarColor: "#ef4444" } }),
+        JSON.stringify({
+          user: {
+            id: `u-${name}`,
+            name,
+            avatarColor: "#ef4444",
+            // Names tell the role and the state: "admin…" administers, "off…" is deactivated.
+            role: name.startsWith("admin") ? "admin" : "member",
+            deactivatedAt: name.startsWith("off") ? "2026-11-16T10:00:00.000Z" : null,
+          },
+        }),
       );
     });
     server.listen(0, () => resolve(server));
@@ -201,6 +213,60 @@ describe("collab server", () => {
       // Removed after the server is gone: it still holds the document and would write it back.
       leftovers.push(imported.id);
     }
+  });
+
+  it("rejects a session whose account was deactivated", async () => {
+    expect(await connect({ cookie: "s=offline" }).outcome).toBe("denied");
+  });
+
+  describe("closing the connections of a signed-out person", () => {
+    const disconnect = (userId: string, cookie?: string, method = "POST") =>
+      fetch(`http://localhost:${collab.address.port}/internal/users/${userId}/disconnect`, {
+        method,
+        headers: cookie ? { cookie } : {},
+      });
+
+    it("is for administrators only", async () => {
+      expect((await disconnect("u-anna")).status).toBe(401);
+      expect((await disconnect("u-anna", "s=nobody; x=1")).status).toBe(403);
+      expect((await disconnect("u-anna", "s=luca")).status).toBe(403);
+      expect((await disconnect("u-anna", "s=offadmin")).status).toBe(401);
+      expect((await disconnect("u-anna", "s=admin1", "GET")).status).toBe(405);
+    });
+
+    it("closes every connection of that person and of nobody else", async () => {
+      const piero = connect({ cookie: "s=piero" });
+      const pieroAgain = connect({ cookie: "s=piero" });
+      const sara = connect({ cookie: "s=sara" });
+      expect(await piero.outcome).toBe("synced");
+      expect(await pieroAgain.outcome).toBe("synced");
+      expect(await sara.outcome).toBe("synced");
+      const refused = { piero: false, pieroAgain: false, sara: false };
+      piero.provider.on("authenticationFailed", () => (refused.piero = true));
+      pieroAgain.provider.on("authenticationFailed", () => (refused.pieroAgain = true));
+      sara.provider.on("authenticationFailed", () => (refused.sara = true));
+
+      // The web app closed Piero's sessions, then asks to close his live connections.
+      signedOut.add("piero");
+      const res = await disconnect("u-piero", "s=admin1");
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ closed: 2 });
+
+      // His browser reconnects by itself and is refused; Sara keeps working.
+      await until(() => refused.piero && refused.pieroAgain);
+      paragraph(sara.doc, "Sara is still here");
+      await until(async () =>
+        JSON.stringify(
+          (await prisma.noteDocument.findUnique({ where: { projectId } }))?.json ?? {},
+        ).includes("Sara is still here"),
+      );
+      expect(refused.sara).toBe(false);
+      expect(JSON.stringify(ydocToJson(piero.doc))).not.toContain("Sara is still here");
+
+      // Nobody of that name is connected any more: nothing to close.
+      expect(await (await disconnect("u-piero", "s=admin1")).json()).toEqual({ closed: 0 });
+      signedOut.delete("piero");
+    });
   });
 
   describe("versions", () => {

@@ -214,6 +214,9 @@ describe("import round trip", () => {
     // The board archive holds everything in the (shared) test database: accounts and projects
     // that other test files create and delete at the same moment. Only this test's data counts.
     parsed.board!.users = parsed.board!.users.filter((u) => u.email === names.email);
+    // The account had been deactivated on the instance the archive comes from.
+    expect(parsed.board!.users[0]).toMatchObject({ deactivatedAt: null });
+    parsed.board!.users[0]!.deactivatedAt = "2026-11-01T10:00:00.000Z";
     parsed.projects = parsed.projects.filter((p) => p.data.name === names.project);
     await wipeSource();
 
@@ -244,6 +247,9 @@ describe("import round trip", () => {
       include: { accounts: true },
     });
     expect(created.accounts[0]!.password).toBe(`hashed:${result.createdUsers[0]!.password}`);
+    // That password is a temporary one, and a restore does not reactivate anybody.
+    expect(created.mustChangePassword).toBe(true);
+    expect(created.deactivatedAt).toEqual(new Date("2026-11-01T10:00:00.000Z"));
 
     const imported = await prisma.project.findUniqueOrThrow({
       where: { id: result.imported[0]!.projectId },
