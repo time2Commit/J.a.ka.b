@@ -101,6 +101,8 @@ pnpm --filter @jakab/web exec playwright install chromium   # once
 pnpm --filter @jakab/web test:e2e
 ```
 
+The suite builds and starts its own web and notes servers, so ports 3000 and 1234 must be free: stop `pnpm dev` first. To run it against servers you started yourself, set `PW_REUSE_SERVER=1`.
+
 ## Deploying with Docker
 
 This is the way to install J.a.ka.b on a server (or on your own computer, to try it). Everything runs in containers: you only need Docker.

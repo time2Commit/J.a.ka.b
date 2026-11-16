@@ -45,8 +45,15 @@ describe("startBackupSchedule", () => {
       expect(names.some((n) => /^jakab-board-\d{8}-\d{6}\.zip$/.test(n))).toBe(true);
     } finally {
       job!.stop();
+      // The archive appears before the run is over (the database dump follows it), and a
+      // second run may have just started: wait for it, or it writes into a folder that
+      // afterAll is removing.
+      const settled = Date.now() + 10_000;
+      while (job!.isBusy() && Date.now() < settled) {
+        await new Promise((r) => setTimeout(r, 50));
+      }
     }
-  }, 20_000);
+  }, 30_000);
 
   it("rejects an invalid expression instead of scheduling it", async () => {
     process.env.BACKUP_CRON = "not a cron";
