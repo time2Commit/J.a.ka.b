@@ -1,5 +1,10 @@
 import { defineConfig } from "@playwright/test";
 
+// A server left running by an earlier session serves an old build, and the tests then fail
+// for no visible reason. So the suite starts its own servers and refuses to run when the
+// ports are taken; PW_REUSE_SERVER=1 opts back in, to iterate against servers started by hand.
+const reuseExistingServer = process.env.PW_REUSE_SERVER === "1";
+
 export default defineConfig({
   testDir: "./e2e",
   globalSetup: "./e2e/global-setup.ts",
@@ -21,7 +26,7 @@ export default defineConfig({
     {
       command: "pnpm build && pnpm start:standalone",
       url: "http://localhost:3000/login",
-      reuseExistingServer: true,
+      reuseExistingServer,
       timeout: 180_000,
       env: {
         PORT: "3000",
@@ -40,7 +45,7 @@ export default defineConfig({
       // Real-time notes: the collab server validates sessions against the web app above.
       command: "pnpm --filter @jakab/collab start",
       url: "http://localhost:1234",
-      reuseExistingServer: true,
+      reuseExistingServer,
       timeout: 60_000,
       env: { COLLAB_PORT: "1234", WEB_INTERNAL_URL: "http://localhost:3000" },
     },

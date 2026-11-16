@@ -86,7 +86,23 @@ jobs:
       - run: pnpm --filter @jakab/db generate
       - run: pnpm --filter @jakab/db migrate:deploy
       # The Playwright webServer runs `pnpm build`, so the production build is verified here too.
-      - run: pnpm --filter @jakab/web exec playwright install --with-deps chromium
+      # The browser download is the slowest and least predictable step: keep it between runs,
+      # keyed by the Playwright version so an upgrade downloads the matching build.
+      - name: Playwright version
+        id: playwright
+        run: echo "version=$(pnpm --filter @jakab/web exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @jakab/web exec playwright install --with-deps chromium
+      # The cache holds the browser only, not the system libraries it needs.
+      - name: Install Chromium system libraries
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter @jakab/web exec playwright install-deps chromium
       - run: pnpm --filter @jakab/web test:e2e
       - uses: actions/upload-artifact@v7
         if: failure()

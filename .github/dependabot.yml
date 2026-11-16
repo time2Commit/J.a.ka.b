@@ -5,6 +5,11 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # A release is proposed only after a week in the registry, when a broken or tampered one
+    # has usually been noticed and withdrawn. Security updates skip this wait; only the shorter
+    # minimum in pnpm-workspace.yaml applies to them.
+    cooldown:
+      default-days: 7
     groups:
       minor-and-patch:
         update-types: [minor, patch]
