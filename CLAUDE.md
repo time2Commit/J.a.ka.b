@@ -74,6 +74,7 @@ Internal packages are named `@jakab/<name>` and export TypeScript sources direct
 - Creating a card always creates (or links) a project and its note, in the same transaction.
 - Restoring a version is **non-destructive**: save a `pre-restore` version first.
 - Attachments are `fileEmbed` nodes inside the note, not a separate list; never delete files referenced by a version.
+- **Accounts** are deactivated (`User.deactivatedAt`), never deleted: a deactivated person stays the author of notes and versions and stays on the cards already assigned, but is left out of pickers, the person filter and mentions (`assignablePeople`). Anything that ends a person's access (deactivation, password reset) deletes their sessions in the same transaction and closes their live connections. Every page of the signed-in area calls `requireSession()`.
 
 ## Stack and conventions
 

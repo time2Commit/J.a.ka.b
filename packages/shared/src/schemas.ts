@@ -56,6 +56,13 @@ export const userCreateSchema = z.object({
   role: z.enum(["admin", "member"]).default("member"),
 });
 
+/** What an administrator may change about somebody's account. `active: false` deactivates it. */
+export const userUpdateSchema = z
+  .object({ name: userName, role: z.enum(["admin", "member"]), active: z.boolean() })
+  .partial();
+/** The temporary password an administrator sets; the person must replace it at the next sign-in. */
+export const passwordResetSchema = z.object({ password: userPassword });
+
 /** What a person may change about their own account. The email is read-only for now. */
 export const accountUpdateSchema = z.object({ name: userName }).partial();
 
@@ -232,6 +239,7 @@ export type StatusInput = z.infer<typeof statusInputSchema>;
 export type CalendarInput = z.infer<typeof calendarInputSchema>;
 export type LabelInput = z.infer<typeof labelInputSchema>;
 export type UserCreateInput = z.infer<typeof userCreateSchema>;
+export type UserUpdateInput = z.infer<typeof userUpdateSchema>;
 export type AccountUpdateInput = z.infer<typeof accountUpdateSchema>;
 export type PasswordChangeInput = z.infer<typeof passwordChangeSchema>;
 export type CardCreateInput = z.infer<typeof cardCreateSchema>;

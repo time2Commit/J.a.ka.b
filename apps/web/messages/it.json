@@ -20,7 +20,8 @@
     "setupTokenHint": "Il valore di BOOTSTRAP_TOKEN nel file .env del server.",
     "firstRunLink": "Prima volta qui? Crea l'account amministratore",
     "haveAccount": "Hai già un account? Accedi",
-    "account": "Account"
+    "account": "Account",
+    "accountDeactivated": "Questo account è stato disattivato. Chiedi a un amministratore di riattivarlo."
   },
   "Account": {
     "title": "Account",
@@ -50,7 +51,9 @@
       "sameAsCurrent": "La nuova password deve essere diversa da quella attuale.",
       "tooManyAttempts": "Troppi tentativi. Aspetta qualche secondo e riprova.",
       "notChanged": "La password non è stata cambiata: il server non è raggiungibile. Riprova."
-    }
+    },
+    "temporaryTitle": "Scegli una nuova password",
+    "temporaryHelp": "Un amministratore ha reimpostato la tua password. Inserisci quella temporanea come password attuale e scegline una nuova per continuare."
   },
   "Nav": {
     "calendar": "Calendario",
@@ -136,7 +139,8 @@
     "saved": "Salvato",
     "deleted": "Eliminato",
     "undo": "Annulla",
-    "confirmDelete": "Eliminare questo elemento?"
+    "confirmDelete": "Eliminare questo elemento?",
+    "deactivatedName": "{name} (disattivato)"
   },
   "Card": {
     "newTitle": "Nuova card",
@@ -205,12 +209,61 @@
     "moveDown": "Sposta giù",
     "labels": "Etichette",
     "users": "Utenti",
-    "usersHelp": "Crea gli account per il tuo team. Potranno cambiare la password in seguito.",
+    "usersHelp": "Crea gli account per il tuo team. Ognuno cambia la propria password dalla pagina Account; qui puoi reimpostarne una dimenticata, cambiare un ruolo o disattivare un account. Gli account non vengono mai eliminati, così note e versioni conservano l'autore.",
     "role": "Ruolo",
     "admin": "Amministratore",
     "member": "Membro",
     "newUser": "Nuovo utente",
     "userCreated": "Utente creato",
+    "userActions": {
+      "you": "(tu)",
+      "deactivated": "Disattivato",
+      "menu": "Azioni per {name}",
+      "temporaryPassword": "Password temporanea",
+      "temporaryPasswordHint": "Almeno 8 caratteri. Comunicala di persona o con un canale di cui ti fidi: non verrà più mostrata.",
+      "generate": "Genera",
+      "notesStillOpen": "Le sue sessioni sono chiuse, ma il server delle note non è raggiungibile: una nota che aveva aperta può restare sul suo schermo finché non ricarica.",
+      "resetPassword": {
+        "item": "Reimposta password…",
+        "title": "Reimposta la password di {name}",
+        "help": "Viene disconnesso da tutti i dispositivi e al prossimo accesso deve scegliere una nuova password.",
+        "confirm": "Reimposta password",
+        "done": "Password di {name} reimpostata"
+      },
+      "makeAdmin": {
+        "item": "Rendi amministratore…",
+        "title": "Rendi {name} amministratore",
+        "help": "Gli amministratori cambiano le impostazioni, gestiscono account e backup, e possono fare lo stesso con gli altri.",
+        "confirm": "Rendi amministratore",
+        "done": "{name} ora è amministratore"
+      },
+      "makeMember": {
+        "item": "Rendi membro…",
+        "title": "Rendi {name} membro",
+        "help": "Continua a lavorare su card e note, ma perde l'accesso alle impostazioni.",
+        "confirm": "Rendi membro",
+        "done": "{name} ora è membro"
+      },
+      "deactivate": {
+        "item": "Disattiva…",
+        "title": "Disattiva {name}",
+        "help": "Viene disconnesso subito e non può più accedere. Le sue note, versioni e card restano come sono, e puoi riattivare l'account in qualsiasi momento.",
+        "confirm": "Disattiva",
+        "done": "{name} disattivato"
+      },
+      "reactivate": {
+        "item": "Riattiva…",
+        "title": "Riattiva {name}",
+        "help": "Può accedere di nuovo con la password che aveva. Reimpostala se non la ricorda più.",
+        "confirm": "Riattiva",
+        "done": "{name} riattivato"
+      },
+      "errors": {
+        "self": "Non puoi farlo sul tuo account.",
+        "tooMany": "Troppi reset di password. Aspetta qualche minuto e riprova.",
+        "failed": "La modifica non è stata fatta. Riprova."
+      }
+    },
     "backup": {
       "title": "Backup ed export",
       "help": "Scarica l'intera board (impostazioni, stati, etichette, persone, ogni progetto con nota, file e card) in un unico archivio importabile in un'altra istanza. Le note sono incluse anche in Markdown.",

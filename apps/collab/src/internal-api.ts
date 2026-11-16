@@ -8,6 +8,7 @@ import { authenticate, type AuthContext, type SessionFetcher } from "./auth";
 import { createVersion, replaceNoteContent } from "./versions";
 
 const ROUTE = /^\/internal\/projects\/([^/]+)\/versions(?:\/([^/]+)\/restore)?$/;
+const DISCONNECT_ROUTE = /^\/internal\/users\/([^/]+)\/disconnect$/;
 
 class RequestError extends Error {
   constructor(
@@ -43,9 +44,49 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
 }
 
 /**
+ * Closes every live connection of one person, on every open note. A connection's session is only
+ * checked when it opens, so the web app calls this after it closed somebody's sessions (account
+ * deactivated, password reset): the browser reconnects by itself and is then refused. Only an
+ * administrator may ask, and the web app forwards theirs: the cookie is checked like any other.
+ */
+async function handleDisconnect(
+  req: IncomingMessage,
+  res: ServerResponse,
+  userId: string,
+  deps: { hocuspocus: Hocuspocus<AuthContext>; getSession: SessionFetcher },
+) {
+  if (req.method !== "POST") throw new RequestError(405, "Method not allowed");
+  const cookie = req.headers.cookie ?? null;
+  const session = cookie
+    ? await deps.getSession(cookie, firstHeader(req.headers["x-forwarded-for"])).catch(() => null)
+    : null;
+  if (!session?.user || session.user.deactivatedAt || session.user.mustChangePassword) {
+    throw new RequestError(401, "Unauthorized");
+  }
+  if (session.user.role !== "admin") throw new RequestError(403, "Forbidden");
+
+  let closed = 0;
+  for (const document of deps.hocuspocus.documents.values()) {
+    for (const connection of document.getConnections()) {
+      if ((connection.context as Partial<AuthContext> | undefined)?.user?.id !== userId) continue;
+      // The whole socket, not only this document: closing the document alone would leave the
+      // socket open with its authentication still remembered. The browser reconnects by itself
+      // and its session is checked again.
+      connection.webSocket.close(SESSION_ENDED.code, SESSION_ENDED.reason);
+      closed++;
+    }
+  }
+  send(res, 200, { closed });
+}
+
+/** WebSocket close event for a connection whose session was ended by an administrator. */
+const SESSION_ENDED = { code: 4401, reason: "Unauthorized" };
+
+/**
  * Write operations that need the live document: saving a manual version and restoring one. The
  * web app forwards the user's session cookie, so access is checked exactly like a WebSocket
- * connection. Returns false when the request is not one of these routes.
+ * connection. Also the request that closes the connections of a signed-out person
+ * (`handleDisconnect`). Returns false when the request is not one of these routes.
  */
 export async function handleInternalRequest(
   req: IncomingMessage,
@@ -60,6 +101,19 @@ export async function handleInternalRequest(
   },
 ): Promise<boolean> {
   const url = new URL(req.url ?? "/", "http://internal");
+  const disconnect = DISCONNECT_ROUTE.exec(url.pathname);
+  if (disconnect) {
+    try {
+      await handleDisconnect(req, res, decodeURIComponent(disconnect[1]!), deps);
+    } catch (error) {
+      if (error instanceof RequestError) send(res, error.status, { error: error.message });
+      else {
+        console.error(error);
+        send(res, 500, { error: "Internal error" });
+      }
+    }
+    return true;
+  }
   const match = ROUTE.exec(url.pathname);
   if (!match) return false;
 

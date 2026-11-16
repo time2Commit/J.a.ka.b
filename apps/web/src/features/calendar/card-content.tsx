@@ -1,4 +1,5 @@
 import { FileText } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { CardDto, Member } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +13,7 @@ export function CardContent({
   users: Member[];
   compact: boolean;
 }) {
+  const common = useTranslations("Common");
   const members = card.memberIds
     .map((id) => users.find((u) => u.id === id))
     .filter((u): u is Member => Boolean(u));
@@ -20,8 +22,11 @@ export function CardContent({
       {members.slice(0, 3).map((m) => (
         <span
           key={m.id}
-          title={m.name}
-          className="flex size-4 items-center justify-center rounded-full text-[9px] font-semibold text-white ring-1 ring-background"
+          title={m.deactivatedAt ? common("deactivatedName", { name: m.name }) : m.name}
+          className={cn(
+            "flex size-4 items-center justify-center rounded-full text-[9px] font-semibold text-white ring-1 ring-background",
+            m.deactivatedAt && "opacity-50",
+          )}
           style={{ backgroundColor: m.avatarColor }}
         >
           {m.name.slice(0, 1).toUpperCase()}

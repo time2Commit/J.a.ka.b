@@ -94,6 +94,8 @@ export const archiveBoardSchema = z.object({
       email: z.string(),
       avatarColor: z.string(),
       role: z.enum(["admin", "member"]),
+      /** Set when the account was deactivated. Absent in older archives: the account is active. */
+      deactivatedAt: z.string().datetime().nullable().optional(),
     }),
   ),
 });

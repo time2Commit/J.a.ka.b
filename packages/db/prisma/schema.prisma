@@ -23,20 +23,26 @@ enum VersionReason {
 // ---------------------------------------------------------------------------
 
 model User {
-  id                String   @id
-  name              String
-  email             String   @unique
-  emailVerified     Boolean  @default(false)
-  image             String?
-  avatarColor       String   @default("#6366f1")
-  calendarView      String? // preferred calendar view, see CALENDAR_VIEWS in @jakab/shared
-  projectSort       String? // how the project tree is ordered, see PROJECT_SORTS in @jakab/shared
+  id                 String    @id
+  name               String
+  email              String    @unique
+  emailVerified      Boolean   @default(false)
+  image              String?
+  avatarColor        String    @default("#6366f1")
+  calendarView       String? // preferred calendar view, see CALENDAR_VIEWS in @jakab/shared
+  projectSort        String? // how the project tree is ordered, see PROJECT_SORTS in @jakab/shared
   // Calendars this person chose not to see: a personal choice, kept on the user so it follows them
   // across devices. Calendars themselves are shared by the whole workspace.
-  hiddenCalendarIds String[] @default([])
-  role              Role     @default(member)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  hiddenCalendarIds  String[]  @default([])
+  role               Role      @default(member)
+  // Set = the account is deactivated: it cannot sign in, but stays the author of what it wrote.
+  // Accounts are never deleted; reactivating sets this back to null.
+  deactivatedAt      DateTime?
+  // True after an administrator reset the password: the person must choose a new one before
+  // using anything else.
+  mustChangePassword Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   sessions Session[]
   accounts Account[]

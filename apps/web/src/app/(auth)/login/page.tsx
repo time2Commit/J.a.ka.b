@@ -4,9 +4,11 @@ import { getTranslations } from "next-intl/server";
 import { AuthForm } from "@/components/auth-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSession, isSignupOpen } from "@/lib/session";
+import { isDeactivated } from "@/lib/session-user";
 
 export default async function LoginPage() {
-  if (await getSession()) redirect("/");
+  const session = await getSession();
+  if (session && !isDeactivated(session)) redirect("/");
   const t = await getTranslations("Auth");
   const signupOpen = await isSignupOpen();
   return (

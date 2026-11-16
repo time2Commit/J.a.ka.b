@@ -208,6 +208,7 @@ describe("exportBoard", () => {
     expect(board.statuses.map((s) => s.name)).toContain(`Ex ${run}`);
     expect(board.labels.map((l) => l.name)).toContain(`Lbl ${run}`);
     expect(board.users.map((u) => u.email)).toContain(email);
+    expect(board.users.find((u) => u.email === email)).toMatchObject({ deactivatedAt: null });
     expect(boardText).not.toMatch(/password|token/i);
     zip.close();
   });

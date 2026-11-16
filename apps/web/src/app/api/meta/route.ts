@@ -23,6 +23,7 @@ export const GET = route(async (_req, { actor }) => {
     calendars,
     labels,
     users,
+    currentUserId: actor.id,
     preferences: {
       calendarView: me?.calendarView ?? null,
       projectSort: me?.projectSort ?? null,

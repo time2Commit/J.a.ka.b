@@ -17,8 +17,18 @@ export type SessionFetcher = (
   cookie: string,
   clientIp?: string | null,
 ) => Promise<{
-  user?: { id: string; name: string; avatarColor?: string };
+  user?: {
+    id: string;
+    name: string;
+    avatarColor?: string;
+    role?: string;
+    deactivatedAt?: string | null;
+    mustChangePassword?: boolean;
+  };
 } | null>;
+
+/** How long the web app may take to answer a session check before the connection is refused. */
+const SESSION_CHECK_TIMEOUT_MS = 10_000;
 
 /**
  * Validates the browser session by asking the web app (single source of truth for auth). The
@@ -30,6 +40,8 @@ export const fetchSessionFromWeb =
   async (cookie, clientIp) => {
     const res = await fetch(`${webUrl}/api/auth/get-session`, {
       headers: { cookie, ...(clientIp ? { "x-forwarded-for": clientIp } : {}) },
+      // A web app that hangs must not keep the connection (and its socket) waiting forever.
+      signal: AbortSignal.timeout(SESSION_CHECK_TIMEOUT_MS),
     });
     if (!res.ok) return null;
     return (await res.json()) as Awaited<ReturnType<SessionFetcher>>;
@@ -55,6 +67,10 @@ export async function authenticate(params: {
 
   const session = await getSession(cookie, clientIp);
   if (!session?.user) throw new Error("Not authenticated");
+  // Deactivating deletes the sessions; one created at that very moment stops here.
+  if (session.user.deactivatedAt) throw new Error("Account deactivated");
+  // A temporary password (set by an administrator) opens nothing until it is replaced.
+  if (session.user.mustChangePassword) throw new Error("Password change required");
 
   const project = await db.project.findUnique({ where: { id: projectId }, select: { id: true } });
   if (!project) throw new Error("Project not found");

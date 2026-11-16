@@ -23,6 +23,8 @@ interface NoteUser {
   id: string;
   name: string;
   color: string;
+  /** The account is deactivated: still an author, no longer somebody to mention. */
+  deactivated?: boolean;
 }
 
 type ConnectionStatus = "connecting" | "connected" | "offline";
@@ -49,7 +51,7 @@ interface Session {
 interface NoteEditorProps {
   projectId: string;
   user: NoteUser;
-  /** Everybody who can edit, to resolve authors by id. */
+  /** Everybody who ever could edit (deactivated accounts included), to resolve authors by id. */
   users: NoteUser[];
   collabUrl: string;
 }
@@ -254,7 +256,11 @@ function NoteEditorView({
           placeholder: t("placeholder"),
           getUser: () => ({ id: user.id }),
           fileEmbed: FileEmbedWithView,
-          mention: createMentionExtension(users, t("suggestions.people")),
+          // Deactivated accounts still resolve as authors, but cannot be mentioned anew.
+          mention: createMentionExtension(
+            users.filter((u) => !u.deactivated),
+            t("suggestions.people"),
+          ),
         }),
         Collaboration.configure({
           document: doc,

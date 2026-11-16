@@ -122,10 +122,21 @@ const emailKey = (email: string) => email.trim().toLowerCase();
 function referencedPeople(parsed: ParsedArchive) {
   const people = new Map<
     string,
-    { email: string; name: string | null; role: "admin" | "member" }
+    {
+      email: string;
+      name: string | null;
+      role: "admin" | "member";
+      /** When the archive says the account was deactivated: it is re-created that way. */
+      deactivatedAt?: string | null;
+    }
   >();
   for (const u of parsed.board?.users ?? []) {
-    people.set(emailKey(u.email), { email: emailKey(u.email), name: u.name, role: u.role });
+    people.set(emailKey(u.email), {
+      email: emailKey(u.email),
+      name: u.name,
+      role: u.role,
+      deactivatedAt: u.deactivatedAt,
+    });
   }
   for (const { data } of parsed.projects) {
     for (const email of [...data.members, ...data.cards.flatMap((c) => c.members)]) {
@@ -489,6 +500,11 @@ async function ensureUsers(
       db,
       { name, email: person.email, password, role: person.role },
       hashPassword,
+      {
+        // The password is shown once to the administrator who imports: it is a temporary one.
+        mustChangePassword: true,
+        deactivatedAt: person.deactivatedAt ? new Date(person.deactivatedAt) : null,
+      },
     ).catch((error: unknown) => {
       // A malformed address in a hand-edited archive must not abort the whole import.
       if (error instanceof HttpError) return null;

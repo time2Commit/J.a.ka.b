@@ -30,3 +30,19 @@ export async function collabPost<T>(path: string, req: Request, body: unknown = 
   if (!res.ok) throw new HttpError(res.status === 401 ? 502 : res.status, data.error ?? "Failed");
   return data;
 }
+
+/**
+ * Closes the live note connections of a person whose sessions were just closed (deactivated, or
+ * password reset): the collab server checks the session only when a connection opens. Returns
+ * false when the collab server could not be reached; the sessions are closed all the same, so the
+ * person cannot connect again.
+ */
+export async function disconnectFromNotes(req: Request, userId: string) {
+  try {
+    await collabPost(`/internal/users/${encodeURIComponent(userId)}/disconnect`, req);
+    return true;
+  } catch (error) {
+    console.error("Could not close the live note connections of a signed-out account", error);
+    return false;
+  }
+}

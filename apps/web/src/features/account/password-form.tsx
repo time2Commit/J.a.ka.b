@@ -24,7 +24,7 @@ const FIELDS: { field: PasswordField; autoComplete: string }[] = [
 ];
 
 /** Changes the signed-in person's password and signs them out of every other device. */
-export function PasswordForm({ email }: { email: string }) {
+export function PasswordForm({ email, onChanged }: { email: string; onChanged?: () => void }) {
   const t = useTranslations("Account");
   const [values, setValues] = useState(EMPTY);
   const [errors, setErrors] = useState<PasswordErrors>({});
@@ -52,6 +52,7 @@ export function PasswordForm({ email }: { email: string }) {
     if (Object.keys(result).length > 0) return;
     setValues(EMPTY);
     toast.success(t("passwordChanged"));
+    onChanged?.();
   }
 
   return (
