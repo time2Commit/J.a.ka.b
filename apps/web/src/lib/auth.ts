@@ -3,6 +3,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
+import { ACCOUNT_DEACTIVATED } from "./auth-codes";
 import { resolveAuthSecret } from "./auth-secret";
 import {
   BOOTSTRAP_TOKEN_HEADER,
@@ -30,9 +31,44 @@ export const auth = betterAuth({
     additionalFields: {
       role: { type: "string", defaultValue: "member", input: false },
       avatarColor: { type: "string", defaultValue: "#6366f1", input: false },
+      // Read with every session, never set through the auth routes (see `server/users.ts`).
+      deactivatedAt: { type: "date", required: false, input: false },
+      mustChangePassword: { type: "boolean", defaultValue: false, input: false },
     },
   },
   databaseHooks: {
+    session: {
+      create: {
+        // A deactivated account cannot sign in. The check runs after the password was verified,
+        // so the message tells nothing to somebody who does not know the password.
+        before: async (session) => {
+          const user = await prisma.user.findUnique({
+            where: { id: session.userId },
+            select: { deactivatedAt: true },
+          });
+          if (user?.deactivatedAt) {
+            throw new APIError("FORBIDDEN", {
+              message: "This account is deactivated",
+              code: ACCOUNT_DEACTIVATED,
+            });
+          }
+        },
+      },
+    },
+    account: {
+      update: {
+        // The only thing the auth routes update on a credential account is its password, and
+        // only for the person themselves: a temporary password set by an administrator (written
+        // directly, not through these hooks) has been replaced.
+        after: async (account) => {
+          if (account.providerId !== "credential") return;
+          await prisma.user.updateMany({
+            where: { id: account.userId, mustChangePassword: true },
+            data: { mustChangePassword: false },
+          });
+        },
+      },
+    },
     user: {
       create: {
         before: async (user, context) => {

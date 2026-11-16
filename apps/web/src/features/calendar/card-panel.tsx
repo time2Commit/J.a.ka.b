@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { assignablePeople } from "@/lib/people";
 import { api } from "@/lib/api";
 import type { CardDto, Meta } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -247,14 +248,14 @@ export function CardPanel({
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium">{t("members")}</span>
                 <div className="flex flex-wrap gap-1.5">
-                  {meta.users.map((u) => (
+                  {assignablePeople(meta.users, card.memberIds).map((u) => (
                     <Chip
                       key={u.id}
                       color={u.avatarColor}
                       active={card.memberIds.includes(u.id)}
                       onClick={() => now({ memberIds: toggle(card.memberIds, u.id) })}
                     >
-                      {u.name}
+                      {u.deactivatedAt ? common("deactivatedName", { name: u.name }) : u.name}
                     </Chip>
                   ))}
                 </div>

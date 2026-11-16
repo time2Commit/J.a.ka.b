@@ -14,6 +14,20 @@ export function useBoardEvents() {
         void queryClient.invalidateQueries({ queryKey: [root] });
       }
     });
+    // The server ends the stream of somebody whose session is over (signed out elsewhere,
+    // password reset, account deactivated) and refuses the reconnection: the browser then gives
+    // up (CLOSED). While it is still reconnecting by itself there is nothing to do.
+    source.addEventListener("error", () => {
+      if (source.readyState !== EventSource.CLOSED) return;
+      void fetch("/api/auth/get-session")
+        .then((res) => (res.ok ? (res.json() as Promise<unknown>) : undefined))
+        .then((session) => {
+          if (session === null) window.location.assign("/login");
+        })
+        .catch(() => {
+          // offline: the page stays as it is
+        });
+    });
     return () => source.close();
   }, [queryClient]);
 }

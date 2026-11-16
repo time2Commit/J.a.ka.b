@@ -6,11 +6,13 @@ import {
   cardCreateSchema,
   cardUpdateSchema,
   passwordChangeSchema,
+  passwordResetSchema,
   projectUpdateSchema,
   statusInputSchema,
   statusUpdateSchema,
   templateInputSchema,
   templateUpdateSchema,
+  userUpdateSchema,
   versionCreateSchema,
 } from "./schemas";
 
@@ -128,6 +130,27 @@ describe("accountUpdateSchema", () => {
   });
 });
 
+describe("userUpdateSchema / passwordResetSchema", () => {
+  it("accepts a role, a name and the active flag, each on its own", () => {
+    expect(userUpdateSchema.parse({ role: "admin" })).toEqual({ role: "admin" });
+    expect(userUpdateSchema.parse({ active: false })).toEqual({ active: false });
+    expect(userUpdateSchema.parse({ name: " Anna " })).toEqual({ name: "Anna" });
+    expect(userUpdateSchema.safeParse({ role: "owner" }).success).toBe(false);
+    expect(userUpdateSchema.safeParse({ active: "no" }).success).toBe(false);
+  });
+  it("drops fields that are not an administrator's to set", () => {
+    expect(
+      userUpdateSchema.parse({ email: "x@example.com", mustChangePassword: false, password: "x" }),
+    ).toEqual({});
+  });
+  it("bounds the temporary password like any other", () => {
+    expect(passwordResetSchema.safeParse({ password: "temporary1" }).success).toBe(true);
+    expect(passwordResetSchema.safeParse({ password: "short" }).success).toBe(false);
+    expect(passwordResetSchema.safeParse({ password: "x".repeat(129) }).success).toBe(false);
+    expect(passwordResetSchema.safeParse({}).success).toBe(false);
+  });
+});
+
 describe("passwordChangeSchema", () => {
   const valid = {
     currentPassword: "password123",
@@ -196,6 +219,7 @@ describe("update schemas", () => {
         "workspaceUpdateSchema",
         "sourceUpdateSchema",
         "accountUpdateSchema",
+        "userUpdateSchema",
       ]),
     );
   });

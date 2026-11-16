@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ACCOUNT_DEACTIVATED } from "@/lib/auth-codes";
 import { authClient } from "@/lib/auth-client";
 import { BOOTSTRAP_TOKEN_HEADER } from "@/lib/bootstrap-token";
 
@@ -39,7 +40,13 @@ export function AuthForm({
           );
     setPending(false);
     if (error) {
-      toast.error(mode === "login" ? t("invalidCredentials") : t("genericError"));
+      toast.error(
+        mode !== "login"
+          ? t("genericError")
+          : error.code === ACCOUNT_DEACTIVATED
+            ? t("accountDeactivated")
+            : t("invalidCredentials"),
+      );
       return;
     }
     router.replace("/");

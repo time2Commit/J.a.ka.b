@@ -29,6 +29,8 @@ export interface Member {
   email: string;
   role: "admin" | "member";
   avatarColor: string;
+  /** ISO date when the account was deactivated; null while it is active. */
+  deactivatedAt: string | null;
 }
 interface Workspace {
   name: string;
@@ -42,7 +44,10 @@ export interface Meta {
   statuses: Status[];
   calendars: Calendar[];
   labels: Label[];
+  /** Everyone, deactivated accounts included (see `assignablePeople`). */
   users: Member[];
+  /** The signed-in person's own id. */
+  currentUserId: string;
   /** The signed-in person's own settings. */
   preferences: {
     calendarView: CalendarView | null;

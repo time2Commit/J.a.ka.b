@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { assignablePeople } from "@/lib/people";
 import type { Meta } from "@/lib/types";
 
 export interface Filters {
@@ -73,7 +74,7 @@ export function FilterBar({
         onChange={(e) => set({ memberId: e.target.value })}
       >
         <option value="">{t("allMembers")}</option>
-        {meta.users.map((u) => (
+        {assignablePeople(meta.users, value.memberId ? [value.memberId] : []).map((u) => (
           <option key={u.id} value={u.id}>
             {u.name}
           </option>

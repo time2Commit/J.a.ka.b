@@ -20,7 +20,8 @@
     "setupTokenHint": "Set as BOOTSTRAP_TOKEN in the server's .env file.",
     "firstRunLink": "First time here? Create the admin account",
     "haveAccount": "Already have an account? Sign in",
-    "account": "Account"
+    "account": "Account",
+    "accountDeactivated": "This account has been deactivated. Ask an administrator to reactivate it."
   },
   "Account": {
     "title": "Account",
@@ -50,7 +51,9 @@
       "sameAsCurrent": "The new password must be different from the current one.",
       "tooManyAttempts": "Too many attempts. Wait a few seconds and try again.",
       "notChanged": "The password was not changed: the server could not be reached. Try again."
-    }
+    },
+    "temporaryTitle": "Choose a new password",
+    "temporaryHelp": "An administrator reset your password. Enter the temporary one as the current password and choose a new one to continue."
   },
   "Nav": {
     "calendar": "Calendar",
@@ -136,7 +139,8 @@
     "saved": "Saved",
     "deleted": "Deleted",
     "undo": "Undo",
-    "confirmDelete": "Delete this item?"
+    "confirmDelete": "Delete this item?",
+    "deactivatedName": "{name} (deactivated)"
   },
   "Card": {
     "newTitle": "New card",
@@ -205,12 +209,61 @@
     "moveDown": "Move down",
     "labels": "Labels",
     "users": "Users",
-    "usersHelp": "Create accounts for your team. They can change their password later.",
+    "usersHelp": "Create accounts for your team. Everyone changes their own password from their Account page; here you can reset a forgotten one, change a role or deactivate an account. Accounts are never deleted, so notes and versions keep their author.",
     "role": "Role",
     "admin": "Administrator",
     "member": "Member",
     "newUser": "New user",
     "userCreated": "User created",
+    "userActions": {
+      "you": "(you)",
+      "deactivated": "Deactivated",
+      "menu": "Actions for {name}",
+      "temporaryPassword": "Temporary password",
+      "temporaryPasswordHint": "At least 8 characters. Pass it on in person or by a channel you trust: it is not shown again.",
+      "generate": "Generate",
+      "notesStillOpen": "Their sessions are closed, but the notes server could not be reached: a note they had open may stay on their screen until they reload.",
+      "resetPassword": {
+        "item": "Reset password…",
+        "title": "Reset the password of {name}",
+        "help": "They are signed out everywhere and must choose a new password the next time they sign in.",
+        "confirm": "Reset password",
+        "done": "Password of {name} reset"
+      },
+      "makeAdmin": {
+        "item": "Make administrator…",
+        "title": "Make {name} an administrator",
+        "help": "Administrators change the settings, manage accounts and backups, and can do this to others.",
+        "confirm": "Make administrator",
+        "done": "{name} is now an administrator"
+      },
+      "makeMember": {
+        "item": "Make member…",
+        "title": "Make {name} a member",
+        "help": "They keep working on cards and notes, but lose access to the settings.",
+        "confirm": "Make member",
+        "done": "{name} is now a member"
+      },
+      "deactivate": {
+        "item": "Deactivate…",
+        "title": "Deactivate {name}",
+        "help": "They are signed out at once and cannot sign in again. Their notes, versions and cards stay as they are, and you can reactivate the account at any time.",
+        "confirm": "Deactivate",
+        "done": "{name} deactivated"
+      },
+      "reactivate": {
+        "item": "Reactivate…",
+        "title": "Reactivate {name}",
+        "help": "They can sign in again with the password they had. Reset it if they no longer know it.",
+        "confirm": "Reactivate",
+        "done": "{name} reactivated"
+      },
+      "errors": {
+        "self": "You cannot do this to your own account.",
+        "tooMany": "Too many password resets. Wait a few minutes and try again.",
+        "failed": "The change was not made. Try again."
+      }
+    },
     "backup": {
       "title": "Backup and export",
       "help": "Download the whole board (settings, statuses, labels, people, every project with its note, files and cards) as one archive you can import into another instance. Notes are included as Markdown too.",

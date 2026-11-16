@@ -353,6 +353,8 @@ export async function exportBoard(
       email: u.email,
       avatarColor: u.avatarColor,
       role: u.role,
+      // So that restoring the archive does not bring a deactivated account back to life.
+      deactivatedAt: u.deactivatedAt?.toISOString() ?? null,
     })),
   };
   const exportedAt = new Date();

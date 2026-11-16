@@ -56,6 +56,8 @@ export const LIMITS = {
   import: { name: "import", limit: 6, windowMs: 10 * MINUTE },
   backup: { name: "backup", limit: 6, windowMs: 10 * MINUTE },
   // Each of these calls the provider on the person's behalf (and spends its quota).
+  // Setting somebody's password is rare: a run of them is a mistake or an abuse.
+  passwordReset: { name: "password-reset", limit: 10, windowMs: 10 * MINUTE },
   sourceVerify: { name: "source-verify", limit: 10, windowMs: 10 * MINUTE },
   sourceSync: { name: "source-sync", limit: 6, windowMs: 10 * MINUTE },
 } satisfies Record<string, RateLimitRule>;

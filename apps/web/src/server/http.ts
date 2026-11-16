@@ -2,6 +2,7 @@ import { prisma } from "@jakab/db";
 import { NextResponse } from "next/server";
 import { ZodError, type ZodType } from "zod";
 import { getSession } from "../lib/session";
+import { isDeactivated } from "../lib/session-user";
 import { HttpError, TooManyRequests } from "./errors";
 import { limiterFor, type RateLimitRule } from "./rate-limit";
 
@@ -47,6 +48,8 @@ export function route<P = Record<string, never>>(
       assertSameOrigin(req);
       const session = await getSession();
       if (!session) throw new HttpError(401, "Unauthorized");
+      // Deactivating deletes the sessions; one created at that very moment stops here.
+      if (isDeactivated(session)) throw new HttpError(403, "Account deactivated");
       const actor: Actor = {
         id: session.user.id,
         role: (session.user as { role?: string }).role === "admin" ? "admin" : "member",

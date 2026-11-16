@@ -3,14 +3,27 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth, signupAllowedByEnv } from "./auth";
 import { configuredBootstrapToken } from "./bootstrap-token";
+import { isDeactivated, mustChangePassword } from "./session-user";
 
 export async function getSession() {
   return auth.api.getSession({ headers: await headers() });
 }
 
-export async function requireSession() {
+/** The session of a request whose headers are at hand (a stream that outlives the request scope). */
+export const sessionFromHeaders = (requestHeaders: Headers) =>
+  auth.api.getSession({ headers: requestHeaders });
+
+type Session = NonNullable<Awaited<ReturnType<typeof getSession>>>;
+
+/**
+ * The session of a page, or a redirect: to the login page without one, and to the account page
+ * while a temporary password has to be replaced. Only the account page itself and the layout
+ * around it pass `allowTemporaryPassword`.
+ */
+export async function requireSession({ allowTemporaryPassword = false } = {}): Promise<Session> {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session || isDeactivated(session)) redirect("/login");
+  if (!allowTemporaryPassword && mustChangePassword(session)) redirect("/account");
   return session;
 }
 

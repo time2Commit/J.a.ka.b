@@ -90,8 +90,28 @@ function ProfileSection({ name, email }: { name: string; email: string }) {
   );
 }
 
-export function AccountPage({ name, email }: { name: string; email: string }) {
+export function AccountPage({
+  name,
+  email,
+  temporaryPassword = false,
+}: {
+  name: string;
+  email: string;
+  /** An administrator reset the password: nothing else is reachable until a new one is chosen. */
+  temporaryPassword?: boolean;
+}) {
   const t = useTranslations("Account");
+  if (temporaryPassword) {
+    return (
+      <div className="mx-auto flex max-w-xl flex-col gap-6">
+        <h1 className="text-2xl font-semibold tracking-tight">{t("temporaryTitle")}</h1>
+        <SectionCard title={t("password")} help={t("temporaryHelp")}>
+          {/* A full load: every page was redirecting here, none of that may stay cached. */}
+          <PasswordForm email={email} onChanged={() => window.location.assign("/")} />
+        </SectionCard>
+      </div>
+    );
+  }
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>

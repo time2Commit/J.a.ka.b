@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { assignablePeople } from "@/lib/people";
 import { api, ApiError } from "@/lib/api";
 import type { Meta, TemplateFull } from "@/lib/types";
 import { TemplateNoteEditor } from "./template-note-editor";
@@ -141,18 +142,18 @@ function TemplateForm({ template }: { template: TemplateFull }) {
           </fieldset>
         )}
 
-        {(meta.data?.users.length ?? 0) > 0 && (
+        {assignablePeople(meta.data?.users ?? [], defaults.memberIds).length > 0 && (
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-1 text-sm font-medium">{t("members")}</legend>
             <div className="flex flex-wrap gap-3">
-              {meta.data?.users.map((u) => (
+              {assignablePeople(meta.data?.users ?? [], defaults.memberIds).map((u) => (
                 <label key={u.id} className="flex items-center gap-1.5 text-sm">
                   <input
                     type="checkbox"
                     checked={defaults.memberIds.includes(u.id)}
                     onChange={() => toggle("memberIds", u.id)}
                   />
-                  {u.name}
+                  {u.deactivatedAt ? common("deactivatedName", { name: u.name }) : u.name}
                 </label>
               ))}
             </div>
