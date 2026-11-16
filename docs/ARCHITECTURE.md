@@ -203,6 +203,7 @@ projects/<slug>/
 ### 5.7 Authentication and permissions
 
 - Better Auth with email+password; first registered user = admin; afterwards invitations by the admin only (open sign-up can be disabled).
+- **Account page** (`/account`, for everyone, from the profile menu): a person changes their own name (`PATCH /api/me`) and their own password. The password goes through the auth library's change-password route, which checks the current one, and every other session of that person is closed; the device used stays signed in. The email is read-only.
 - Roles: **admin** (statuses, labels, users, backups), **member** (everything else). The Hocuspocus WebSocket validates the session cookie in `onAuthenticate`.
 
 **Hardening** (milestone 8):

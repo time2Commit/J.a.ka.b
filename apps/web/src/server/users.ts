@@ -1,7 +1,8 @@
 import type { PrismaClient } from "@jakab/db";
-import type { UserCreateInput } from "@jakab/shared";
+import type { AccountUpdateInput, UserCreateInput } from "@jakab/shared";
 import { randomUUID } from "node:crypto";
 import { conflict } from "./errors";
+import { notifyBoardChanged } from "./notify";
 
 const AVATAR_COLORS = ["#6366f1", "#ec4899", "#f59e0b", "#10b981", "#06b6d4", "#8b5cf6", "#ef4444"];
 
@@ -47,5 +48,21 @@ export async function createUser(
       },
     },
     select: publicUserSelect,
+  });
+}
+
+/**
+ * A person changes their own account (for now only the name). Other people see the name on cards,
+ * in the people pickers and in mentions, so every open board is told.
+ */
+export function updateOwnAccount(db: PrismaClient, userId: string, input: AccountUpdateInput) {
+  return db.$transaction(async (tx) => {
+    const user = await tx.user.update({
+      where: { id: userId },
+      data: { ...(input.name !== undefined && { name: input.name }) },
+      select: publicUserSelect,
+    });
+    if (input.name !== undefined) await notifyBoardChanged(tx, "user", userId);
+    return user;
   });
 }

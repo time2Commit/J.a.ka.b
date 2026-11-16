@@ -12,6 +12,8 @@ const AFFECTED: Record<string, string[]> = {
   project: ["projects", "cards", "meta", "templates"],
   folder: ["projects", "templates"],
   workspace: ["meta"],
+  // A person renamed themselves: the list of people, and the cards and projects that show them.
+  user: ["meta", "cards", "projects"],
   calendar: ["meta", "cards", "external-events", "sources"],
   // A source was updated, paused or changed: its events and its status in the settings.
   source: ["meta", "external-events", "sources"],

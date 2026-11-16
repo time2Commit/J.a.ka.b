@@ -60,7 +60,7 @@ Just another kanban board (J.a.ka.b) is an open-source project aimed at creating
 ### Self-hosted
 
 - Ships as a Docker Compose stack: web app, real-time notes server, PostgreSQL and Caddy (automatic HTTPS).
-- Local accounts with email and password, admin and member roles.
+- Local accounts with email and password, admin and member roles. Everyone changes their own name and password from the **Account** page.
 - Designed for small teams on a single server; files live on a Docker volume.
 
 ## Tech stack

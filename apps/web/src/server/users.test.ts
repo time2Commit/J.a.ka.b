@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { createPrismaClient } from "@jakab/db";
-import { createUser } from "./users";
+import { createUser, updateOwnAccount } from "./users";
 
 const prisma = createPrismaClient();
 const email = `anna.${Date.now().toString(36)}@example.com`;
@@ -33,5 +33,26 @@ describe("createUser", () => {
         fakeHash,
       ),
     ).rejects.toMatchObject({ status: 409 });
+  });
+});
+
+describe("updateOwnAccount", () => {
+  it("renames the person and leaves everything else alone", async () => {
+    const before = await prisma.user.findUniqueOrThrow({ where: { email } });
+    const user = await updateOwnAccount(prisma, before.id, { name: "Anna Verdi" });
+    expect(user).toEqual({
+      id: before.id,
+      name: "Anna Verdi",
+      email,
+      role: "member",
+      avatarColor: before.avatarColor,
+    });
+  });
+
+  it("changes nothing for an empty update", async () => {
+    const before = await prisma.user.findUniqueOrThrow({ where: { email } });
+    await updateOwnAccount(prisma, before.id, {});
+    const after = await prisma.user.findUniqueOrThrow({ where: { email } });
+    expect(after.name).toBe("Anna Verdi");
   });
 });

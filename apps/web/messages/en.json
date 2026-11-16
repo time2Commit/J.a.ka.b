@@ -19,7 +19,38 @@
     "setupToken": "Setup token",
     "setupTokenHint": "Set as BOOTSTRAP_TOKEN in the server's .env file.",
     "firstRunLink": "First time here? Create the admin account",
-    "haveAccount": "Already have an account? Sign in"
+    "haveAccount": "Already have an account? Sign in",
+    "account": "Account"
+  },
+  "Account": {
+    "title": "Account",
+    "profile": "Profile",
+    "profileHelp": "Your name is shown on cards, in notes and in mentions.",
+    "name": "Name",
+    "email": "Email",
+    "emailHelp": "The email address cannot be changed here.",
+    "saveName": "Save name",
+    "nameSaved": "Name saved",
+    "nameInvalid": "Enter a name of 1 to 80 characters.",
+    "nameError": "The name could not be saved. Try again.",
+    "password": "Password",
+    "passwordHelp": "Changing the password signs you out everywhere else. This device stays signed in.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "passwordHint": "At least 8 characters.",
+    "changePassword": "Change password",
+    "passwordChanged": "Password changed",
+    "errors": {
+      "currentRequired": "Enter your current password.",
+      "wrongCurrent": "The current password is not correct.",
+      "tooShort": "The new password needs at least 8 characters.",
+      "tooLong": "The new password can have at most 128 characters.",
+      "mismatch": "The two passwords do not match.",
+      "sameAsCurrent": "The new password must be different from the current one.",
+      "tooManyAttempts": "Too many attempts. Wait a few seconds and try again.",
+      "notChanged": "The password was not changed: the server could not be reached. Try again."
+    }
   },
   "Nav": {
     "calendar": "Calendar",

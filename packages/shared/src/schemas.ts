@@ -43,12 +43,41 @@ export const labelInputSchema = z.object({
 });
 export const labelUpdateSchema = labelInputSchema.partial();
 
+const userName = z.string().trim().min(1).max(80);
+/** Same bounds as the auth library enforces (`minPasswordLength` in the web app's auth setup). */
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_LENGTH = 128;
+const userPassword = z.string().min(PASSWORD_MIN_LENGTH).max(PASSWORD_MAX_LENGTH);
+
 export const userCreateSchema = z.object({
-  name: z.string().trim().min(1).max(80),
+  name: userName,
   email: z.string().trim().toLowerCase().email(),
-  password: z.string().min(8).max(128),
+  password: userPassword,
   role: z.enum(["admin", "member"]).default("member"),
 });
+
+/** What a person may change about their own account. The email is read-only for now. */
+export const accountUpdateSchema = z.object({ name: userName }).partial();
+
+/**
+ * The change-password form. The auth library checks the current password and the length again on
+ * the server; this schema gives the form its messages before anything is sent. Each issue carries
+ * the field it belongs to in `path`.
+ */
+export const passwordChangeSchema = z
+  .object({
+    currentPassword: z.string().min(1).max(PASSWORD_MAX_LENGTH),
+    newPassword: userPassword,
+    confirmPassword: z.string(),
+  })
+  .refine((v) => v.newPassword === v.confirmPassword, {
+    message: "The two passwords do not match",
+    path: ["confirmPassword"],
+  })
+  .refine((v) => v.newPassword !== v.currentPassword, {
+    message: "The new password must differ from the current one",
+    path: ["newPassword"],
+  });
 
 const dateRange = (value: { start: Date; end: Date }) => value.end >= value.start;
 const rangeMessage = { message: "end must not be before start", path: ["end"] };
@@ -203,6 +232,8 @@ export type StatusInput = z.infer<typeof statusInputSchema>;
 export type CalendarInput = z.infer<typeof calendarInputSchema>;
 export type LabelInput = z.infer<typeof labelInputSchema>;
 export type UserCreateInput = z.infer<typeof userCreateSchema>;
+export type AccountUpdateInput = z.infer<typeof accountUpdateSchema>;
+export type PasswordChangeInput = z.infer<typeof passwordChangeSchema>;
 export type CardCreateInput = z.infer<typeof cardCreateSchema>;
 export type CardUpdateInput = z.infer<typeof cardUpdateSchema>;
 export type TemplateDefaults = z.infer<typeof templateDefaultsSchema>;
