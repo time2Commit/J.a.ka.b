@@ -1,9 +1,9 @@
 import { prisma } from "@jakab/db";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { APIError } from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
-import { ACCOUNT_DEACTIVATED } from "./auth-codes";
+import { ACCOUNT_DEACTIVATED, PASSWORD_UNCHANGED } from "./auth-codes";
 import { resolveAuthSecret } from "./auth-secret";
 import {
   BOOTSTRAP_TOKEN_HEADER,
@@ -35,6 +35,21 @@ export const auth = betterAuth({
       deactivatedAt: { type: "date", required: false, input: false },
       mustChangePassword: { type: "boolean", defaultValue: false, input: false },
     },
+  },
+  hooks: {
+    // "Changing" a password to itself would end the forced change after a reset without replacing
+    // the temporary password. (Somebody set on keeping it can still change it twice: this stops
+    // the shortcut, not a deliberate choice about one's own password.)
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/change-password") return;
+      const body = ctx.body as { currentPassword?: unknown; newPassword?: unknown } | undefined;
+      if (typeof body?.newPassword === "string" && body.newPassword === body.currentPassword) {
+        throw new APIError("BAD_REQUEST", {
+          message: "The new password must differ from the current one",
+          code: PASSWORD_UNCHANGED,
+        });
+      }
+    }),
   },
   databaseHooks: {
     session: {

@@ -2,7 +2,12 @@ import { createPrismaClient } from "@jakab/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createUser } from "./users";
 
-let sessionUser: { id: string; role: string; deactivatedAt?: Date | null } = {
+let sessionUser: {
+  id: string;
+  role: string;
+  deactivatedAt?: Date | null;
+  mustChangePassword?: boolean;
+} = {
   id: "nobody",
   role: "member",
 };
@@ -83,6 +88,20 @@ describe("user management routes", () => {
       me.PATCH(request("PATCH", { name: "Still here" }), none),
     ]);
     expect(refused.map((r) => r.status)).toEqual([403, 403, 403]);
+  });
+
+  it("refuse a session that still has a temporary password, on every route", async () => {
+    sessionUser = { id: adminId, role: "admin", mustChangePassword: true };
+    const list = await import("../app/api/users/route");
+    const one = await import("../app/api/users/[id]/route");
+    const me = await import("../app/api/me/route");
+    const refused = await Promise.all([
+      list.GET(request("GET"), none),
+      one.PATCH(request("PATCH", { active: false }), params(memberId)),
+      me.PATCH(request("PATCH", { name: "Not yet" }), none),
+    ]);
+    expect(refused.map((r) => r.status)).toEqual([403, 403, 403]);
+    expect(await refused[0]!.json()).toMatchObject({ code: "password_change_required" });
   });
 
   it("deactivate an account and close its live note connections", async () => {

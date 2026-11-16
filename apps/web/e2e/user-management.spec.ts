@@ -144,6 +144,19 @@ test("a reset password signs the person out and must be replaced at the next sig
   await remo.page.goto("/");
   await expect(remo.page).toHaveURL(/\/account$/);
 
+  // Not only the pages: the data behind them is closed too.
+  expect((await remo.page.request.get("/api/meta")).status()).toBe(403);
+  expect((await remo.page.request.get("/api/events")).status()).toBe(401);
+
+  // "Changing" it to itself, even by calling the server directly, does not count.
+  const unchanged = await remo.page.request.post("/api/auth/change-password", {
+    data: { currentPassword: temporary, newPassword: temporary },
+    headers: { origin: "http://localhost:3000" },
+  });
+  expect(unchanged.status()).toBe(400);
+  await remo.page.goto("/");
+  await expect(remo.page).toHaveURL(/\/account$/);
+
   await remo.page.waitForLoadState("networkidle");
   await remo.page.getByLabel("Current password").fill(temporary);
   await remo.page.getByLabel("New password", { exact: true }).fill(chosen);

@@ -1,13 +1,18 @@
 import { boardEvents } from "@/server/board-events";
 import { sessionFromHeaders } from "@/lib/session";
-import { isDeactivated } from "@/lib/session-user";
+import { isDeactivated, mustChangePassword } from "@/lib/session-user";
 
 export const dynamic = "force-dynamic";
 
-/** The person a stream belongs to, or null when their session is over or their account deactivated. */
+/**
+ * The person a stream belongs to; null when their session is over, their account deactivated or
+ * their password a temporary one. Throws when the session cannot be read (database unreachable):
+ * that says nothing about the session.
+ */
 async function streamOwner(headers: Headers) {
-  const session = await sessionFromHeaders(headers).catch(() => null);
-  return session && !isDeactivated(session) ? session.user.id : null;
+  const session = await sessionFromHeaders(headers);
+  if (!session || isDeactivated(session) || mustChangePassword(session)) return null;
+  return session.user.id;
 }
 
 /** True when a board event says that this person's account changed (deactivated, password reset). */
@@ -28,7 +33,14 @@ function concernsAccount(payload: string, userId: string) {
  * deactivated person stops receiving what happens on the board.
  */
 export async function GET(req: Request) {
-  const userId = await streamOwner(req.headers);
+  let userId: string | null;
+  try {
+    userId = await streamOwner(req.headers);
+  } catch {
+    // Not a refusal: the browser's EventSource gives up on any error status, and the page then
+    // tries again by itself (`useBoardEvents`).
+    return new Response("Session unavailable", { status: 503 });
+  }
   if (!userId) return new Response("Unauthorized", { status: 401 });
 
   const encoder = new TextEncoder();
@@ -42,12 +54,23 @@ export async function GET(req: Request) {
           cleanup();
         }
       };
+      // One check at a time; a request that arrives meanwhile asks for one more afterwards, since
+      // the check in flight may have read the session before the change it is told about.
       let checking = false;
+      let checkAgain = false;
       const closeIfSignedOut = async () => {
-        if (checking) return;
+        if (checking) {
+          checkAgain = true;
+          return;
+        }
         checking = true;
         try {
-          if ((await streamOwner(req.headers)) !== userId) cleanup();
+          do {
+            checkAgain = false;
+            if ((await streamOwner(req.headers)) !== userId) return cleanup();
+          } while (checkAgain);
+        } catch {
+          // The session could not be read: keep the stream and check at the next heartbeat.
         } finally {
           checking = false;
         }

@@ -1,13 +1,13 @@
 import { prisma } from "@jakab/db";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { auth, signupAllowedByEnv } from "./auth";
 import { configuredBootstrapToken } from "./bootstrap-token";
 import { isDeactivated, mustChangePassword } from "./session-user";
 
-export async function getSession() {
-  return auth.api.getSession({ headers: await headers() });
-}
+/** Read once per request: the layout and the page it wraps both ask for it. */
+export const getSession = cache(async () => auth.api.getSession({ headers: await headers() }));
 
 /** The session of a request whose headers are at hand (a stream that outlives the request scope). */
 export const sessionFromHeaders = (requestHeaders: Headers) =>

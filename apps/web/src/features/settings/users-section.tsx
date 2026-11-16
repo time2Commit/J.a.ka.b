@@ -1,7 +1,7 @@
 "use client";
 
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@jakab/shared";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { MoreHorizontal } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
@@ -29,7 +29,7 @@ import { api } from "@/lib/api";
 import type { Member, Meta } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { SectionCard } from "./section-card";
-import { useMetaMutation } from "./use-meta-mutation";
+import { useMetaMutation, useRefreshSettingsData } from "./use-meta-mutation";
 import {
   generateTemporaryPassword,
   userActionError,
@@ -118,7 +118,7 @@ function UserActionDialog({
             </div>
           )}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onCancel}>
+            <Button type="button" variant="outline" disabled={busy} onClick={onCancel}>
               {common("cancel")}
             </Button>
             <Button
@@ -211,6 +211,7 @@ export function UsersSection({ meta }: { meta: Meta }) {
   const t = useTranslations("Settings");
   const actions = useTranslations("Settings.userActions");
   const common = useTranslations("Common");
+  const auth = useTranslations("Auth");
   const empty = { name: "", email: "", password: "", role: "member" };
   const [form, setForm] = useState(empty);
   const [pending, setPending] = useState<Pending | null>(null);
@@ -218,7 +219,7 @@ export function UsersSection({ meta }: { meta: Meta }) {
     (input: typeof empty) => api("/api/users", { method: "POST", json: input }),
     t("userCreated"),
   );
-  const queryClient = useQueryClient();
+  const refresh = useRefreshSettingsData();
   const act = useMutation({
     mutationFn: ({ user, action, password }: Pending & { password: string }) => {
       const { path, ...init } = userActionRequest(action, user.id, password);
@@ -228,10 +229,7 @@ export function UsersSection({ meta }: { meta: Meta }) {
       toast.success(actions(`${action}.done`, { name: user.name }));
       // Their sessions are closed either way; only the notes they had open may linger.
       if (result.notesDisconnected === false) toast.warning(actions("notesStillOpen"));
-      // People are shown on the cards: refresh those too.
-      for (const key of ["meta", "cards", "projects"]) {
-        void queryClient.invalidateQueries({ queryKey: [key] });
-      }
+      refresh();
     },
     onError: (error) => toast.error(actions(`errors.${userActionError(error)}`)),
   });
@@ -250,7 +248,8 @@ export function UsersSection({ meta }: { meta: Meta }) {
       <UserActionDialog
         pending={pending}
         busy={act.isPending}
-        onCancel={() => setPending(null)}
+        // Not while the request runs: its answer would close whichever dialog is open by then.
+        onCancel={() => !act.isPending && setPending(null)}
         onConfirm={(password) => {
           if (!pending) return;
           act.mutate({ ...pending, password }, { onSuccess: () => setPending(null) });
@@ -273,7 +272,7 @@ export function UsersSection({ meta }: { meta: Meta }) {
           />
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="u-email">Email</Label>
+          <Label htmlFor="u-email">{auth("email")}</Label>
           <Input
             id="u-email"
             type="email"
@@ -283,11 +282,12 @@ export function UsersSection({ meta }: { meta: Meta }) {
           />
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="u-password">Password</Label>
+          <Label htmlFor="u-password">{auth("password")}</Label>
           <Input
             id="u-password"
             type="password"
-            minLength={8}
+            minLength={PASSWORD_MIN_LENGTH}
+            maxLength={PASSWORD_MAX_LENGTH}
             autoComplete="new-password"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}

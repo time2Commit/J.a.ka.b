@@ -1,3 +1,4 @@
+import { PASSWORD_UNCHANGED } from "@/lib/auth-codes";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, passwordChangeSchema } from "@jakab/shared";
 
 export type PasswordField = "currentPassword" | "newPassword" | "confirmPassword";
@@ -50,6 +51,8 @@ export function passwordErrorFromServer(error: { status?: number; code?: string 
       return { currentPassword: "wrongCurrent" };
     case "PASSWORD_TOO_SHORT":
       return { newPassword: "tooShort" };
+    case PASSWORD_UNCHANGED:
+      return { newPassword: "sameAsCurrent" };
     case "PASSWORD_TOO_LONG":
       return { newPassword: "tooLong" };
     default:

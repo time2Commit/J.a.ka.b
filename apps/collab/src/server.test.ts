@@ -39,9 +39,11 @@ function startFakeWeb() {
             id: `u-${name}`,
             name,
             avatarColor: "#ef4444",
-            // Names tell the role and the state: "admin…" administers, "off…" is deactivated.
+            // Names tell the role and the state: "admin…" administers, "off…" is deactivated,
+            // "temp…" still has the temporary password of a reset.
             role: name.startsWith("admin") ? "admin" : "member",
             deactivatedAt: name.startsWith("off") ? "2026-11-16T10:00:00.000Z" : null,
+            mustChangePassword: name.startsWith("temp"),
           },
         }),
       );
@@ -215,8 +217,9 @@ describe("collab server", () => {
     }
   });
 
-  it("rejects a session whose account was deactivated", async () => {
+  it("rejects a session whose account was deactivated or still has a temporary password", async () => {
     expect(await connect({ cookie: "s=offline" }).outcome).toBe("denied");
+    expect(await connect({ cookie: "s=temporary" }).outcome).toBe("denied");
   });
 
   describe("closing the connections of a signed-out person", () => {
@@ -231,6 +234,7 @@ describe("collab server", () => {
       expect((await disconnect("u-anna", "s=nobody; x=1")).status).toBe(403);
       expect((await disconnect("u-anna", "s=luca")).status).toBe(403);
       expect((await disconnect("u-anna", "s=offadmin")).status).toBe(401);
+      expect((await disconnect("u-anna", "s=tempadmin")).status).toBe(401);
       expect((await disconnect("u-anna", "s=admin1", "GET")).status).toBe(405);
     });
 

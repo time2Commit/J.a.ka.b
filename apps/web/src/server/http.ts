@@ -2,7 +2,7 @@ import { prisma } from "@jakab/db";
 import { NextResponse } from "next/server";
 import { ZodError, type ZodType } from "zod";
 import { getSession } from "../lib/session";
-import { isDeactivated } from "../lib/session-user";
+import { isDeactivated, mustChangePassword } from "../lib/session-user";
 import { HttpError, TooManyRequests } from "./errors";
 import { limiterFor, type RateLimitRule } from "./rate-limit";
 
@@ -50,6 +50,11 @@ export function route<P = Record<string, never>>(
       if (!session) throw new HttpError(401, "Unauthorized");
       // Deactivating deletes the sessions; one created at that very moment stops here.
       if (isDeactivated(session)) throw new HttpError(403, "Account deactivated");
+      // After a reset, the temporary password opens nothing but the change of password itself
+      // (an auth route, not one of these).
+      if (mustChangePassword(session)) {
+        throw new HttpError(403, "Choose a new password first", "password_change_required");
+      }
       const actor: Actor = {
         id: session.user.id,
         role: (session.user as { role?: string }).role === "admin" ? "admin" : "member",

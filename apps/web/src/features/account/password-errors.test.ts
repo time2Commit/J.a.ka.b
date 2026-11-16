@@ -48,6 +48,9 @@ describe("passwordErrorFromServer", () => {
     expect(passwordErrorFromServer({ status: 400, code: "PASSWORD_TOO_SHORT" })).toEqual({
       newPassword: "tooShort",
     });
+    expect(passwordErrorFromServer({ status: 400, code: "PASSWORD_UNCHANGED" })).toEqual({
+      newPassword: "sameAsCurrent",
+    });
     expect(passwordErrorFromServer({ status: 400, code: "PASSWORD_TOO_LONG" })).toEqual({
       newPassword: "tooLong",
     });

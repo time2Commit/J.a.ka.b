@@ -23,6 +23,7 @@ export type SessionFetcher = (
     avatarColor?: string;
     role?: string;
     deactivatedAt?: string | null;
+    mustChangePassword?: boolean;
   };
 } | null>;
 
@@ -68,6 +69,8 @@ export async function authenticate(params: {
   if (!session?.user) throw new Error("Not authenticated");
   // Deactivating deletes the sessions; one created at that very moment stops here.
   if (session.user.deactivatedAt) throw new Error("Account deactivated");
+  // A temporary password (set by an administrator) opens nothing until it is replaced.
+  if (session.user.mustChangePassword) throw new Error("Password change required");
 
   const project = await db.project.findUnique({ where: { id: projectId }, select: { id: true } });
   if (!project) throw new Error("Project not found");

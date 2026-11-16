@@ -60,7 +60,9 @@ async function handleDisconnect(
   const session = cookie
     ? await deps.getSession(cookie, firstHeader(req.headers["x-forwarded-for"])).catch(() => null)
     : null;
-  if (!session?.user || session.user.deactivatedAt) throw new RequestError(401, "Unauthorized");
+  if (!session?.user || session.user.deactivatedAt || session.user.mustChangePassword) {
+    throw new RequestError(401, "Unauthorized");
+  }
   if (session.user.role !== "admin") throw new RequestError(403, "Forbidden");
 
   let closed = 0;
