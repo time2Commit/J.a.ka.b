@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
+import type { ZodType } from "zod";
+import * as shared from "./index";
 import {
   cardCreateSchema,
   cardUpdateSchema,
   projectUpdateSchema,
   statusInputSchema,
+  statusUpdateSchema,
   templateInputSchema,
+  templateUpdateSchema,
   versionCreateSchema,
 } from "./schemas";
 
@@ -106,5 +110,51 @@ describe("templateInputSchema", () => {
     expect(templateInputSchema.safeParse({ name: "x", note: { type: "paragraph" } }).success).toBe(
       false,
     );
+  });
+});
+
+describe("update schemas", () => {
+  // `.partial()` keeps `.default()`: an update schema built from an input schema with defaults
+  // would overwrite every stored field the caller did not send.
+  const updateSchemas = Object.entries(shared).filter(
+    ([name]) => name.endsWith("UpdateSchema") || name === "userPreferencesSchema",
+  ) as [string, ZodType][];
+
+  it("covers every update schema of the package", () => {
+    expect(updateSchemas.map(([name]) => name)).toEqual(
+      expect.arrayContaining([
+        "statusUpdateSchema",
+        "calendarUpdateSchema",
+        "labelUpdateSchema",
+        "cardUpdateSchema",
+        "projectUpdateSchema",
+        "folderUpdateSchema",
+        "templateUpdateSchema",
+        "workspaceUpdateSchema",
+        "sourceUpdateSchema",
+      ]),
+    );
+  });
+
+  it.each(updateSchemas)("%s adds nothing to an empty update", (_name, schema) => {
+    expect(schema.parse({})).toEqual({});
+  });
+
+  it("a template update holds only the fields that were sent", () => {
+    expect(templateUpdateSchema.parse({ folderId: "f1" })).toEqual({ folderId: "f1" });
+    expect(templateUpdateSchema.parse({ name: " New name " })).toEqual({ name: "New name" });
+    expect(templateUpdateSchema.parse({ note: null })).toEqual({ note: null });
+    // The defaults are replaced as a whole, so the settings left out of them are filled in.
+    expect(templateUpdateSchema.parse({ defaults: { durationMin: 30 } })).toEqual({
+      defaults: { statusId: null, labelIds: [], memberIds: [], durationMin: 30, checklist: [] },
+    });
+  });
+
+  it("a status update holds only the fields that were sent", () => {
+    expect(statusUpdateSchema.parse({ name: "Shipped" })).toEqual({ name: "Shipped" });
+    expect(statusUpdateSchema.parse({ color: "#00ff00" })).toEqual({ color: "#00ff00" });
+    expect(statusUpdateSchema.parse({ isDone: false })).toEqual({ isDone: false });
+    // Creating still defaults to "not done".
+    expect(statusInputSchema.parse({ name: "Open", color: "#00ff00" }).isDone).toBe(false);
   });
 });

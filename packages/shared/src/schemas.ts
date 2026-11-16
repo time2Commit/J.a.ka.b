@@ -4,12 +4,21 @@ const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Expected a #rrggbb color
 const progress = z.number().int().min(0).max(100);
 const id = z.string().min(1);
 
-export const statusInputSchema = z.object({
+/**
+ * Update schemas are declared from fields WITHOUT defaults. `.partial()` keeps a field's
+ * `.default()`, so an update schema derived from an input schema would fill every field the caller
+ * left out and overwrite the stored value with it.
+ */
+const statusFields = {
   name: z.string().trim().min(1).max(40),
   color: hexColor,
-  isDone: z.boolean().default(false),
+  isDone: z.boolean(),
+};
+export const statusInputSchema = z.object({
+  ...statusFields,
+  isDone: statusFields.isDone.default(false),
 });
-export const statusUpdateSchema = statusInputSchema.partial();
+export const statusUpdateSchema = z.object(statusFields).partial();
 /** Moves everything that uses a deleted status to another one (the nearest one when omitted). */
 export const statusDeleteSchema = z.object({ replaceWith: id.optional() });
 export const statusReorderSchema = z.object({ ids: z.array(id).min(1) });
@@ -159,21 +168,29 @@ export const templateDefaultsSchema = z.object({
 
 const noteDoc = z.object({ type: z.literal("doc") }).passthrough();
 
-export const templateInputSchema = z.object({
+const templateFields = {
   name: z.string().trim().min(1).max(80),
-  defaults: templateDefaultsSchema.default({
+  /** Replaced as a whole when sent: the settings left out of it go back to their defaults. */
+  defaults: templateDefaultsSchema,
+  /** Note content as editor JSON. */
+  note: noteDoc.nullable(),
+  /** The folder of the template tree it sits in; null = uncategorized. */
+  folderId: id.nullable(),
+};
+export const templateInputSchema = z.object({
+  ...templateFields,
+  defaults: templateFields.defaults.default({
     statusId: null,
     labelIds: [],
     memberIds: [],
     durationMin: 60,
     checklist: [],
   }),
-  /** Initial note content as editor JSON. */
-  note: noteDoc.nullable().default(null),
-  /** The folder of the template tree it sits in; null = uncategorized. */
-  folderId: id.nullable().default(null),
+  note: templateFields.note.default(null),
+  folderId: templateFields.folderId.default(null),
 });
-export const templateUpdateSchema = templateInputSchema.partial();
+/** Only the fields that are sent change (see the note on update schemas above). */
+export const templateUpdateSchema = z.object(templateFields).partial();
 
 export const saveAsTemplateSchema = z.object({ name: z.string().trim().min(1).max(80) });
 
