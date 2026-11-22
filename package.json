@@ -26,7 +26,7 @@
     "lint-staged": "^17.6.0",
     "prettier": "^3.10.1",
     "prettier-plugin-tailwindcss": "^0.8.1",
-    "secretlint": "^13.1.0",
+    "secretlint": "^14.0.0",
     "turbo": "^2.11.11",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.2",
